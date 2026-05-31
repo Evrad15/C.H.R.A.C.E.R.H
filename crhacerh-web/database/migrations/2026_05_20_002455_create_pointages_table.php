@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('pointages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
+            $table->foreignId('employee_id')->constrained('employés')->onDelete('cascade');
             $table->string('type', 10); // ENTREE ou SORTIE
             $table->string('source', 20); // QR, FACE, BIO, PIN
             $table->timestamp('timestamp')->useCurrent();

@@ -13,16 +13,17 @@ return new class extends Migration
     {
         Schema::create('absences', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
+            // Pointage vers 'employés' au lieu de 'employees'
+            $table->foreignId('employee_id')->constrained('employés')->onDelete('cascade');
             $table->date('date_start');
             $table->date('date_end');
-            $table->string('type', 50); // CONGE, MALADIE, SANS_SOLDE
-            $table->string('status', 20)->default('DEMANDE'); // DEMANDE, APPROUVEE, REJETEE
-
-            // Personne qui approuve (doit être un employé existant)
-            $table->foreignId('approved_by')->nullable()->constrained('employees')->onDelete('set null');
-
-            $table->string('justification_url')->nullable(); // Lien vers le certificat médical
+            $table->string('type', 50); 
+            $table->string('status', 20)->default('DEMANDE'); 
+    
+            // Personne qui approuve pointe aussi vers 'employés'
+            $table->foreignId('approved_by')->nullable()->constrained('employés')->onDelete('set null');
+    
+            $table->string('justification_url')->nullable(); 
             $table->timestamps();
         });
     }

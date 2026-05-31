@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('employees', function (Blueprint $table) {
+        Schema::create('employés', function (Blueprint $table) {
             $table->id();
             $table->string('email', 150)->unique();
             $table->string('password'); // Recommandé pour l'Auth Laravel
             $table->string('first_name', 100);
             $table->string('last_name', 100);
-            $table->string('role', 50)->default('Employee'); // Employee, Manager, RH_Admin
+            $table->string('role', 50)->default('Employés'); // Employee, Manager, RH_Admin
 
             // Clé étrangère vers les départements
             $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('set null');
@@ -35,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('employees');
+        Schema::dropIfExists('employés');
     }
 };

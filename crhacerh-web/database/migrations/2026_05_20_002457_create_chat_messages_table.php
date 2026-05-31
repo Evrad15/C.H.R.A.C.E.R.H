@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('chat_messages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sender_id')->constrained('employees')->onDelete('cascade');
-            $table->foreignId('recipient_id')->constrained('employees')->onDelete('cascade');
+            $table->foreignId('sender_id')->constrained('employés')->onDelete('cascade');
+            $table->foreignId('recipient_id')->constrained('employés')->onDelete('cascade');
             $table->text('message');
-            $table->boolean('is_ai')->default(false); // TRUE si c'est l'IA Claude qui répond
+            $table->boolean('is_ai')->default(false);
             $table->timestamps();
         });
     }

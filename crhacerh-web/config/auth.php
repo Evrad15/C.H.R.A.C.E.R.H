@@ -64,7 +64,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            'model' => App\Models\Employés::class, // 👈 On remplace User::class par ton modèle avec accent
         ],
 
         // 'users' => [
