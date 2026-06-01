@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 // 💡 On remplace le Model de base par la classe Authenticatable
-use Illuminate\Foundation\Auth\User as Authenticatable; 
+use Illuminate\Foundation\Auth\User as Authenticatable;
 // 💡 On importe le contrat requis pour que Filament accepte ce modèle
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
@@ -28,7 +28,8 @@ class Employés extends Authenticatable implements FilamentUser, HasName
         'department_id',
         'phone',
         'face_embeddings',
-        'consent_facial_at'
+        'consent_facial_at',
+        'remember_token',
     ];
 
     // Sécurisation et mutation automatique des types de données
@@ -44,7 +45,7 @@ class Employés extends Authenticatable implements FilamentUser, HasName
     public function canAccessPanel(Panel $panel): bool
     {
         // Seuls les utilisateurs ayant le rôle 'RH_Admin' ou 'Manager' peuvent se connecter
-        return in_array($this->role, ['RH_Admin', 'Manager', 'Employés']); 
+        return in_array($this->role, ['RH_Admin', 'Manager', 'Employés']);
     }
 
     // --- RELATIONS ---
@@ -89,5 +90,29 @@ class Employés extends Authenticatable implements FilamentUser, HasName
     public function getFilamentName(): string
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    /**
+     * Récupère le nom de la colonne pour le "Remember Me"
+     */
+    public function getRememberTokenName(): string
+    {
+        return 'remember_token';
+    }
+
+    /**
+     * Récupère la valeur du cookie de session
+     */
+    public function getRememberToken(): ?string
+    {
+        return $this->remember_token;
+    }
+
+    /**
+     * Définit la nouvelle valeur du cookie de session
+     */
+    public function setRememberToken($value): void
+    {
+        $this->remember_token = $value;
     }
 }
