@@ -8,7 +8,8 @@
     "require": {
         "php": "^8.2",
         "filament/filament": "^3.2",
-        "google/apiclient": "*",
+        "google/apiclient": "^2.19",
+        "guzzlehttp/guzzle": "^7.10",
         "laravel/framework": "^11.2",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0"
