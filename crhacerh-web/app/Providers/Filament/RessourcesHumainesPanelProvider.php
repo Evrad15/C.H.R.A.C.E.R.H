@@ -22,8 +22,8 @@ class RessourcesHumainesPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
-            ->id('ressources-Humaines')
-            ->path('ressources-Humaines')
+            ->id('ressources-humaines')
+            ->path('ressources-humaines')
             ->login()
             ->colors([
                 'primary' => Color::Amber,

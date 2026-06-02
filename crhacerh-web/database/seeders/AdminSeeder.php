@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Employe;
 use Illuminate\Database\Seeder;
 use App\Models\Employés; // 💡 On utilise ton modèle mis à jour
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +14,7 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        Employés::create([
+        Employe::create([
             'first_name' => 'Admin',
             'last_name' => 'RH',
             'email' => 'admin@crhacerh.com',

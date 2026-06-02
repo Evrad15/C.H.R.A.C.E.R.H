@@ -64,7 +64,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Employés::class, // 👈 On remplace User::class par ton modèle avec accent
+            'model' => App\Models\Employe::class, // 👈 On remplace User::class par ton modèle avec accent
         ],
 
         // 'users' => [

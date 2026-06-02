@@ -11,7 +11,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 
-class Employés extends Authenticatable implements FilamentUser, HasName
+class Employe extends Authenticatable implements FilamentUser, HasName
 {
     use HasFactory, SoftDeletes; // Ajout de SoftDeletes car ton schéma SQL a un deleted_at
 
@@ -114,5 +114,10 @@ class Employés extends Authenticatable implements FilamentUser, HasName
     public function setRememberToken($value): void
     {
         $this->remember_token = $value;
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return "{$this->first_name} {$this->last_name}";
     }
 }
