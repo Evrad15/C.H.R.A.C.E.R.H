@@ -16,12 +16,12 @@ class Absence extends Model
     // L'absence appartient à un employé
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employe::class);
     }
 
     // L'absence est approuvée par un employé (Manager/RH)
     public function approver()
     {
-        return $this->belongsTo(Employee::class, 'approved_by');
+        return $this->belongsTo(Employe::class, 'approved_by');
     }
 }

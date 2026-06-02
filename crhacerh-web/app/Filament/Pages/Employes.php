@@ -21,29 +21,22 @@ class Employes extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(Employe::query()->withCount(['absences', 'pointages']))
+            ->query(
+                Employe::query()->where('role', '!=', 'RH_Admin')
+                    ->withCount('absences')
+                    ->withCount([
+                        'pointages as retards_count' => fn($query) => $query->where('type', 'retard'),
+                        'pointages as a_lheure_count' => fn($query) => $query->where('type', 'a_lheure'),
+                    ])
+            )
             ->columns([
-                TextColumn::make('full_name')
-                    ->label('Nom et Prénoms')
-                    ->searchable(),
-                
-                TextColumn::make('department.name')
-                    ->label('Départements'),
-                
-                TextColumn::make('absences_count')
-                    ->label('Absences')
-                    ->color('danger'),
-                
-                TextColumn::make('retards_count')
-                    ->label('Retards')
-                    ->color('warning'),
-                
-                TextColumn::make('a_lheure_count')
-                    ->label('À l\'heure')
-                    ->color('primary'),
+                TextColumn::make('full_name')->label('Nom et Prénoms')->searchable(),
+                TextColumn::make('department.name')->label('Départements'),
+                TextColumn::make('absences_count')->label('Absences')->default(0),
+                TextColumn::make('retards_count')->label('Retards')->color('warning')->default(0),
+                TextColumn::make('a_lheure_count')->label('À l\'heure')->color('primary')->default(0),
             ])
-            ->recordUrl(fn ($record) => "/ressources-humaines/statistiques/" . $record->id)
-            ->actions([])
-            ->bulkActions([]);
+            // Dans votre tableau dans Employes.php
+            ->recordUrl(fn($record) => \App\Filament\Pages\StatsEmploye::getUrl(['employeId' => $record->id]));
     }
 }
