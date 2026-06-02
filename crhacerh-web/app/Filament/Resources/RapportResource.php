@@ -17,13 +17,17 @@ class RapportResource extends Resource
 {
     protected static ?string $model = Rapport::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                //
+                Forms\Components\TextInput::make('titre')->required(),
+                Forms\Components\RichEditor::make('contenu'),
+                Forms\Components\DatePicker::make('date_rapport'),
             ]);
     }
 
