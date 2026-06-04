@@ -10,10 +10,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Panel;
+use Cmgmyr\Messenger\Traits\Messagable;
 
 class Employe extends Authenticatable implements FilamentUser, HasName
 {
-    use HasFactory, SoftDeletes; // Ajout de SoftDeletes car ton schéma SQL a un deleted_at
+    use HasFactory, SoftDeletes, Messagable; // Ajout de SoftDeletes car ton schéma SQL a un deleted_at
 
     // On force la table sur 'employés' avec son accent
     protected $table = 'employés';
@@ -69,11 +70,6 @@ class Employe extends Authenticatable implements FilamentUser, HasName
         return $this->hasMany(Absence::class, 'employee_id');
     }
 
-    // Un employé peut avoir plusieurs messages
-    public function messages()
-    {
-        return $this->hasMany(ChatMessage::class, 'employee_id');
-    }
 
     // Un employé peut avoir plusieurs prédictions
     public function predictions()

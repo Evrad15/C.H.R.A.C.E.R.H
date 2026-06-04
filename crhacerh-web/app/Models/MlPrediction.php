@@ -16,6 +16,6 @@ class MlPrediction extends Model
     // La prédiction concerne un employé
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employe::class);
     }
 }

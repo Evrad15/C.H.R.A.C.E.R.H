@@ -12,6 +12,6 @@ class Department extends Model
     // Un département a plusieurs employés
     public function employees()
     {
-        return $this->hasMany(Employee::class);
+        return $this->hasMany(Employe::class);
     }
 }
