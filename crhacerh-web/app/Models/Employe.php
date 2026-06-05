@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 // 💡 On importe le contrat requis pour que Filament accepte ce modèle
 use Filament\Models\Contracts\FilamentUser;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Cmgmyr\Messenger\Traits\Messagable;
@@ -103,7 +104,12 @@ class Employe extends Authenticatable implements FilamentUser, HasName
     {
         return $this->remember_token;
     }
-
+    
+    public function presences(): HasMany
+    {
+        return $this->hasMany(Presence::class, 'employe_id');
+    }
+    
     /**
      * Définit la nouvelle valeur du cookie de session
      */

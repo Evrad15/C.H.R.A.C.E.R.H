@@ -1,0 +1,16 @@
+python -c "
+content = '''Flask==3.0.0
+Flask-CORS==4.0.0
+python-dotenv==1.0.0
+numpy>=2.0.0
+pandas>=2.0.0
+scikit-learn>=1.5.0
+xgboost>=2.0.0
+opencv-python>=4.8.0
+mediapipe>=0.10.0
+Pillow>=10.1.0
+requests>=2.31.0'''
+with open('requirements.txt', 'w') as f:
+    f.write(content)
+print('OK - requirements.txt créé')
+"

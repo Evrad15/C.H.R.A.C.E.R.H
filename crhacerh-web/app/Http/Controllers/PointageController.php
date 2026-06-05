@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Employe;
 use App\Models\Pointage;
 use App\Models\Employee;
 use Illuminate\Http\Request;
@@ -47,7 +48,7 @@ class PointageController extends Controller
         ]);
 
         // 3. Récupérer l'employé pour personnaliser la réponse
-        $employee = Employee::find($validated['employee_id']);
+        $employee = Employe::find($validated['employee_id']);
 
         return response()->json([
             'status'  => 'success',

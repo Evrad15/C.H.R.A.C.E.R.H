@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('employés', function (Blueprint $table) {
             $table->id();
+            $table->string('matricule', 50)->unique(); // Ajout du matricule unique
             $table->string('email', 150)->unique();
             $table->string('password'); // Recommandé pour l'Auth Laravel
             $table->string('first_name', 100);
@@ -39,3 +40,4 @@ return new class extends Migration
         Schema::dropIfExists('employés');
     }
 };
+

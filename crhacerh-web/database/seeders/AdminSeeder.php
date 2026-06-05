@@ -17,10 +17,20 @@ class AdminSeeder extends Seeder
         Employe::create([
             'first_name' => 'Admin',
             'last_name' => 'RH',
+            'matricule' => 'chr-2020-0001',
             'email' => 'admin@crhacerh.com',
             'password' => Hash::make('admin123'), // Ou laisse Laravel le hasher automatiquement si configuré dans les casts
             'role' => 'RH_Admin', // Ton rôle d'administrateur
             'consent_facial_at' => now(),
+        ]);
+
+        Employe::create([
+            'email' => 'jean.dupont@entreprise.com',
+            'matricule' => 'chr-2020-0002',
+            'password' => Hash::make('password123'),
+            'first_name' => 'Jean',
+            'last_name' => 'Dupont',
+            'role' => 'Employés',
         ]);
     }
 }

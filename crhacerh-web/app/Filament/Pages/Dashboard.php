@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\DB;
 class Dashboard extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-home';
-    
+
     protected static ?string $navigationLabel = 'Tableau de bord';
-    
-    protected static ?int $navigationSort = 0; 
+
+    protected static ?int $navigationSort = 0;
 
     protected static ?string $title = 'Tableau de bord';
     protected static string $view = 'filament.pages.dashboard';
@@ -35,72 +35,71 @@ class Dashboard extends Page
 
     public function mount(): void
     {
-        // Définir les bornes de la semaine en cours (Lundi à Vendredi)
         $debutSemaine = Carbon::now()->startOfWeek(Carbon::MONDAY);
-        $finSemaine = Carbon::now()->startOfWeek(Carbon::MONDAY)->addDays(4)->endOfDay(); // Vendredi soir
+        $finSemaine = Carbon::now()->startOfWeek(Carbon::MONDAY)->addDays(4)->endOfDay();
 
-        // 1. Calcul des 4 cartes du haut
-        $this->totalEmployes = Employe::count(); // Total absolu des employés actifs
-        
-        $this->absentsSemaine = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])
-            ->where('statut', 'Absent')
-            ->count();
+        // Déterminer le jour précédent (si on est lundi, le jour précédent est le vendredi)
+        $hier = Carbon::yesterday();
+        if (Carbon::now()->isMonday()) {
+            $hier = Carbon::now()->subDays(3);
+        }
 
-        $this->retardsSemaine = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])
-            ->where('statut', 'Retard')
-            ->count();
+        // 1. Calculs de base
+        $this->totalEmployes = Employe::count();
 
-        $this->aLHeureSemaine = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])
-            ->where('statut', 'Present') // Ou 'A l\'heure' selon votre énumération
-            ->count();
+        // Requêtes de la semaine en cours
+        $this->absentsSemaine = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('statut', 'Absent')->count();
+        $this->retardsSemaine = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('statut', 'Retard')->count();
+        $this->aLHeureSemaine = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('statut', 'Present')->count();
 
-        // 2. Récupération des Tops 5 (Basé sur la semaine en cours)
-        $this->topAbsents = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])
-            ->where('statut', 'Absent')
-            ->select('employe_id', DB::raw('count(*) as total'))
-            ->groupBy('employe_id')
-            ->orderByDesc('total')
-            ->with('employe') // Assurez-vous d'avoir la relation 'employe' dans votre modèle Presence
-            ->limit(5)
-            ->get();
+        // 2. Calcul des tendances (Différence avec hier)
+        $absentsHier = Presence::whereDate('created_at', $hier)->where('statut', 'Absent')->count();
+        $retardsHier = Presence::whereDate('created_at', $hier)->where('statut', 'Retard')->count();
+        $aLHeureHier = Presence::whereDate('created_at', $hier)->where('statut', 'Present')->count();
 
-        $this->topRetards = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])
-            ->where('statut', 'Retard')
-            ->select('employe_id', DB::raw('count(*) as total'))
-            ->groupBy('employe_id')
-            ->orderByDesc('total')
+        // Absents aujourd'hui (ou dernier jour) pour comparer
+        $absentsAujourdhui = Presence::whereDate('created_at', Carbon::today())->where('statut', 'Absent')->count();
+        $retardsAujourdhui = Presence::whereDate('created_at', Carbon::today())->where('statut', 'Retard')->count();
+        $aLHeureAujourdhui = Presence::whereDate('created_at', Carbon::today())->where('statut', 'Present')->count();
+
+        $this->tendanceAbsents = $absentsAujourdhui - $absentsHier;
+        $this->tendanceRetards = $retardsAujourdhui - $retardsHier;
+        $this->tendanceALHeure = $aLHeureAujourdhui - $aLHeureHier;
+
+        // 3. Calcul du taux de présence global sur la semaine
+        $totalPresencesPossibles = $this->totalEmployes * 5; // Nombre d'employés * 5 jours
+        if ($totalPresencesPossibles > 0) {
+            $this->tauxPresenceGlobal = round((($this->aLHeureSemaine + $this->retardsSemaine) / $totalPresencesPossibles) * 100, 1);
+        }
+
+        // 4. Section "Alerte Anomalies" en direct (Ex: Retards importants ou absences non justifiées du jour)
+        $this->anomalies = Presence::whereDate('created_at', Carbon::today())
+            ->whereIn('statut', ['Absent', 'Retard'])
             ->with('employe')
-            ->limit(5)
+            ->latest()
+            ->limit(4)
             ->get();
 
-        $this->topAssidus = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])
-            ->where('statut', 'Present')
-            ->select('employe_id', DB::raw('count(*) as total'))
-            ->groupBy('employe_id')
-            ->orderByDesc('total')
-            ->with('employe')
-            ->limit(5)
-            ->get();
+        // Chargement des Tops 5 et données graphiques (identique à votre ancienne logique)
+        $this->chargerTopsEtGraphique($debutSemaine, $finSemaine);
+    }
 
-        // 3. Préparation des données du graphique (Lundi à Vendredi)
+    protected function chargerTopsEtGraphique($debutSemaine, $finSemaine)
+    {
+        $this->topAbsents = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('statut', 'Absent')->select('employe_id', DB::raw('count(*) as total'))->groupBy('employe_id')->orderByDesc('total')->with('employe')->limit(5)->get();
+        $this->topRetards = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('statut', 'Retard')->select('employe_id', DB::raw('count(*) as total'))->groupBy('employe_id')->orderByDesc('total')->with('employe')->limit(5)->get();
+        $this->topAssidus = Presence::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('statut', 'Present')->select('employe_id', DB::raw('count(*) as total'))->groupBy('employe_id')->orderByDesc('total')->with('employe')->limit(5)->get();
+
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
         $absencesParJour = [];
         $retardsParJour = [];
         $assidusParJour = [];
-
         for ($i = 0; $i < 5; $i++) {
             $jourCible = Carbon::now()->startOfWeek(Carbon::MONDAY)->addDays($i);
-            
             $absencesParJour[] = Presence::whereDate('created_at', $jourCible)->where('statut', 'Absent')->count();
             $retardsParJour[] = Presence::whereDate('created_at', $jourCible)->where('statut', 'Retard')->count();
             $assidusParJour[] = Presence::whereDate('created_at', $jourCible)->where('statut', 'Present')->count();
         }
-
-        $this->chartData = [
-            'labels' => $jours,
-            'absences' => $absencesParJour,
-            'retards' => $retardsParJour,
-            'assidus' => $assidusParJour,
-        ];
+        $this->chartData = ['labels' => $jours, 'absences' => $absencesParJour, 'retards' => $retardsParJour, 'assidus' => $assidusParJour];
     }
 }
