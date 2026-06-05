@@ -30,15 +30,48 @@ class Calendrier extends Model
     /**
      * Initialise et récupère le service Google Calendar API.
      */
+    /**
+     * Initialise et récupère le service Google Calendar API via OAuth2 (sans fichier JSON).
+     */
     public static function getGoogleCalendarService()
     {
-        $client = new GoogleClient();
-        
-        // Chemin vers ton fichier JSON de clé de compte de service Google Cloud
-        $client->setAuthConfig(storage_path('app/google-calendar/service-account.json'));
-        $client->addScope(GoogleCalendar::CALENDAR);
-        
-        return new GoogleCalendar($client);
+        $client = new \Google\Client();
+
+        $client->setClientId(config('services.google.client_id'));
+        $client->setClientSecret(config('services.google.client_secret'));
+        $client->setRedirectUri(config('services.google.redirect'));
+        $client->addScope(\Google\Service\Calendar::CALENDAR);
+
+        // 1. On récupère l'identifiant de l'admin connecté via Filament
+        $authAdmin = \Filament\Facades\Filament::auth()->user();
+
+        if ($authAdmin) {
+            // 2. On force le chargement du vrai modèle Employe depuis la BDD pour avoir accès à update()
+            $admin = \App\Models\Employe::find($authAdmin->getAuthIdentifier());
+
+            if ($admin && $admin->google_access_token) {
+                $client->setAccessToken([
+                    'access_token'  => $admin->google_access_token,
+                    'refresh_token' => $admin->google_refresh_token,
+                    'expires_in'    => $admin->google_token_expires_at ? $admin->google_token_expires_at->diffInSeconds(now()) : 0
+                ]);
+
+                // Si le jeton d'accès a expiré, on le rafraîchit automatiquement
+                if ($client->isAccessTokenExpired()) {
+                    if ($client->getRefreshToken()) {
+                        $newToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+
+                        // Cette fois, l'object Éloquent mettra bien à jour ta table PostgreSQL
+                        $admin->update([
+                            'google_access_token'     => $newToken['access_token'],
+                            'google_token_expires_at' => now()->addSeconds($newToken['expires_in']),
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return new \Google\Service\Calendar($client);
     }
 
     /**
@@ -80,7 +113,7 @@ class Calendrier extends Model
         if ($this->google_event_id) {
             $calendarService = self::getGoogleCalendarService();
             $calendarId = config('services.google.calendar_id');
-            
+
             try {
                 $calendarService->events->delete($calendarId, $this->google_event_id);
             } catch (\Exception $e) {

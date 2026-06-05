@@ -29,6 +29,7 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes(); // Pour le "deleted_at" (Droit à l'oubli / RGPD)
+            
         });
     }
 

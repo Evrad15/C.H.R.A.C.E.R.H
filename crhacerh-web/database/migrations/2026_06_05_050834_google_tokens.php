@@ -11,21 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('calendriers', function (Blueprint $table) {
+        Schema::create('google_tokens', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->string('google_event_id')->nullable(); // Important pour la synchro Google
-            $table->dateTime('start_at');
-            $table->dateTime('end_at')->nullable();
-            $table->text('description')->nullable();
+            // Liaison avec ton admin/employé
+            $table->foreignId('employe_id')->constrained('employés')->onDelete('cascade');
+            $table->text('access_token');
+            $table->text('refresh_token'); // <-- Le jeton permanent stocké ici
+            $table->timestamp('expires_at');
             $table->timestamps();
         });
     }
+
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('calendriers');
+        Schema::dropIfExists('google_tokens');
     }
 };
