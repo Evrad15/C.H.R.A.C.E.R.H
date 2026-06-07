@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\KioskController;
 
 // Page d'affichage de la borne (Interface Web)
@@ -19,7 +20,7 @@ Route::get('/google/auth', function () {
     $client->setClientId(env('GOOGLE_CLIENT_ID'));
     $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
     // Dans routes/web.php, modifie le scope existant :
-$client->addScope(Google\Service\Calendar::CALENDAR); // ✅ Donne les droits complets (lecture/écriture)
+    $client->addScope(Google\Service\Calendar::CALENDAR); // ✅ Donne les droits complets (lecture/écriture)
     // Utilisation d'un fallback automatique si l'env() ne répond pas
     $redirectUri = env('GOOGLE_REDIRECT_URI') ?? 'http://localhost:8000/ressources-humaines/calendrier/callback';
     $client->setRedirectUri($redirectUri);
@@ -47,3 +48,15 @@ Route::get('/ressources-humaines/calendrier/callback', function (Request $reques
 
     return redirect('/ressources-humaines/calendrier');
 });
+
+// Route pour supprimer un fichier de rapport (utilisé par la page Filament Rapports)
+Route::post('/filament/rapports/delete', function (Request $request) {
+    $request->validate(['path' => 'required|string']);
+    $path = $request->input('path');
+
+    if (Storage::disk('public')->exists($path)) {
+        Storage::disk('public')->delete($path);
+    }
+
+    return back();
+})->name('filament.pages.rapports.delete')->middleware('auth');

@@ -3,12 +3,23 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Cmgmyr\Messenger\Models\Thread;
 use Cmgmyr\Messenger\Models\Message;
 use Illuminate\Support\Facades\Auth;
+use Livewire\TemporaryUploadedFile;
 
 class Chat extends Component
 {
+    use WithFileUploads;
+
+    public ?TemporaryUploadedFile $attachment = null;
+
+    protected $rules = [
+        'newMessage' => 'nullable|string|max:2000',
+        'attachment' => 'nullable|file|max:10240',
+    ];
+
     public $threads;
     public $activeThreadId;
     public $newMessage = '';
@@ -17,6 +28,9 @@ class Chat extends Component
     public function mount()
     {
         $this->loadThreads();
+        if (!$this->activeThreadId && $this->threads->isNotEmpty()) {
+            $this->selectThread($this->threads->first()->id);
+        }
     }
 
     public function loadThreads()
@@ -30,20 +44,45 @@ class Chat extends Component
         $this->activeThreadId = $id;
         // Marquer comme lu
         $thread = Thread::find($id);
-        $thread->markAsRead(Auth::id());
+        if ($thread) {
+            $thread->markAsRead(Auth::id());
+        }
     }
 
     public function sendMessage()
     {
-        if (empty($this->newMessage) || !$this->activeThreadId) return;
+        $this->validate();
 
-        Message::create([
-            'thread_id' => $this->activeThreadId,
-            'user_id'   => Auth::id(),
-            'body'      => $this->newMessage,
+        if (!$this->activeThreadId) {
+            return;
+        }
+
+        $thread = Thread::find($this->activeThreadId);
+        if (! $thread) {
+            return;
+        }
+
+        // Create message via the thread to ensure relationships are correct
+        $msg = $thread->messages()->create([
+            'thread_id' => $thread->id,
+            'user_id' => Auth::id(),
+            'body' => trim($this->newMessage) ?: ($this->attachment ? 'Fichier joint' : ''),
         ]);
 
+        // Handle attachment: can't mass-assign in vendor model, set and save
+        if ($this->attachment) {
+            $path = $this->attachment->store('chat-attachments', 'public');
+            $msg->attachment = $path;
+            $msg->save();
+        }
+
+        // Update thread metadata and participant states
+        $thread->touch();
+        $thread->activateAllParticipants();
+        $thread->markAsRead(Auth::id());
+
         $this->newMessage = '';
+        $this->attachment = null;
         $this->loadThreads(); // Rafraîchir la liste
     }
 

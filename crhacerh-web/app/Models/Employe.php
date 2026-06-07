@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 // 💡 On remplace le Model de base par la classe Authenticatable
 use Illuminate\Foundation\Auth\User as Authenticatable;
 // 💡 On importe le contrat requis pour que Filament accepte ce modèle
@@ -15,7 +16,7 @@ use Cmgmyr\Messenger\Traits\Messagable;
 
 class Employe extends Authenticatable implements FilamentUser, HasName
 {
-    use HasFactory, SoftDeletes, Messagable; // Ajout de SoftDeletes car ton schéma SQL a un deleted_at
+    use HasFactory, SoftDeletes, Notifiable, Messagable; // Ajout de SoftDeletes car ton schéma SQL a un deleted_at
 
     // On force la table sur 'employés' avec son accent
     protected $table = 'employés';
@@ -104,12 +105,12 @@ class Employe extends Authenticatable implements FilamentUser, HasName
     {
         return $this->remember_token;
     }
-    
+
     public function presences(): HasMany
     {
         return $this->hasMany(Presence::class, 'employe_id');
     }
-    
+
     /**
      * Définit la nouvelle valeur du cookie de session
      */
