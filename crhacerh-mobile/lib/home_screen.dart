@@ -68,7 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
     await prefs.remove('cached_employee');
 
     if (context.mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, '/matricule', (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/matricule', (route) => false);
     }
   }
 
@@ -76,10 +77,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final pages = [
       HomeTab(
-        employeeId: widget.employee['id'], 
-        name: '${widget.employee['first_name']} ${widget.employee['last_name']}', 
-        onLogout: () => _logout(context)
-      ),
+          employeeId: widget.employee['id'],
+          name:
+              '${widget.employee['first_name']} ${widget.employee['last_name']}',
+          onLogout: () => _logout(context)),
       MessageScreen(employeeId: widget.employee['id']),
       ScannQRScreen(employeeId: widget.employee['id']),
       const _PlaceholderScreen(title: 'Documents'),
@@ -132,7 +133,11 @@ class HomeTab extends StatefulWidget {
   final String name;
   final VoidCallback onLogout;
 
-  const HomeTab({super.key, required this.employeeId, required this.name, required this.onLogout});
+  const HomeTab(
+      {super.key,
+      required this.employeeId,
+      required this.name,
+      required this.onLogout});
 
   @override
   State<HomeTab> createState() => _HomeTabState();
@@ -142,7 +147,11 @@ class _HomeTabState extends State<HomeTab> {
   final AuthService _authService = AuthService();
   bool _isLoading = true;
   List<dynamic> _history = [];
-  Map<String, dynamic> _stats = {'presence': 0.0, 'retard': 0.0, 'absence': 0.0};
+  Map<String, dynamic> _stats = {
+    'presence': 0.0,
+    'retard': 0.0,
+    'absence': 0.0
+  };
 
   @override
   void initState() {
@@ -176,7 +185,8 @@ class _HomeTabState extends State<HomeTab> {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final dateLabel = '${_twoDigits(now.day)} ${_monthName(now.month)} ${now.year}';
+    final dateLabel =
+        '${_twoDigits(now.day)} ${_monthName(now.month)} ${now.year}';
     final timeLabel = '${_twoDigits(now.hour)}:${_twoDigits(now.minute)}';
 
     return RefreshIndicator(
@@ -195,7 +205,10 @@ class _HomeTabState extends State<HomeTab> {
             ),
             const SizedBox(height: 20),
             if (_isLoading)
-              const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+              const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator()))
             else ...[
               _AttendanceCard(history: _history),
               const SizedBox(height: 20),
@@ -267,18 +280,28 @@ class _HeaderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Bonjour,', style: TextStyle(fontSize: 16, color: Color(0xFF4B4B4B))),
+                    const Text('Bonjour,',
+                        style:
+                            TextStyle(fontSize: 16, color: Color(0xFF4B4B4B))),
                     const SizedBox(height: 6),
-                    Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+                    Text(name,
+                        style: const TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(date, style: const TextStyle(fontSize: 14, color: Color(0xFF5F5F5F))),
+                  Text(date,
+                      style: const TextStyle(
+                          fontSize: 14, color: Color(0xFF5F5F5F))),
                   const SizedBox(height: 10),
-                  Text(time, style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Color(0xFFEC1C24))),
+                  Text(time,
+                      style: const TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFEC1C24))),
                 ],
               ),
             ],
@@ -287,9 +310,10 @@ class _HeaderCard extends StatelessWidget {
           Center(
             child: Opacity(
               opacity: 0.15,
-              child: Text(
-                'C.H.R.A.C.E.R.H',
-                style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.blueGrey[900]),
+              child: Image.asset(
+                'assets/images/chracerh logo.png',
+                height: 150,
+                fit: BoxFit.contain,
               ),
             ),
           ),
@@ -302,8 +326,10 @@ class _HeaderCard extends StatelessWidget {
               label: const Text('Déconnexion'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1976D2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
@@ -346,7 +372,10 @@ class _AttendanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (history.isEmpty)
-            const Center(child: Padding(padding: EdgeInsets.all(8.0), child: Text('Aucun pointage récent.')))
+            const Center(
+                child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('Aucun pointage récent.')))
           else
             ...history.map((item) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -354,7 +383,9 @@ class _AttendanceCard extends StatelessWidget {
                     date: item['date'],
                     time: item['time'],
                     status: item['status'],
-                    dotColor: item['is_late'] == true ? Colors.red : Colors.transparent,
+                    dotColor: item['is_late'] == true
+                        ? Colors.red
+                        : Colors.transparent,
                   ),
                 )),
         ],
@@ -407,7 +438,9 @@ class _AttendanceRow extends StatelessWidget {
           ),
           Expanded(
             flex: 2,
-            child: Text(time, style: const TextStyle(fontSize: 15), textAlign: TextAlign.center),
+            child: Text(time,
+                style: const TextStyle(fontSize: 15),
+                textAlign: TextAlign.center),
           ),
           Expanded(
             flex: 3,
@@ -420,7 +453,8 @@ class _AttendanceRow extends StatelessWidget {
                   Container(
                     width: 10,
                     height: 10,
-                    decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+                    decoration:
+                        BoxDecoration(color: dotColor, shape: BoxShape.circle),
                   ),
                 ],
               ],
@@ -467,7 +501,8 @@ class _StatsCard extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.white,
-                    child: Text('${(stats['presence'] ?? 0).toInt()}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text('${(stats['presence'] ?? 0).toInt()}%',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -479,11 +514,17 @@ class _StatsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _StatLabel(color: const Color(0xFF47D534), label: '${(stats['presence'] ?? 0).toInt()}% d’assiduité'),
+                _StatLabel(
+                    color: const Color(0xFF47D534),
+                    label: '${(stats['presence'] ?? 0).toInt()}% d’assiduité'),
                 const SizedBox(height: 12),
-                _StatLabel(color: const Color(0xFFEF7E0D), label: '${(stats['retard'] ?? 0).toInt()}% de retard'),
+                _StatLabel(
+                    color: const Color(0xFFEF7E0D),
+                    label: '${(stats['retard'] ?? 0).toInt()}% de retard'),
                 const SizedBox(height: 12),
-                _StatLabel(color: const Color(0xFFE01010), label: '${(stats['absence'] ?? 0).toInt()}% d’absences'),
+                _StatLabel(
+                    color: const Color(0xFFE01010),
+                    label: '${(stats['absence'] ?? 0).toInt()}% d’absences'),
               ],
             ),
           ),
@@ -503,12 +544,16 @@ class _StatLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             label,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color),
+            style: TextStyle(
+                fontSize: 15, fontWeight: FontWeight.w600, color: color),
           ),
         ),
       ],
@@ -521,7 +566,8 @@ class _DonutChartPainter extends CustomPainter {
   final double retard;
   final double absence;
 
-  _DonutChartPainter({required this.presence, required this.retard, required this.absence});
+  _DonutChartPainter(
+      {required this.presence, required this.retard, required this.absence});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -566,7 +612,8 @@ class _PlaceholderScreen extends StatelessWidget {
     return Center(
       child: Text(
         title,
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black54),
+        style: const TextStyle(
+            fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black54),
       ),
     );
   }
@@ -611,7 +658,9 @@ class _NavBarItemState extends State<_NavBarItem> {
           height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: widget.isSelected ? const Color(0xFF171717) : Colors.transparent,
+            color: widget.isSelected
+                ? const Color(0xFF171717)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(22),
           ),
           child: widget.child,
@@ -658,8 +707,9 @@ class _ChatBubblePainter extends CustomPainter {
     final h = size.height;
 
     final bubbleRect = Rect.fromLTWH(0, 0, w, h * 0.85);
-    final rrect = RRect.fromRectAndRadius(bubbleRect, Radius.circular(w * 0.45));
-    
+    final rrect =
+        RRect.fromRectAndRadius(bubbleRect, Radius.circular(w * 0.45));
+
     final path = Path()..addRRect(rrect);
 
     final tailPath = Path()
@@ -722,10 +772,10 @@ class _BiometricScannerPainter extends CustomPainter {
 
     final w = size.width;
     final h = size.height;
-    
+
     final len = w * 0.22;
     final rad = w * 0.15;
-    
+
     Path pathTL = Path()
       ..moveTo(0, len)
       ..lineTo(0, rad)

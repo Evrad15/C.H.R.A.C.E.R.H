@@ -63,14 +63,9 @@ class _MatriculeScreenState extends State<MatriculeScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: CachedNetworkImage(
-                          imageUrl:
-                              'https://firebasestorage.googleapis.com/v0/b/flutterflow-io-6f20.appspot.com/o/designer_assets%2Fee93e0c0-07f3-4b39-b671-8db2da146d13%2FoyktwpkcX7nEKEktdQCy?alt=media&token=0e80e52e-b2c6-4eb6-89c7-e9667f8ee1da',
+                        child: Image.asset(
+                          'assets/images/chracerh logo.png',
                           fit: BoxFit.contain,
-                          placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.error),
                         ),
                       ),
                       const SizedBox(height: 24),
