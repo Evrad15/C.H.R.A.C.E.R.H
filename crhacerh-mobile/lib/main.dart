@@ -5,16 +5,15 @@ import 'screens/matriculescreen.dart';
 import 'home_screen.dart';
 
 void main() async {
-  // Assure l'initialisation des bindings Flutter avant l'asynchrone
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Vérifier si un employé est déjà enregistré en local
   final prefs = await SharedPreferences.getInstance();
   String? cachedEmployee = prefs.getString('cached_employee');
 
   Map<String, dynamic>? initialEmployee;
   if (cachedEmployee != null) {
-    initialEmployee = jsonDecode(cachedEmployee);
+    // Le .cast<String, dynamic>() assure la compatibilité parfaite Android, iOS et Chrome (Web)
+    initialEmployee = jsonDecode(cachedEmployee).cast<String, dynamic>();
   }
 
   runApp(MyApp(savedEmployee: initialEmployee));
@@ -33,7 +32,6 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      // Si un employé est trouvé en cache, on va direct à l'accueil, sinon au Matricule
       home: savedEmployee != null 
           ? HomeScreen(employee: savedEmployee!) 
           : const MatriculeScreen(),

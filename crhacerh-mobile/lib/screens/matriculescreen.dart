@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'matriculescreen_model.dart';
 import '../home_screen.dart';
+import 'package:flutter/foundation.dart';
 
 class MatriculeScreen extends StatefulWidget {
   const MatriculeScreen({super.key});
@@ -18,8 +19,10 @@ class _MatriculeScreenState extends State<MatriculeScreen> {
   late MatriculeScreenModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // URL fixe de ton tunnel local de développement
-  final String apiUrl = 'https://crhacerh-api.loca.lt/api/matricule/check';
+  // URL dynamique : utilise localhost pour Chrome (Web) et le tunnel pour le Mobile
+  final String apiUrl = kIsWeb 
+    ? 'http://localhost:8000/api/matricule/check' 
+    : 'https://crhacerh-api.loca.lt/api/matricule/check';
 
   @override
   void initState() {
@@ -222,6 +225,7 @@ class _MatriculeScreenState extends State<MatriculeScreen> {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'bypass-tunnel-reminder': 'true', // Force le bypass de la sécurité Localtunnel sur mobile
         },
         body: jsonEncode({'matricule': matricule}),
       );

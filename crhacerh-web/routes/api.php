@@ -18,3 +18,12 @@ Route::post('/pointages/scan', [PointageController::class, 'scan']);
 
 // Route pour vérifier le matricule en ligne
 Route::post('/matricule/check', [AttendanceController::class, 'checkMatricule']);
+
+// Route pour récupérer les statistiques et l'historique d'un employé pour le mobile
+Route::get('/employee/{id}/dashboard', [AttendanceController::class, 'getDashboardData']);
+
+// Routes pour la messagerie mobile
+Route::get('/employee/{id}/messages', [\App\Http\Controllers\Api\ChatApiController::class, 'getMessages']);
+Route::post('/employee/{id}/messages', [\App\Http\Controllers\Api\ChatApiController::class, 'sendMessage']);
+Route::get('/employee/{id}/messages/{messageId}/download', [\App\Http\Controllers\Api\ChatApiController::class, 'downloadAttachment']);
+
