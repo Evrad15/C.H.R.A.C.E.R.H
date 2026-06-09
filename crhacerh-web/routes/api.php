@@ -20,7 +20,7 @@ Route::post('/pointages/scan', [PointageController::class, 'scan']);
 Route::post('/matricule/check', [AttendanceController::class, 'checkMatricule']);
 
 // Route pour récupérer les statistiques et l'historique d'un employé pour le mobile
-Route::get('/employee/{id}/dashboard', [AttendanceController::class, 'getDashboardData']);
+Route::get('/employee/{employeeId}/dashboard', [AttendanceController::class, 'getDashboardData']);
 
 // Routes pour la messagerie mobile
 Route::get('/employee/{id}/messages', [\App\Http\Controllers\Api\ChatApiController::class, 'getMessages']);

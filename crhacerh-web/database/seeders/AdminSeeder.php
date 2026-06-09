@@ -28,8 +28,8 @@ class AdminSeeder extends Seeder
             'email' => 'jean.dupont@entreprise.com',
             'matricule' => 'chr-2020-0002',
             'password' => Hash::make('password123'),
-            'first_name' => 'Jean',
-            'last_name' => 'Dupont',
+            'first_name' => 'Mopi',
+            'last_name' => 'Sonkouat',
             'role' => 'Employés',
         ]);
     }

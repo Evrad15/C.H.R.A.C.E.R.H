@@ -14,7 +14,6 @@ class PointageController extends Controller
      */
     public function scan(Request $request): JsonResponse
     {
-        // 1. Validation stricte des données reçues du mobile
         $validated = $request->validate([
             'employee_id'  => 'required|exists:employés,id',
             'type'         => 'required|in:ENTREE,SORTIE',
@@ -22,7 +21,6 @@ class PointageController extends Controller
             'longitude'    => 'nullable|numeric',
         ]);
 
-        // 1.1 Vérification de la cohérence (Optionnel pour MVP mais recommandé)
         $lastPointage = Pointage::where('employee_id', $validated['employee_id'])
             ->orderBy('timestamp', 'desc')
             ->first();
@@ -34,19 +32,29 @@ class PointageController extends Controller
             ], 400);
         }
 
-        // 2. Création du pointage dans PostgreSQL
+        // --- CALCUL DU STATUT ---
+        $status = 'Présent';
+        if (strtoupper($validated['type']) === 'ENTREE') {
+            // Si l'employé arrive après 08:15, le statut passe à 'RETARD'
+            if (date('H:i') > '08:15') {
+                $status = 'Retard';
+            }
+        } else {
+            $status = 'SORTIE';
+        }
+
         $pointage = Pointage::create([
             'employee_id'      => $validated['employee_id'],
             'type'             => $validated['type'],
-            'source'           => 'QR', // Provient du scan QR Code
-            'timestamp'        => now(), // Heure actuelle exacte
+            'status'           => $status, // Enregistrement de ta nouvelle colonne !
+            'source'           => 'QR',
+            'timestamp'        => now(),
             'latitude'         => $validated['latitude'] ?? null,
             'longitude'        => $validated['longitude'] ?? null,
-            'confidence_score' => 1.00,  // Un scan de QR Code valide est sûr à 100%
-            'anomaly_detected' => false  // Modulo IA plus tard
+            'confidence_score' => 1.00,
+            'anomaly_detected' => false
         ]);
 
-        // 3. Récupérer l'employé pour personnaliser la réponse
         $employee = Employe::find($validated['employee_id']);
 
         return response()->json([
