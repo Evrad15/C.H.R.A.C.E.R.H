@@ -4,13 +4,14 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\KioskController;
+use App\Filament\Resources\RapportResource;
 
 // Page d'affichage de la borne (Interface Web)
 Route::get('/kiosk', [KioskController::class, 'showView']);
 
 // Redirection globale de la route d'authentification par défaut
 Route::get('/login', function () {
-    return redirect()->route('filament.ressources-humaines.auth.login'); // ✅ Mis à jour avec le tiret
+    return redirect()->route('filament.ressources-humaines.auth.login'); 
 })->name('login');
 
 // --- Routes d'intégration pour l'API Google Calendar ---
@@ -19,9 +20,8 @@ Route::get('/google/auth', function () {
     $client = new Google\Client();
     $client->setClientId(env('GOOGLE_CLIENT_ID'));
     $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-    // Dans routes/web.php, modifie le scope existant :
-    $client->addScope(Google\Service\Calendar::CALENDAR); // ✅ Donne les droits complets (lecture/écriture)
-    // Utilisation d'un fallback automatique si l'env() ne répond pas
+    $client->addScope(Google\Service\Calendar::CALENDAR); 
+    
     $redirectUri = env('GOOGLE_REDIRECT_URI') ?? 'http://localhost:8000/ressources-humaines/calendrier/callback';
     $client->setRedirectUri($redirectUri);
 
@@ -49,8 +49,12 @@ Route::get('/ressources-humaines/calendrier/callback', function (Request $reques
     return redirect('/ressources-humaines/calendrier');
 });
 
-// Route pour supprimer un fichier de rapport (utilisé par la page Filament Rapports)
-Route::post('/filament/rapports/delete', function (Request $request) {
+// --- Routes pour la gestion des rapports (Décommentées et Actives) ---
+Route::get('/ressources-humaines/rapports', function () {
+    return view('filament.pages.rapports');
+})->name('filament.ressources-humaines.resources.rapports.index')->middleware(['web', 'auth']);
+
+Route::post('/ressources-humaines/rapports/delete', function (Request $request) {
     $request->validate(['path' => 'required|string']);
     $path = $request->input('path');
 
@@ -59,4 +63,4 @@ Route::post('/filament/rapports/delete', function (Request $request) {
     }
 
     return back();
-})->name('filament.pages.rapports.delete')->middleware('auth');
+})->name('filament.ressources-humaines.pages.rapports.delete')->middleware(['web', 'auth']);

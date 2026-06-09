@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('absences', function (Blueprint $table) {
             $table->id();
-            // Pointage vers 'employés' au lieu de 'employees'
+            // Pointage vers 'employés'
             $table->foreignId('employee_id')->constrained('employés')->onDelete('cascade');
             $table->date('date_start');
             $table->date('date_end');

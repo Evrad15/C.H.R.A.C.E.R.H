@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Employe;
 use App\Models\Pointage;
-use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -17,7 +16,7 @@ class PointageController extends Controller
     {
         // 1. Validation stricte des données reçues du mobile
         $validated = $request->validate([
-            'employee_id'  => 'required|exists:employees,id',
+            'employee_id'  => 'required|exists:employés,id',
             'type'         => 'required|in:ENTREE,SORTIE',
             'latitude'     => 'nullable|numeric',
             'longitude'    => 'nullable|numeric',
