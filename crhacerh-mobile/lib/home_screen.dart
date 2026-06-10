@@ -105,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(35),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Colors.black.withOpacity(0.05),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -182,6 +182,23 @@ class _HomeTabState extends State<HomeTab> {
     }
   }
 
+  Color _getClockColor() {
+    final aPointeAujourdHui = _history.any((p) =>
+        p['status'] == 'PRESENT' || p['status'] == 'RETARD');
+
+    if (aPointeAujourdHui) {
+      return const Color(0xFF1A1A1A); // ⚫ Noir après le premier pointage
+    }
+
+    final maintenant = DateTime.now();
+    
+    if (maintenant.hour > 8 || (maintenant.hour == 8 && maintenant.minute > 15)) {
+      return const Color(0xFFEC1C24); // 🔴 Rouge si l'heure dépasse 08:15
+    }
+
+    return const Color(0xFF47D534); // 🟢 Vert par défaut
+  }
+
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -201,6 +218,7 @@ class _HomeTabState extends State<HomeTab> {
               name: widget.name,
               date: dateLabel,
               time: timeLabel,
+              clockColor: _getClockColor(),
               onLogout: widget.onLogout,
             ),
             const SizedBox(height: 20),
@@ -224,18 +242,8 @@ class _HomeTabState extends State<HomeTab> {
 
   static String _monthName(int month) {
     const frenchMonths = [
-      'Janvier',
-      'Février',
-      'Mars',
-      'Avril',
-      'Mai',
-      'Juin',
-      'Juillet',
-      'Août',
-      'Septembre',
-      'Octobre',
-      'Novembre',
-      'Décembre',
+      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
     ];
     return frenchMonths[month - 1];
   }
@@ -245,12 +253,14 @@ class _HeaderCard extends StatelessWidget {
   final String name;
   final String date;
   final String time;
+  final Color clockColor;
   final VoidCallback onLogout;
 
   const _HeaderCard({
     required this.name,
     required this.date,
     required this.time,
+    required this.clockColor,
     required this.onLogout,
   });
 
@@ -264,7 +274,7 @@ class _HeaderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -298,10 +308,10 @@ class _HeaderCard extends StatelessWidget {
                           fontSize: 14, color: Color(0xFF5F5F5F))),
                   const SizedBox(height: 10),
                   Text(time,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFEC1C24))),
+                          color: clockColor)),
                 ],
               ),
             ],
@@ -353,7 +363,7 @@ class _AttendanceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -421,6 +431,18 @@ class _AttendanceRow extends StatelessWidget {
     required this.dotColor,
   });
 
+  Color _getStatusTextColor(String statusStr) {
+    switch (statusStr.toUpperCase()) {
+      case 'PRESENT':
+        return const Color(0xFF47D534);
+      case 'RETARD':
+      case 'ABSENT':
+        return const Color(0xFFE01010);
+      default:
+        return Colors.black87;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -447,7 +469,14 @@ class _AttendanceRow extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(status, style: const TextStyle(fontSize: 15)),
+                Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: _getStatusTextColor(status),
+                  ),
+                ),
                 if (dotColor != Colors.transparent) ...[
                   const SizedBox(width: 8),
                   Container(
@@ -480,7 +509,7 @@ class _StatsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -581,10 +610,10 @@ class _DonutChartPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.butt;
 
-    double startAngle = -1.5708; // Commence en haut (-90°)
+    double startAngle = -1.5708;
 
     paint.color = const Color(0xFF47D534);
-    double sweepPresence = (presence / 100) * 6.2832; // 6.2832 = 2 * PI
+    double sweepPresence = (presence / 100) * 6.2832;
     canvas.drawArc(rect, startAngle, sweepPresence, false, paint);
     startAngle += sweepPresence;
 
@@ -618,8 +647,6 @@ class _PlaceholderScreen extends StatelessWidget {
     );
   }
 }
-
-// Custom widgets for the Floating Bottom Navigation Bar
 
 class _NavBarItem extends StatefulWidget {
   final Widget child;

@@ -33,7 +33,7 @@ class PointageController extends Controller
         }
 
         // --- CALCUL DU STATUT ---
-        $status = 'Présent';
+        $status = 'Present';
         if (strtoupper($validated['type']) === 'ENTREE') {
             // Si l'employé arrive après 08:15, le statut passe à 'RETARD'
             if (date('H:i') > '08:15') {

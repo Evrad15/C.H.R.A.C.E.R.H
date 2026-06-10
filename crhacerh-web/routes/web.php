@@ -11,7 +11,7 @@ Route::get('/kiosk', [KioskController::class, 'showView']);
 
 // Redirection globale de la route d'authentification par défaut
 Route::get('/login', function () {
-    return redirect()->route('filament.ressources-humaines.auth.login'); 
+    return redirect()->route('filament.ressources-humaines.auth.login');
 })->name('login');
 
 // --- Routes d'intégration pour l'API Google Calendar ---
@@ -20,8 +20,8 @@ Route::get('/google/auth', function () {
     $client = new Google\Client();
     $client->setClientId(env('GOOGLE_CLIENT_ID'));
     $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-    $client->addScope(Google\Service\Calendar::CALENDAR); 
-    
+    $client->addScope(Google\Service\Calendar::CALENDAR);
+
     $redirectUri = env('GOOGLE_REDIRECT_URI') ?? 'http://localhost:8000/ressources-humaines/calendrier/callback';
     $client->setRedirectUri($redirectUri);
 
@@ -63,4 +63,4 @@ Route::post('/ressources-humaines/rapports/delete', function (Request $request) 
     }
 
     return back();
-})->name('filament.ressources-humaines.pages.rapports.delete')->middleware(['web', 'auth']);
+})->name('filament.ressources-humaines.resources.rapports.delete')->middleware(['web', 'auth']);
