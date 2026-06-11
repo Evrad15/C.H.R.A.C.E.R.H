@@ -74,7 +74,7 @@ class Dashboard extends Page
 
         // 4. Section "Alerte Anomalies" en direct (Ex: Retards importants ou absences non justifiées du jour)
         $this->anomalies = Presence::whereDate('created_at', Carbon::today())
-            ->whereIn('statut', ['Absent', 'Retard'])
+            ->whereIn('status', ['Absent', 'Retard'])
             ->with('employe')
             ->latest()
             ->limit(4)

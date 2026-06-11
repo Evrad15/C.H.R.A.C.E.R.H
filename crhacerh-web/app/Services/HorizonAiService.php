@@ -66,7 +66,7 @@ class HorizonAiService
         $late = $records->where('status', 'Retard')->count();
 
         $lateByEmployee = $records
-            ->where('statut', 'Retard')
+            ->where('status', 'Retard')
             ->groupBy('employe_id')
             ->map(function ($items) {
                 $employee = $items->first()->employe;
@@ -81,7 +81,7 @@ class HorizonAiService
             ->all();
 
         $absentByEmployee = $records
-            ->where('statut', 'Absent')
+            ->where('status', 'Absent')
             ->groupBy('employe_id')
             ->map(function ($items) {
                 $employee = $items->first()->employe;
@@ -126,7 +126,7 @@ class HorizonAiService
                 return [
                     'nom' => $employee?->getFullNameAttribute() ?? 'Employé inconnu',
                     'date' => $group->first()->created_at->toDateString(),
-                    'evenements' => $group->pluck('statut')->all(),
+                    'evenements' => $group->pluck('status')->all(),
                     'compte' => $group->count(),
                 ];
             })
@@ -138,7 +138,7 @@ class HorizonAiService
                 return $presence->employee_id . '|' . $presence->created_at->toDateString();
             })
             ->filter(function ($group) {
-                $statuses = $group->pluck('statut')->unique();
+                $statuses = $group->pluck('status')->unique();
                 return $statuses->contains('Absent') && ($statuses->contains('Present') || $statuses->contains('Retard'));
             })
             ->map(function ($group) {
@@ -146,7 +146,7 @@ class HorizonAiService
                 return [
                     'nom' => $employee?->getFullNameAttribute() ?? 'Employé inconnu',
                     'date' => $group->first()->created_at->toDateString(),
-                    'statuts' => $group->pluck('statut')->unique()->values()->all(),
+                    'status' => $group->pluck('status')->unique()->values()->all(),
                 ];
             })
             ->values()
@@ -241,7 +241,7 @@ class HorizonAiService
         if (!empty($anomalies['contradictions'])) {
             $summary[] = 'Statuts contradictoires détectés :';
             foreach ($anomalies['contradictions'] as $item) {
-                $summary[] = "- {$item['nom']} le {$item['date']} : " . implode(', ', $item['statuts']);
+                $summary[] = "- {$item['nom']} le {$item['date']} : " . implode(', ', $item['status']);
             }
             $summary[] = '';
         }

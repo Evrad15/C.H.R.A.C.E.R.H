@@ -187,7 +187,7 @@ class _HomeTabState extends State<HomeTab> {
 
   Color _getClockColor() {
     final aPointeAujourdHui = _history
-        .any((p) => p['status'] == 'PRESENT' || p['status'] == 'RETARD');
+        .any((p) => p['status'] == 'Present' || p['status'] == 'Retard');
 
     if (aPointeAujourdHui) {
       return const Color(0xFF1A1A1A); // ⚫ Noir après le premier pointage
@@ -447,10 +447,10 @@ class _AttendanceRow extends StatelessWidget {
 
   Color _getStatusTextColor(String statusStr) {
     switch (statusStr.toUpperCase()) {
-      case 'PRESENT':
+      case 'Present':
         return const Color(0xFF47D534);
-      case 'RETARD':
-      case 'ABSENT':
+      case 'Retard':
+      case 'Absent':
         return const Color(0xFFE01010);
       default:
         return Colors.black87;

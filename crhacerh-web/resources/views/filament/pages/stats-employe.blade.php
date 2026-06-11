@@ -7,20 +7,22 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <x-filament::section>
                 <x-slot name="heading">Absences</x-slot>
-                <p class="text-3xl font-semibold">{{ $this->employe->absences()->count() }}</p>
+                <p class="text-3xl font-semibold">
+                    <p class="text-3xl font-semibold">{{ $this->employe->Absences()->count() }}</p>
+                </p>
             </x-filament::section>
 
             <x-filament::section>
                 <x-slot name="heading">Retards</x-slot>
                 <p class="text-3xl font-semibold">
-                    {{ $this->employe->pointages()->where('type', 'retard')->count() }}
+                    {{ $this->employe->pointages()->where('status', 'Retard')->count() }}
                 </p>
             </x-filament::section>
 
             <x-filament::section>
                 <x-slot name="heading">À l'heure</x-slot>
-                <p class="text-3xl font-semibold">
-                    {{ $this->employe->pointages()->where('type', 'a_lheure')->count() }}
+                <p class="text-3xl font-semibold"> 
+                    {{ $this->employe->pointages()->where('status', 'Present')->count() }}
                 </p>
             </x-filament::section>
         </div>

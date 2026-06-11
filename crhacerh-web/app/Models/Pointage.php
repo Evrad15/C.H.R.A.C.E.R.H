@@ -11,7 +11,7 @@ class Pointage extends Model
 
     protected $fillable = [
         'employee_id', 'type', 'source', 'timestamp', 
-        'latitude', 'longitude', 'confidence_score', 'anomaly_detected'
+        'latitude', 'longitude', 'confidence_score', 'anomaly_detected', 'status'
     ];
 
     // Un pointage appartient à un employé

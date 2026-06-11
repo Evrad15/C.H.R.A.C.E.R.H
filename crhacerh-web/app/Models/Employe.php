@@ -59,6 +59,12 @@ class Employe extends Authenticatable implements FilamentUser, HasName
         return $this->belongsTo(Department::class);
     }
 
+    // Un employé peut avoir plusieurs prédictions
+    public function predictions()
+    {
+        return $this->hasMany(MlPrediction::class, 'employee_id');
+    }
+    
     // Un employé a plusieurs pointages
     public function pointages()
     {
@@ -66,19 +72,17 @@ class Employe extends Authenticatable implements FilamentUser, HasName
         return $this->hasMany(Pointage::class, 'employee_id');
     }
 
-    // Un employé a plusieurs absences
-    public function absences()
+    /**
+     * 🛠️ LA RELATION MANQUANTE (CORRECTION)
+     * On crée artificiellement la relation absences pour Filament en forçant la bonne clé 'employee_id'
+     */
+    public function absences(): HasMany
     {
-        return $this->hasMany(Absence::class, 'employee_id');
+        return $this->hasMany(Pointage::class, 'employee_id')
+                    ->where('status', 'Absent'); 
+                    // 💡 Note : Si dans ta BDD c'est écrit en minuscule 'absent', remplace 'Absent' par 'absent' ici.
     }
-
-
-    // Un employé peut avoir plusieurs prédictions
-    public function predictions()
-    {
-        return $this->hasMany(MlPrediction::class, 'employee_id');
-    }
-
+    
     // Les messages envoyés par l'employé
     public function sentMessages()
     {
@@ -104,11 +108,6 @@ class Employe extends Authenticatable implements FilamentUser, HasName
     public function getRememberToken(): ?string
     {
         return $this->remember_token;
-    }
-
-    public function presences(): HasMany
-    {
-        return $this->hasMany(Presence::class, 'employe_id');
     }
 
     /**

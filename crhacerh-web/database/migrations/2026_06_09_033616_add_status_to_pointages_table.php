@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::table('pointages', function (Blueprint $table) {
             // On ajoute le status ('PRESENT', 'RETARD', ou null pour les sorties)
             //On met 'PRESENT' par défaut pour ne pas casser tes anciens enregistrements
-            $table->string('status')->default('PRESENT')->after('type'); 
+            $table->string('status')->default('Present')->after('type'); 
         });
     }
 
