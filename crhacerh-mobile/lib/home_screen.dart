@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/message_screen.dart';
 import 'screens/scannqr_screen.dart';
+import 'screens/rapportscreen.dart';
 import 'services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -83,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onLogout: () => _logout(context)),
       MessageScreen(employeeId: widget.employee['id']),
       ScannQRScreen(employeeId: widget.employee['id']),
-      const _PlaceholderScreen(title: 'Documents'),
+      const RapportsScreen(),
       const _PlaceholderScreen(title: 'Profil'),
     ];
 
@@ -97,30 +98,32 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-          height: 70,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF2F2F2),
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(5, (index) {
-              final isSelected = _selectedIndex == index;
-              return _NavBarItem(
-                isSelected: isSelected,
-                onTap: () => _onNavTap(index),
-                child: _buildNavIcon(index, isSelected),
-              );
-            }),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
+          child: Container(
+            height: 68,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF2F2F2),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(5, (index) {
+                final isSelected = _selectedIndex == index;
+                return _NavBarItem(
+                  isSelected: isSelected,
+                  onTap: () => _onNavTap(index),
+                  child: _buildNavIcon(index, isSelected),
+                );
+              }),
+            ),
           ),
         ),
       ),
@@ -183,16 +186,17 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Color _getClockColor() {
-    final aPointeAujourdHui = _history.any((p) =>
-        p['status'] == 'PRESENT' || p['status'] == 'RETARD');
+    final aPointeAujourdHui = _history
+        .any((p) => p['status'] == 'PRESENT' || p['status'] == 'RETARD');
 
     if (aPointeAujourdHui) {
       return const Color(0xFF1A1A1A); // ⚫ Noir après le premier pointage
     }
 
     final maintenant = DateTime.now();
-    
-    if (maintenant.hour > 8 || (maintenant.hour == 8 && maintenant.minute > 15)) {
+
+    if (maintenant.hour > 8 ||
+        (maintenant.hour == 8 && maintenant.minute > 15)) {
       return const Color(0xFFEC1C24); // 🔴 Rouge si l'heure dépasse 08:15
     }
 
@@ -242,8 +246,18 @@ class _HomeTabState extends State<HomeTab> {
 
   static String _monthName(int month) {
     const frenchMonths = [
-      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
     ];
     return frenchMonths[month - 1];
   }
@@ -669,7 +683,8 @@ class _NavBarItemState extends State<_NavBarItem> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _scale = 0.9),
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _scale = 0.95),
       onTapUp: (_) {
         setState(() => _scale = 1.0);
         widget.onTap();
@@ -681,7 +696,7 @@ class _NavBarItemState extends State<_NavBarItem> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          width: 64,
+          width: 58,
           height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(

@@ -11,7 +11,8 @@ class ScannQRScreen extends StatefulWidget {
   State<ScannQRScreen> createState() => _ScannQRScreenState();
 }
 
-class _ScannQRScreenState extends State<ScannQRScreen> with WidgetsBindingObserver {
+class _ScannQRScreenState extends State<ScannQRScreen>
+    with WidgetsBindingObserver {
   final ChatService _chatService = ChatService();
   final MobileScannerController _scannerController = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
@@ -47,7 +48,8 @@ class _ScannQRScreenState extends State<ScannQRScreen> with WidgetsBindingObserv
     if (!_cameraReady) return;
     if (state == AppLifecycleState.resumed) {
       _scannerController.start();
-    } else if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       _scannerController.stop();
     }
   }
@@ -162,6 +164,10 @@ class _ScannQRScreenState extends State<ScannQRScreen> with WidgetsBindingObserv
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final frameSize = size.width * 0.72;
+    final frameTop = (size.height - frameSize) / 2 - 40;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -183,36 +189,43 @@ class _ScannQRScreenState extends State<ScannQRScreen> with WidgetsBindingObserv
             // Obscurcissement autour du cadre
             _ScannerOverlay(isScanActive: _isScanActive),
 
-            // Barre supérieure
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Titre
-                    const Text(
-                      'Scanner QR',
-                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    // Torche
-                    GestureDetector(
-                      onTap: _toggleTorch,
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _torchOn ? Colors.white : Colors.white24,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                          color: _torchOn ? Colors.black : Colors.white,
-                          size: 22,
-                        ),
+            // Barre supérieure repositionnée au-dessus du cadre de scan
+            Positioned(
+              top: frameTop - 64 < MediaQuery.of(context).padding.top
+                  ? MediaQuery.of(context).padding.top + 8
+                  : frameTop - 64,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Titre
+                  const Text(
+                    'Scanner QR',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  // Torche
+                  GestureDetector(
+                    onTap: _toggleTorch,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: _torchOn ? Colors.white : Colors.white24,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _torchOn
+                            ? Icons.flash_on_rounded
+                            : Icons.flash_off_rounded,
+                        color: _torchOn ? Colors.black : Colors.white,
+                        size: 22,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 
@@ -222,20 +235,24 @@ class _ScannQRScreenState extends State<ScannQRScreen> with WidgetsBindingObserv
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                    CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 3),
                     SizedBox(height: 16),
-                    Text('Enregistrement du pointage…', style: TextStyle(color: Colors.white, fontSize: 15)),
+                    Text('Enregistrement du pointage…',
+                        style: TextStyle(color: Colors.white, fontSize: 15)),
                   ],
                 ),
               ),
 
-            // ── Panneau bas ────────────────────────────────────────
+            // ── Panneau bas (décalé pour éviter la bottom bar)
             Positioned(
-              bottom: 0, left: 0, right: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
               child: SafeArea(
                 top: false,
                 child: Container(
-                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 100),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -245,7 +262,8 @@ class _ScannQRScreenState extends State<ScannQRScreen> with WidgetsBindingObserv
                       const SizedBox(height: 12),
                       // Instruction
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 14),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
@@ -255,13 +273,21 @@ class _ScannQRScreenState extends State<ScannQRScreen> with WidgetsBindingObserv
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              _isScanActive ? Icons.qr_code_scanner : Icons.pause_circle_outline,
-                              color: Colors.white, size: 20,
+                              _isScanActive
+                                  ? Icons.qr_code_scanner
+                                  : Icons.pause_circle_outline,
+                              color: Colors.white,
+                              size: 20,
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              _isScanActive ? 'Placez le QR code dans le cadre' : 'Scan en pause…',
-                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                              _isScanActive
+                                  ? 'Placez le QR code dans le cadre'
+                                  : 'Scan en pause…',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500),
                             ),
                           ],
                         ),
@@ -289,16 +315,19 @@ class _ScannerOverlay extends StatefulWidget {
   State<_ScannerOverlay> createState() => _ScannerOverlayState();
 }
 
-class _ScannerOverlayState extends State<_ScannerOverlay> with SingleTickerProviderStateMixin {
+class _ScannerOverlayState extends State<_ScannerOverlay>
+    with SingleTickerProviderStateMixin {
   late AnimationController _lineController;
   late Animation<double> _lineAnim;
 
   @override
   void initState() {
     super.initState();
-    _lineController = AnimationController(vsync: this, duration: const Duration(seconds: 2))
-      ..repeat(reverse: true);
-    _lineAnim = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _lineController, curve: Curves.easeInOut));
+    _lineController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..repeat(reverse: true);
+    _lineAnim = Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(parent: _lineController, curve: Curves.easeInOut));
   }
 
   @override
@@ -319,7 +348,8 @@ class _ScannerOverlayState extends State<_ScannerOverlay> with SingleTickerProvi
         CustomPaint(
           size: Size(size.width, size.height),
           painter: _OverlayPainter(
-            frameRect: Rect.fromLTWH((size.width - frameSize) / 2, frameTop, frameSize, frameSize),
+            frameRect: Rect.fromLTWH(
+                (size.width - frameSize) / 2, frameTop, frameSize, frameSize),
           ),
         ),
         // Ligne de scan animée
@@ -383,13 +413,37 @@ class _FrameCornersPainter extends CustomPainter {
     final h = size.height;
 
     // Coin TL
-    canvas.drawPath(Path()..moveTo(0, len)..lineTo(0, rad)..quadraticBezierTo(0, 0, rad, 0)..lineTo(len, 0), paint);
+    canvas.drawPath(
+        Path()
+          ..moveTo(0, len)
+          ..lineTo(0, rad)
+          ..quadraticBezierTo(0, 0, rad, 0)
+          ..lineTo(len, 0),
+        paint);
     // Coin TR
-    canvas.drawPath(Path()..moveTo(w - len, 0)..lineTo(w - rad, 0)..quadraticBezierTo(w, 0, w, rad)..lineTo(w, len), paint);
+    canvas.drawPath(
+        Path()
+          ..moveTo(w - len, 0)
+          ..lineTo(w - rad, 0)
+          ..quadraticBezierTo(w, 0, w, rad)
+          ..lineTo(w, len),
+        paint);
     // Coin BL
-    canvas.drawPath(Path()..moveTo(0, h - len)..lineTo(0, h - rad)..quadraticBezierTo(0, h, rad, h)..lineTo(len, h), paint);
+    canvas.drawPath(
+        Path()
+          ..moveTo(0, h - len)
+          ..lineTo(0, h - rad)
+          ..quadraticBezierTo(0, h, rad, h)
+          ..lineTo(len, h),
+        paint);
     // Coin BR
-    canvas.drawPath(Path()..moveTo(w - len, h)..lineTo(w - rad, h)..quadraticBezierTo(w, h, w, h - rad)..lineTo(w, h - len), paint);
+    canvas.drawPath(
+        Path()
+          ..moveTo(w - len, h)
+          ..lineTo(w - rad, h)
+          ..quadraticBezierTo(w, h, w, h - rad)
+          ..lineTo(w, h - len),
+        paint);
   }
 
   @override
@@ -405,7 +459,11 @@ class _ScanLinePainter extends CustomPainter {
     final y = size.height * progress;
     final paint = Paint()
       ..shader = LinearGradient(
-        colors: [Colors.transparent, const Color(0xFF00C853).withValues(alpha: 0.9), Colors.transparent],
+        colors: [
+          Colors.transparent,
+          const Color(0xFF00C853).withValues(alpha: 0.9),
+          Colors.transparent
+        ],
       ).createShader(Rect.fromLTWH(0, y - 1, size.width, 3))
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
@@ -413,7 +471,8 @@ class _ScanLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ScanLinePainter old) => old.progress != progress;
+  bool shouldRepaint(covariant _ScanLinePainter old) =>
+      old.progress != progress;
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -446,33 +505,42 @@ class _PointageDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72, height: 72,
-              decoration: BoxDecoration(color: const Color(0xFFF0F4FF), shape: BoxShape.circle),
-              child: const Icon(Icons.qr_code_rounded, size: 38, color: Color(0xFF1976D2)),
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                  color: const Color(0xFFF0F4FF), shape: BoxShape.circle),
+              child: const Icon(Icons.qr_code_rounded,
+                  size: 38, color: Color(0xFF1976D2)),
             ),
             const SizedBox(height: 20),
-            const Text('QR Code détecté', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('QR Code détecté',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text(
               'Choisissez le type de pointage à enregistrer.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF5F5F5F), height: 1.5),
+              style: TextStyle(
+                  fontSize: 14, color: Color(0xFF5F5F5F), height: 1.5),
             ),
             const SizedBox(height: 28),
             Row(
               children: [
                 Expanded(
                   child: _TypeButton(
-                    label: 'Entrée', icon: Icons.login_rounded,
-                    color: const Color(0xFF43A047), bgColor: const Color(0xFFF1F9F1),
+                    label: 'Entrée',
+                    icon: Icons.login_rounded,
+                    color: const Color(0xFF43A047),
+                    bgColor: const Color(0xFFF1F9F1),
                     onTap: () => onConfirm('ENTREE'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _TypeButton(
-                    label: 'Sortie', icon: Icons.logout_rounded,
-                    color: const Color(0xFFE53935), bgColor: const Color(0xFFFFF3F3),
+                    label: 'Sortie',
+                    icon: Icons.logout_rounded,
+                    color: const Color(0xFFE53935),
+                    bgColor: const Color(0xFFFFF3F3),
                     onTap: () => onConfirm('SORTIE'),
                   ),
                 ),
@@ -481,7 +549,8 @@ class _PointageDialog extends StatelessWidget {
             const SizedBox(height: 14),
             TextButton(
               onPressed: onCancel,
-              child: const Text('Annuler', style: TextStyle(color: Color(0xFF8A8A8A))),
+              child: const Text('Annuler',
+                  style: TextStyle(color: Color(0xFF8A8A8A))),
             ),
           ],
         ),
@@ -498,8 +567,11 @@ class _TypeButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _TypeButton({
-    required this.label, required this.icon, required this.color,
-    required this.bgColor, required this.onTap,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.bgColor,
+    required this.onTap,
   });
 
   @override
@@ -508,12 +580,15 @@ class _TypeButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(18)),
+        decoration: BoxDecoration(
+            color: bgColor, borderRadius: BorderRadius.circular(18)),
         child: Column(
           children: [
             Icon(icon, color: color, size: 32),
             const SizedBox(height: 8),
-            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
       ),
@@ -529,7 +604,8 @@ class _SuccessDialog extends StatelessWidget {
   final String type;
   final String time;
 
-  const _SuccessDialog({required this.employeeName, required this.type, required this.time});
+  const _SuccessDialog(
+      {required this.employeeName, required this.type, required this.time});
 
   @override
   Widget build(BuildContext context) {
@@ -546,20 +622,28 @@ class _SuccessDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 80, height: 80,
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 44),
           ),
           const SizedBox(height: 20),
-          Text(label, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold, color: color)),
           const SizedBox(height: 8),
-          Text('Bonjour $employeeName !', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          Text('Bonjour $employeeName !',
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           if (time.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text('Pointage à $time', style: const TextStyle(fontSize: 14, color: Color(0xFF5F5F5F))),
+            Text('Pointage à $time',
+                style: const TextStyle(fontSize: 14, color: Color(0xFF5F5F5F))),
           ],
           const SizedBox(height: 20),
-          const Text('Le scan se reprend automatiquement…', style: TextStyle(fontSize: 12, color: Color(0xFFAAAAAA))),
+          const Text('Le scan se reprend automatiquement…',
+              style: TextStyle(fontSize: 12, color: Color(0xFFAAAAAA))),
         ],
       ),
     );
@@ -594,17 +678,26 @@ class _LastScanCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
-            child: Icon(isEntree ? Icons.login_rounded : Icons.logout_rounded, color: color, size: 22),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
+            child: Icon(isEntree ? Icons.login_rounded : Icons.logout_rounded,
+                color: color, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Dernier pointage : $type', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
-                Text('$name — $time', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Dernier pointage : $type',
+                    style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13)),
+                Text('$name — $time',
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 12)),
               ],
             ),
           ),
@@ -629,14 +722,20 @@ class _PermissionDeniedView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.no_photography_rounded, color: Colors.white54, size: 72),
+            const Icon(Icons.no_photography_rounded,
+                color: Colors.white54, size: 72),
             const SizedBox(height: 24),
-            const Text('Caméra inaccessible', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('Caméra inaccessible',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             const Text(
               'Autorisez l\'accès à la caméra dans les paramètres pour utiliser le scanner QR.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+              style:
+                  TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
@@ -649,8 +748,10 @@ class _PermissionDeniedView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ],

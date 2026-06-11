@@ -61,9 +61,9 @@ class HorizonAiService
             ->get();
 
         $totalEmployes = Employe::count();
-        $present = $records->where('statut', 'Present')->count();
-        $absent = $records->where('statut', 'Absent')->count();
-        $late = $records->where('statut', 'Retard')->count();
+        $present = $records->where('status', 'Present')->count();
+        $absent = $records->where('status', 'Absent')->count();
+        $late = $records->where('status', 'Retard')->count();
 
         $lateByEmployee = $records
             ->where('statut', 'Retard')
@@ -118,7 +118,7 @@ class HorizonAiService
 
         $duplicates = $records
             ->groupBy(function ($presence) {
-                return $presence->employe_id . '|' . $presence->created_at->toDateString();
+                return $presence->employee_id . '|' . $presence->created_at->toDateString();
             })
             ->filter(fn($group) => $group->count() > 1)
             ->map(function ($group) {
@@ -135,7 +135,7 @@ class HorizonAiService
 
         $contradictions = $records
             ->groupBy(function ($presence) {
-                return $presence->employe_id . '|' . $presence->created_at->toDateString();
+                return $presence->employee_id . '|' . $presence->created_at->toDateString();
             })
             ->filter(function ($group) {
                 $statuses = $group->pluck('statut')->unique();
@@ -153,8 +153,8 @@ class HorizonAiService
             ->all();
 
         $lateStreaks = $records
-            ->where('statut', 'Retard')
-            ->groupBy('employe_id')
+            ->where('status', 'Retard')
+            ->groupBy('employee_id')
             ->map(function ($items) {
                 $employee = $items->first()->employe;
                 return [

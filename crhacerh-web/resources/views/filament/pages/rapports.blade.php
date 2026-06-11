@@ -21,7 +21,7 @@
 
             <div class="flex items-center gap-2">
                 <a href="{{ $file['url'] }}" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded bg-primary-600 text-white">Télécharger</a>
-                <form method="POST" action="{{ route('filament.pages.rapports.delete') }}" onsubmit="return confirm('Supprimer ce fichier ?');">
+                <form method="POST" action="{{ route('filament.ressources-humaines.resources.rapports.delete') }}" onsubmit="return confirm('Supprimer ce fichier ?');">
                     @csrf
                     <input type="hidden" name="path" value="{{ $file['path'] }}">
                     <button type="submit" class="inline-flex items-center gap-2 px-3 py-2 rounded border">Supprimer</button>

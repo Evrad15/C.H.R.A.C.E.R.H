@@ -7,11 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Presence extends Model
 {
+    protected $table = 'pointages';
+
     // Définissez les champs modifiables en masse
     protected $fillable = [
-        'employe_id',
-        'statut', // 'Absent', 'Retard', 'Present'
-        'heure_arrivee',
+        'employee_id',
+        'type',
+        'source',
+        'timestamp',
+        'status',
+        'latitude',
+        'longitude',
+        'confidence_score',
+        'anomaly_detected',
     ];
 
     /**
@@ -19,6 +27,6 @@ class Presence extends Model
      */
     public function employe(): BelongsTo
     {
-        return $this->belongsTo(Employe::class, 'employe_id');
+        return $this->belongsTo(Employe::class, 'employee_id');
     }
 }
