@@ -15,14 +15,14 @@
             <x-filament::section>
                 <x-slot name="heading">Retards</x-slot>
                 <p class="text-3xl font-semibold">
-                    {{ $this->employe->pointages()->where('status', 'Retard')->count() }}
+                    {{ $this->employe->pointages()->where('type', 'ENTREE')->where('status', 'Retard')->count() }}
                 </p>
             </x-filament::section>
 
             <x-filament::section>
                 <x-slot name="heading">À l'heure</x-slot>
                 <p class="text-3xl font-semibold"> 
-                    {{ $this->employe->pointages()->where('status', 'Present')->count() }}
+                    {{ $this->employe->pointages()->where('type', 'ENTREE')->where('status', 'Present')->count() }}
                 </p>
             </x-filament::section>
         </div>

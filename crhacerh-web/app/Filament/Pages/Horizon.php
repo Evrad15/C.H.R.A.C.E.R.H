@@ -60,21 +60,42 @@ class Horizon extends Page
 
     public function envoyerMessage(): void
     {
-        if (empty(trim($this->messageInterne))) {
+        $userMessage = trim($this->messageInterne);
+        $file = $this->fileUpload;
+
+        if (empty($userMessage) && !$file) {
             return;
         }
 
-        $userMessage = $this->messageInterne;
+        $textToShow = $userMessage ?: "Analyse de fichier joint";
+        if ($file) {
+            $textToShow .= " 📎 (Fichier : " . $file->getClientOriginalName() . ")";
+        }
 
         $this->messages[] = [
             'sender' => 'moi',
-            'text' => $userMessage,
+            'text' => $textToShow,
             'time' => now()->format('H:i'),
         ];
 
         $this->messageInterne = '';
 
-        $reponse = $this->assistant()->analyzeUserRequest($userMessage);
+        if ($file) {
+            try {
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $file->storeAs('horizon_uploads', $fileName, 'public');
+                $filePath = storage_path('app/public/horizon_uploads/' . $fileName);
+                $mimeType = $file->getMimeType();
+
+                $reponse = $this->assistant()->analyzeUserRequestWithFile($userMessage ?: "Analyse ce document", $filePath, $mimeType);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("Erreur d'analyse fichier: " . $e->getMessage());
+                $reponse = "Une erreur est survenue lors de l'analyse du fichier : " . $e->getMessage();
+            }
+            $this->fileUpload = null;
+        } else {
+            $reponse = $this->assistant()->analyzeUserRequest($userMessage);
+        }
 
         $this->appendAssistantMessage($reponse);
     }
@@ -83,6 +104,14 @@ class Horizon extends Page
     {
         $report = $this->assistant()->generateReport($period);
         $texte = $this->assistant()->formatReportText($report, 'Rapport ' . ucfirst($period));
+        
+        try {
+            $excelUrl = $this->assistant()->generateAndExport($period, 'excel');
+            $texte .= "\n\n📥 **[Télécharger le rapport Excel (XLSX)](" . $excelUrl . ")**";
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Erreur lors de la génération Excel : " . $e->getMessage());
+        }
+
         $this->assistant()->createReportRecord('Rapport automatique ' . ucfirst($period), $texte);
         $this->appendAssistantMessage($texte);
     }

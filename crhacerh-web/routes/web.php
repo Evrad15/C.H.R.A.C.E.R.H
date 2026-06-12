@@ -49,22 +49,4 @@ Route::get('/ressources-humaines/calendrier/callback', function (Request $reques
     return redirect('/ressources-humaines/calendrier');
 });
 
-// --- Routes pour la gestion des rapports (Décommentées et Actives) ---
-Route::get('/ressources-humaines/rapports', function () {
-    return view('filament.pages.rapports');
-})->name('filament.ressources-humaines.resources.rapports.index')->middleware(['web', 'auth']);
 
-Route::get('/ressources-humaines/rapports-page-alias', function () {
-    return redirect()->route('filament.ressources-humaines.resources.rapports.index');
-})->name('filament.ressources-humaines.pages.rapports')->middleware(['web', 'auth']);
-
-Route::post('/ressources-humaines/rapports/delete', function (Request $request) {
-    $request->validate(['path' => 'required|string']);
-    $path = $request->input('path');
-
-    if (Storage::disk('public')->exists($path)) {
-        Storage::disk('public')->delete($path);
-    }
-
-    return back();
-})->name('filament.ressources-humaines.resources.rapports.delete')->middleware(['web', 'auth']);

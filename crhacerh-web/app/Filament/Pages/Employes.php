@@ -25,8 +25,8 @@ class Employes extends Page implements HasTable
                 Employe::query()->where('role', '!=', 'RH_Admin')
                     ->withCount('absences')
                     ->withCount([
-                        'pointages as retards_count' => fn($query) => $query->where('type', 'retard'),
-                        'pointages as a_lheure_count' => fn($query) => $query->where('type', 'a_lheure'),
+                        'pointages as retards_count' => fn($query) => $query->where('type', 'ENTREE')->where('status', 'Retard'),
+                        'pointages as a_lheure_count' => fn($query) => $query->where('type', 'ENTREE')->where('status', 'Present'),
                     ])
             )
             ->columns([

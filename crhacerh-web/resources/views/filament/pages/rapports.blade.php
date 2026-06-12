@@ -25,13 +25,12 @@
                     <a href="{{ $file['url'] }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium text-sm transition">
                         <i class="fa-solid fa-download"></i> Télécharger
                     </a>
-                    <form method="POST" action="{{ route('filament.ressources-humaines.resources.rapports.delete') }}" onsubmit="return confirm('Supprimer ce fichier ?');">
-                        @csrf
-                        <input type="hidden" name="path" value="{{ $file['path'] }}">
-                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-850 font-medium text-sm transition">
-                            <i class="fa-solid fa-trash-can"></i> Supprimer
-                        </button>
-                    </form>
+                    <button type="button" 
+                        wire:click="deleteFile('{{ $file['path'] }}')" 
+                        wire:confirm="Supprimer ce fichier ?" 
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-850 font-medium text-sm transition">
+                        <i class="fa-solid fa-trash-can"></i> Supprimer
+                    </button>
                 </div>
             </div>
             @endforeach

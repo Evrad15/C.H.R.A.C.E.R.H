@@ -24,6 +24,10 @@ class Dashboard extends Page
     public int $absentsSemaine = 0;
     public int $retardsSemaine = 0;
     public int $aLHeureSemaine = 0;
+    public int $tendanceAbsents = 0;
+    public int $tendanceRetards = 0;
+    public int $tendanceALHeure = 0;
+    public float $tauxPresenceGlobal = 0.0;
 
     // Propriétés pour les tops 5
     public $topAbsents = [];
@@ -32,6 +36,12 @@ class Dashboard extends Page
 
     // Données pour le graphique linéaire
     public array $chartData = [];
+
+    // Rapport d'anomalies de la semaine
+    public array $anomaliesReport = [];
+
+    // Prédiction de l'absentéisme
+    public array $absenteeismRisks = [];
 
     public function mount(): void
     {
@@ -72,13 +82,13 @@ class Dashboard extends Page
             $this->tauxPresenceGlobal = round((($this->aLHeureSemaine + $this->retardsSemaine) / $totalPresencesPossibles) * 100, 1);
         }
 
-        // 4. Section "Alerte Anomalies" en direct (Ex: Retards importants ou absences non justifiées du jour)
-        $this->anomalies = Pointage::whereDate('created_at', Carbon::today())
-            ->whereIn('status', ['Absent', 'Retard'])
-            ->with('employe')
-            ->latest()
-            ->limit(4)
-            ->get();
+        // 4. Section "Alerte Anomalies" via Horizon AI (hebdomadaire)
+        $horizonAi = new \App\Services\HorizonAiService();
+        $this->anomaliesReport = $horizonAi->detectAnomalies('week');
+
+        // 5. Prédictions des risques d'absentéisme via Horizon AI
+        $predictions = $horizonAi->predictAbsenteeismRisk();
+        $this->absenteeismRisks = array_filter($predictions, fn($p) => $p['score'] > 20);
 
         // Chargement des Tops 5 et données graphiques (identique à votre ancienne logique)
         $this->chargerTopsEtGraphique($debutSemaine, $finSemaine);

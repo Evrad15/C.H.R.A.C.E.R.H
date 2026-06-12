@@ -26,28 +26,107 @@ class HorizonAiService
         $question = trim($question);
         $normalized = mb_strtolower($question, 'UTF-8');
 
+        $period = null;
+        $title = '';
+
+        if (Str::contains($normalized, ['prédiction', 'prediction', 'risque', 'susceptible', 'absentéisme', 'absenteisme'])) {
+            $predictions = $this->predictAbsenteeismRisk();
+            $highRisk = array_filter($predictions, fn($p) => $p['score'] > 20);
+            
+            $texte = "🔮 **Prédiction des risques d'absentéisme (30 derniers jours)**\n\n";
+            if (empty($highRisk)) {
+                $texte .= "✅ Excellent ! Aucun employé ne présente de risque d'absentéisme modéré ou élevé pour la semaine prochaine.";
+            } else {
+                $texte .= "Voici la liste des employés présentant des risques identifiés :\n\n";
+                foreach ($highRisk as $p) {
+                    $texte .= "- **{$p['nom']}** ({$p['departement']}) : **{$p['score']}%** (Risque **{$p['niveau']}**)\n";
+                    $texte .= "  *Motif* : {$p['raisons']}\n";
+                }
+                $texte .= "\n💡 *Recommandation RH* : Planifier un entretien individuel avec les employés affichant un score supérieur à 50% afin de comprendre les raisons de ces retards/absences répétés.";
+            }
+            return $texte;
+        }
+
+        if (Str::contains($normalized, ['graphique', 'diagramme', 'comparer', 'comparaison', 'statistiques des départements'])) {
+            $departments = \App\Models\Department::with('employees.pointages')->get();
+            $labels = [];
+            $presents = [];
+            $retards = [];
+            $absences = [];
+
+            foreach ($departments as $dept) {
+                $labels[] = $dept->name;
+                $empIds = $dept->employees->pluck('id');
+                
+                $pointages = Pointage::whereIn('employee_id', $empIds)->get();
+                $presents[] = $pointages->where('status', 'Present')->count();
+                $retards[] = $pointages->where('status', 'Retard')->count();
+                $absences[] = $pointages->where('status', 'Absent')->count();
+            }
+
+            $chartData = [
+                'type' => 'bar',
+                'labels' => $labels,
+                'datasets' => [
+                    [
+                        'label' => 'Présences',
+                        'data' => $presents,
+                        'backgroundColor' => 'rgba(34, 197, 94, 0.6)'
+                    ],
+                    [
+                        'label' => 'Retards',
+                        'data' => $retards,
+                        'backgroundColor' => 'rgba(234, 88, 12, 0.6)'
+                    ],
+                    [
+                        'label' => 'Absences',
+                        'data' => $absences,
+                        'backgroundColor' => 'rgba(239, 68, 68, 0.6)'
+                    ]
+                ]
+            ];
+
+            $texte = "📊 **Graphique comparatif des présences par département**\n\n";
+            $texte .= "Voici le comparatif d'assiduité généré pour chaque département :\n";
+            foreach ($labels as $i => $label) {
+                $texte .= "- **{$label}** : Présents ({$presents[$i]}), Retards ({$retards[$i]}), Absents ({$absences[$i]})\n";
+            }
+            $texte .= "\n[CHART:" . json_encode($chartData) . "]";
+            return $texte;
+        }
+
         if (Str::contains($normalized, ['rapport journalier', 'rapport du jour', 'statistiques du jour', 'jour'])) {
-            return $this->formatReportText($this->generateReport('day'), 'Rapport journalier');
+            $period = 'day';
+            $title = 'Rapport journalier';
+        } elseif (Str::contains($normalized, ['rapport hebdomadaire', 'rapport de la semaine', 'semaine'])) {
+            $period = 'week';
+            $title = 'Rapport hebdomadaire';
+        } elseif (Str::contains($normalized, ['rapport mensuel', 'rapport du mois', 'mois'])) {
+            $period = 'month';
+            $title = 'Rapport mensuel';
+        } elseif (Str::contains($normalized, ['rapport annuel', 'rapport de l\'année', 'année', 'an'])) {
+            $period = 'year';
+            $title = 'Rapport annuel';
+        } elseif (Str::contains($normalized, ['absent', 'retard', 'présence', 'présences', 'pointage', 'pointages'])) {
+            $period = 'day';
+            $title = 'Résumé de présence';
         }
 
-        if (Str::contains($normalized, ['rapport hebdomadaire', 'rapport de la semaine', 'semaine'])) {
-            return $this->formatReportText($this->generateReport('week'), 'Rapport hebdomadaire');
-        }
-
-        if (Str::contains($normalized, ['rapport mensuel', 'rapport du mois', 'mois'])) {
-            return $this->formatReportText($this->generateReport('month'), 'Rapport mensuel');
-        }
-
-        if (Str::contains($normalized, ['rapport annuel', 'rapport de l\'année', 'année', 'an'])) {
-            return $this->formatReportText($this->generateReport('year'), 'Rapport annuel');
+        if ($period !== null) {
+            $report = $this->generateReport($period);
+            $texte = $this->formatReportText($report, $title);
+            try {
+                $excelUrl = $this->generateAndExport($period, 'excel');
+                $texte .= "\n\n📥 **[Télécharger le rapport Excel (XLSX)](" . $excelUrl . ")**";
+            } catch (\Throwable $e) {
+                Log::error("Erreur lors de la génération Excel pour {$period} : " . $e->getMessage());
+            }
+            $this->createReportRecord($title, $texte);
+            return $texte;
         }
 
         if (Str::contains($normalized, ['anomalie', 'fraude', 'suspicion', 'irrégulier', 'inconsist'])) {
             return $this->formatAnomaliesText($this->detectAnomalies('month'), 'Détection d\'anomalies');
-        }
-
-        if (Str::contains($normalized, ['absent', 'retard', 'présence', 'présences', 'pointage', 'pointages'])) {
-            return $this->formatReportText($this->generateReport('day'), 'Résumé de présence');
         }
 
         return $this->callGemini($this->buildSystemPrompt($this->getDashboardContext()) . "\n\nQuestion : {$question}");
@@ -296,6 +375,7 @@ class HorizonAiService
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Résumé Global');
 
         // Header
         $sheet->setCellValue('A1', "Rapport ({$report['from']} → {$report['to']})");
@@ -310,12 +390,17 @@ class HorizonAiService
         $sheet->setCellValue('A6', 'Retards');
         $sheet->setCellValue('B6', $report['retard']);
 
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A2:A6')->getFont()->setBold(true);
+
         $row = 8;
         if (!empty($report['top_retards'])) {
             $sheet->setCellValue("A{$row}", 'Top retards');
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true);
             $row++;
             $sheet->setCellValue("A{$row}", 'Nom');
             $sheet->setCellValue("B{$row}", 'Retards');
+            $sheet->getStyle("A{$row}:B{$row}")->getFont()->setBold(true);
             $row++;
             foreach ($report['top_retards'] as $item) {
                 $sheet->setCellValue("A{$row}", $item['nom']);
@@ -327,15 +412,88 @@ class HorizonAiService
         if (!empty($report['top_absences'])) {
             $row += 1;
             $sheet->setCellValue("A{$row}", 'Top absences');
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true);
             $row++;
             $sheet->setCellValue("A{$row}", 'Nom');
             $sheet->setCellValue("B{$row}", 'Absences');
+            $sheet->getStyle("A{$row}:B{$row}")->getFont()->setBold(true);
             $row++;
             foreach ($report['top_absences'] as $item) {
                 $sheet->setCellValue("A{$row}", $item['nom']);
                 $sheet->setCellValue("B{$row}", $item['absences']);
                 $row++;
             }
+        }
+
+        // Auto-dimensionnement des colonnes pour le premier onglet
+        foreach (range('A', 'B') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Deuxième onglet : Détail Employés
+        $sheet2 = $spreadsheet->createSheet();
+        $sheet2->setTitle('Détail Employés');
+
+        // Titre de la feuille
+        $sheet2->setCellValue('A1', "Détails de Présence des Employés ({$report['from']} → {$report['to']})");
+        $sheet2->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet2->mergeCells('A1:F1');
+
+        // En-têtes du tableau
+        $headers = ['Nom Complet', 'Département', 'Présences', 'Retards', 'Absences', 'Taux de Présence'];
+        $colChar = 'A';
+        foreach ($headers as $header) {
+            $sheet2->setCellValue($colChar . '3', $header);
+            $colChar++;
+        }
+
+        // Style des en-têtes
+        $sheet2->getStyle('A3:F3')->getFont()->setBold(true);
+        $sheet2->getStyle('A3:F3')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
+        $sheet2->getStyle('A3:F3')->getFill()->getStartColor()->setARGB('FF4F81BD'); // Sleek blue
+        $sheet2->getStyle('A3:F3')->getFont()->getColor()->setARGB(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_WHITE);
+
+        // Récupérer tous les employés avec leurs pointages pour cette période
+        $from = \Carbon\Carbon::parse($report['from'])->startOfDay();
+        $to = \Carbon\Carbon::parse($report['to'])->endOfDay();
+        
+        $employes = \App\Models\Employe::with(['department', 'pointages' => function ($query) use ($from, $to) {
+            $query->whereBetween('created_at', [$from, $to]);
+        }])->get();
+
+        $rowNum = 4;
+        foreach ($employes as $emp) {
+            $presentsCount = $emp->pointages->where('status', 'Present')->count();
+            $retardsCount = $emp->pointages->where('status', 'Retard')->count();
+            $absencesCount = $emp->pointages->where('status', 'Absent')->count();
+            $totalCount = $presentsCount + $retardsCount + $absencesCount;
+
+            $attendanceRate = $totalCount > 0 
+                ? round((($presentsCount + $retardsCount) / $totalCount) * 100, 1) . '%'
+                : '0%';
+
+            $sheet2->setCellValue("A{$rowNum}", $emp->getFullNameAttribute());
+            $sheet2->setCellValue("B{$rowNum}", $emp->department ? $emp->department->name : 'N/A');
+            $sheet2->setCellValue("C{$rowNum}", $presentsCount);
+            $sheet2->setCellValue("D{$rowNum}", $retardsCount);
+            $sheet2->setCellValue("E{$rowNum}", $absencesCount);
+            $sheet2->setCellValue("F{$rowNum}", $attendanceRate);
+
+            // Alternance de couleur (Zebra striping)
+            if ($rowNum % 2 == 0) {
+                $sheet2->getStyle("A{$rowNum}:F{$rowNum}")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
+                $sheet2->getStyle("A{$rowNum}:F{$rowNum}")->getFill()->getStartColor()->setARGB('FFF9FAFB');
+            }
+
+            // Alignements
+            $sheet2->getStyle("C{$rowNum}:F{$rowNum}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+            $rowNum++;
+        }
+
+        // Auto-dimensionnement des colonnes pour le deuxième onglet
+        foreach (range('A', 'F') as $col) {
+            $sheet2->getColumnDimension($col)->setAutoSize(true);
         }
 
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
@@ -346,7 +504,7 @@ class HorizonAiService
         // Cleanup temp
         @unlink($tempFile);
 
-        return Storage::disk('public')->url($stored);
+        return '/storage/' . $stored;
     }
 
     /**
@@ -389,7 +547,7 @@ class HorizonAiService
         if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('A4', 'portrait');
             Storage::disk('public')->put('reports/' . $filename, $pdf->output());
-            return Storage::disk('public')->url('reports/' . $filename);
+            return '/storage/reports/' . $filename;
         }
 
         // Fallback to direct Dompdf
@@ -400,7 +558,7 @@ class HorizonAiService
             $dompdf->render();
             $output = $dompdf->output();
             Storage::disk('public')->put('reports/' . $filename, $output);
-            return Storage::disk('public')->url('reports/' . $filename);
+            return '/storage/reports/' . $filename;
         }
 
         throw new \RuntimeException('Aucun convertisseur PDF trouvé. Installez barryvdh/laravel-dompdf ou dompdf/dompdf via composer.');
@@ -470,7 +628,7 @@ class HorizonAiService
 
         try {
             $client = \Gemini::client($this->apiKey);
-            $response = $client->geminiPro()->generateContent($prompt);
+            $response = $client->generativeModel('gemini-2.5-flash')->generateContent($prompt);
             return trim($response->text() ?? 'Je n’ai pas obtenu de réponse de l’API Gemini.');
         } catch (\Throwable $exception) {
             Log::error('HorizonAiService Gemini error: ' . $exception->getMessage());
@@ -500,5 +658,145 @@ class HorizonAiService
                 'to' => $reference->copy()->endOfDay(),
             ],
         };
+    }
+
+    /**
+     * Analyse un document importé (justificatif d'absence, etc.) via Gemini et met à jour la base de données.
+     */
+    public function analyzeUserRequestWithFile(string $question, string $filePath, string $mimeType): string
+    {
+        if (empty($this->apiKey)) {
+            return "La clé Gemini n'est pas configurée. Veuillez l'ajouter à votre fichier .env.";
+        }
+
+        try {
+            $client = \Gemini::client($this->apiKey);
+            
+            $fileData = base64_encode(file_get_contents($filePath));
+            $blob = new \Gemini\Data\Blob(
+                mimeType: $mimeType,
+                data: $fileData
+            );
+
+            $prompt = "Tu es Horizon, l'assistant RH de C.H.R.A.C.E.R.H. "
+                . "On te fournit un fichier joint. Analyse ce document (justificatif d'absence, certificat médical ou autre). "
+                . "1. Détermine s'il s'agit d'un justificatif d'absence valide. "
+                . "2. Extrait les informations clés suivantes sous forme textuelle propre : "
+                . "   - Nom complet de l'employé concerné "
+                . "   - Dates/Période de validité de la justification (début et fin) "
+                . "   - Motif de l'absence "
+                . "3. Rédige un diagnostic clair en indiquant si l'absence est justifiée ou non. "
+                . "4. Ajoute une note à la fin au format JSON exact suivant si tu confirmes la justification : "
+                . "   ```json\n"
+                . "   {\"justification_valide\": true, \"nom_employe\": \"[Nom]\", \"date_debut\": \"YYYY-MM-DD\", \"date_fin\": \"YYYY-MM-DD\"}\n"
+                . "   ```\n"
+                . "Question/Instruction de l'utilisateur : " . $question;
+
+            $response = $client->generativeModel('gemini-2.5-flash')->generateContent($prompt, $blob);
+            $reponseTexte = trim($response->text() ?? 'Aucune réponse obtenue de Gemini.');
+
+            if (preg_match('/\{"justification_valide"\s*:\s*true.*?\}/s', $reponseTexte, $matches)) {
+                $jsonData = json_decode($matches[0], true);
+                if ($jsonData) {
+                    $nom = $jsonData['nom_employe'];
+                    $debut = Carbon::parse($jsonData['date_debut']);
+                    $fin = Carbon::parse($jsonData['date_fin']);
+
+                    $names = explode(' ', $nom);
+                    $query = Employe::query();
+                    if (count($names) >= 2) {
+                        $query->where(function($q) use ($names) {
+                            $q->where('first_name', 'like', "%{$names[0]}%")
+                              ->orWhere('last_name', 'like', "%{$names[1]}%")
+                              ->orWhere('first_name', 'like', "%{$names[1]}%")
+                              ->orWhere('last_name', 'like', "%{$names[0]}%");
+                        });
+                    } else {
+                        $query->where('first_name', 'like', "%{$nom}%")
+                              ->orWhere('last_name', 'like', "%{$nom}%");
+                    }
+                    $employe = $query->first();
+
+                    if ($employe) {
+                        $count = Pointage::where('employee_id', $employe->id)
+                            ->whereBetween('created_at', [$debut->startOfDay(), $fin->endOfDay()])
+                            ->where('status', 'Absent')
+                            ->update(['status' => 'Present', 'anomaly_detected' => false]);
+
+                        $reponseTexte .= "\n\n⚙️ **[Mise à jour automatique]** : L'employé **{$employe->first_name} {$employe->last_name}** a été identifié. {$count} pointage(s) d'absence sur la période du {$jsonData['date_debut']} au {$jsonData['date_fin']} ont été convertis en 'Présent' (justifié).";
+                    } else {
+                        $reponseTexte .= "\n\n⚠️ **[Mise à jour automatique]** : Le justificatif semble valide, mais aucun employé nommé '{$nom}' n'a été trouvé dans la base de données.";
+                    }
+                }
+            }
+
+            return $reponseTexte;
+        } catch (\Throwable $e) {
+            Log::error('HorizonAiService File Analysis error: ' . $e->getMessage());
+            return "Désolé, je rencontre des difficultés pour analyser ce fichier. Détails de l'erreur : " . $e->getMessage();
+        }
+    }
+
+    /**
+     * Calcule le score de risque d'absentéisme pour chaque employé.
+     */
+    public function predictAbsenteeismRisk(): array
+    {
+        $employes = Employe::with('department')->get();
+        $dateLim = Carbon::now()->subDays(30);
+
+        $predictions = [];
+        foreach ($employes as $emp) {
+            $pointages = Pointage::where('employee_id', $emp->id)
+                ->where('created_at', '>=', $dateLim)
+                ->get();
+
+            $absences = $pointages->where('status', 'Absent')->count();
+            $retards = $pointages->where('status', 'Retard')->count();
+            $total = $pointages->count();
+
+            $score = 0;
+            if ($total > 0) {
+                $score = ($retards * 10) + ($absences * 25);
+            }
+            $score = min($score, 100);
+
+            $niveau = 'Faible';
+            $couleur = 'green';
+            if ($score >= 60) {
+                $niveau = 'Critique';
+                $couleur = 'red';
+            } elseif ($score >= 30) {
+                $niveau = 'Modéré';
+                $couleur = 'orange';
+            }
+
+            $raisons = [];
+            if ($absences > 0) {
+                $raisons[] = "{$absences} absence(s) ce mois-ci.";
+            }
+            if ($retards > 0) {
+                $raisons[] = "{$retards} retard(s) ce mois-ci.";
+            }
+            if (empty($raisons)) {
+                $raisons[] = "Pointages réguliers et assiduité parfaite.";
+            }
+
+            $predictions[] = [
+                'employe_id' => $emp->id,
+                'nom' => $emp->getFullNameAttribute(),
+                'departement' => $emp->department ? $emp->department->name : 'N/A',
+                'retards' => $retards,
+                'absences' => $absences,
+                'score' => $score,
+                'niveau' => $niveau,
+                'couleur' => $couleur,
+                'raisons' => implode(' ', $raisons)
+            ];
+        }
+
+        usort($predictions, fn($a, $b) => $b['score'] <=> $a['score']);
+
+        return $predictions;
     }
 }
