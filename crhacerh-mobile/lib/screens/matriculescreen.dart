@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:convert'; 
 import 'package:http/http.dart' as http; 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'matriculescreen_model.dart';
 import '../home_screen.dart';
 import 'package:flutter/foundation.dart';
+import '../services/local_storage_service.dart';
 
 class MatriculeScreen extends StatefulWidget {
   const MatriculeScreen({super.key});
@@ -234,6 +234,10 @@ class _MatriculeScreenState extends State<MatriculeScreen> {
         final prefs = await SharedPreferences.getInstance();
         String employeeJson = jsonEncode(employee);
         await prefs.setString('cached_employee', employeeJson);
+
+        // 2. Sauvegarde étendue via LocalStorageService (fichier JSON dédié)
+        await LocalStorageService().saveEmployee(
+            Map<String, dynamic>.from(employee));
 
         if (mounted) {
           _showSnackBar(

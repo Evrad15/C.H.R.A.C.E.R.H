@@ -33,7 +33,7 @@
             <div class="bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/30 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300 border-l-4 border-l-red-500" style="flex: 1;">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        Absents (Sem.)
+                        Absents (Jour)
                     </span>
                     <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-lg">
                         ❌
@@ -59,7 +59,7 @@
             <div class="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-900/30 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300 border-l-4 border-l-amber-500" style="flex: 1;">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        En Retard (Sem.)
+                        En Retard (Jour)
                     </span>
                     <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-lg">
                         ⏰
@@ -85,7 +85,7 @@
             <div class="bg-white dark:bg-gray-800 border border-green-200 dark:border-green-900/30 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300 border-l-4 border-l-green-500" style="flex: 1;">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        À l'Heure (Sem.)
+                        À l'Heure (Jour)
                     </span>
                     <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-lg">
                         ✅
@@ -111,20 +111,137 @@
         </div>
     </div>
 
-    <div class="lg:col-span-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 flex flex-col justify-between">
+    <div class="lg:col-span-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 flex flex-col">
         <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <span class="w-1 h-4 bg-primary-500 rounded-full"></span>
-            Évolution des Présences
+            Évolution des Présences (Semaine en cours)
         </h3>
-        <div class="h-64 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
-            <div class="text-center">
-                <p class="text-gray-400 text-xs font-medium mb-1">Graphique en courbe</p>
-                <p class="text-[10px] text-gray-500">
-                    [Chart Data: {{ count($this->chartData) }} points]
-                </p>
-            </div>
+
+        {{-- Légende --}}
+        <div class="flex items-center gap-6 mb-4 text-xs font-medium">
+            <span class="flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-full" style="background:#22c55e;"></span>
+                <span class="text-gray-600 dark:text-gray-300">Présents</span>
+            </span>
+            <span class="flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-full" style="background:#f59e0b;"></span>
+                <span class="text-gray-600 dark:text-gray-300">Retards</span>
+            </span>
+            <span class="flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-full" style="background:#ef4444;"></span>
+                <span class="text-gray-600 dark:text-gray-300">Absents</span>
+            </span>
+        </div>
+
+        <div class="relative" style="height: 256px;">
+            <canvas id="presenceWeekChart"></canvas>
         </div>
     </div>
+
+    {{-- Chart.js (CDN) --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+    <script>
+        (function () {
+            var chartData = @json($this->chartData);
+
+            function initChart() {
+                var canvas = document.getElementById('presenceWeekChart');
+                if (!canvas) { return; }
+                if (typeof Chart === 'undefined') {
+                    setTimeout(initChart, 100);
+                    return;
+                }
+
+                // detect dark mode
+                var isDark = document.documentElement.classList.contains('dark');
+                var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+                var labelColor = isDark ? '#9ca3af' : '#6b7280';
+
+                new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels || [],
+                        datasets: [
+                            {
+                                label: 'Présents',
+                                data: chartData.assidus || [],
+                                borderColor: '#22c55e',
+                                backgroundColor: 'rgba(34,197,94,0.12)',
+                                pointBackgroundColor: '#22c55e',
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                                tension: 0.4,
+                                fill: true,
+                                borderWidth: 2,
+                            },
+                            {
+                                label: 'Retards',
+                                data: chartData.retards || [],
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245,158,11,0.10)',
+                                pointBackgroundColor: '#f59e0b',
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                                tension: 0.4,
+                                fill: true,
+                                borderWidth: 2,
+                            },
+                            {
+                                label: 'Absents',
+                                data: chartData.absences || [],
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239,68,68,0.10)',
+                                pointBackgroundColor: '#ef4444',
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                                tension: 0.4,
+                                fill: true,
+                                borderWidth: 2,
+                            },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                                titleColor: isDark ? '#f3f4f6' : '#111827',
+                                bodyColor: isDark ? '#d1d5db' : '#374151',
+                                borderColor: isDark ? '#374151' : '#e5e7eb',
+                                borderWidth: 1,
+                                padding: 10,
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return '  ' + ctx.dataset.label + ' : ' + ctx.parsed.y;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: gridColor },
+                                ticks: { color: labelColor, font: { size: 12 } }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: gridColor },
+                                ticks: { color: labelColor, font: { size: 12 }, stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initChart);
+            } else {
+                initChart();
+            }
+        })();
+    </script>
 
     <div class="mb-8" style="width: 100%;">
         <div style="display: flex; flex-direction: row; gap: 1.5rem; width: 100%; items: stretch;">
@@ -299,7 +416,7 @@
     <div class="w-full">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <span class="w-1 h-6 bg-primary-500 rounded-full"></span>
-            Classements de la Semaine
+            Classement Général des Employés
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-6">
@@ -315,7 +432,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {{ $row->employe->nom ?? 'Inconnu' }}
+                                {{ $row->employe->full_name ?? 'Inconnu' }}
                             </p>
                         </div>
                         <span class="flex-shrink-0 inline-block px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs font-bold">
@@ -342,7 +459,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {{ $row->employe->nom ?? 'Inconnu' }}
+                                {{ $row->employe->full_name ?? 'Inconnu' }}
                             </p>
                         </div>
                         <span class="flex-shrink-0 inline-block px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-bold">
@@ -369,7 +486,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {{ $row->employe->nom ?? 'Inconnu' }}
+                                {{ $row->employe->full_name ?? 'Inconnu' }}
                             </p>
                         </div>
                         <span class="flex-shrink-0 inline-block px-2.5 py-1 rounded-full bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs font-bold">

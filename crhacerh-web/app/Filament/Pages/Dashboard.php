@@ -48,38 +48,42 @@ class Dashboard extends Page
         $debutSemaine = Carbon::now()->startOfWeek(Carbon::MONDAY);
         $finSemaine = Carbon::now()->startOfWeek(Carbon::MONDAY)->addDays(4)->endOfDay();
 
-        // Déterminer le jour précédent (si on est lundi, le jour précédent est le vendredi)
-        $hier = Carbon::yesterday();
-        if (Carbon::now()->isMonday()) {
-            $hier = Carbon::now()->subDays(3);
-        }
-
         // 1. Calculs de base
         $this->totalEmployes = Employe::count();
 
-        // Requêtes de la semaine en cours
-        $this->absentsSemaine = Pointage::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('status', 'Absent')->count();
-        $this->retardsSemaine = Pointage::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('status', 'Retard')->count();
-        $this->aLHeureSemaine = Pointage::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('status', 'Present')->count();
+        // Déterminer la date cible (dernier jour ayant des pointages d'entrée, ou aujourd'hui par défaut)
+        $latestPointage = Pointage::where('type', 'ENTREE')->latest('created_at')->first();
+        $targetDate = $latestPointage ? Carbon::parse($latestPointage->created_at)->startOfDay() : Carbon::today();
 
-        // 2. Calcul des tendances (Différence avec hier)
-        $absentsHier = Pointage::whereDate('created_at', $hier)->where('status', 'Absent')->count();
-        $retardsHier = Pointage::whereDate('created_at', $hier)->where('status', 'Retard')->count();
-        $aLHeureHier = Pointage::whereDate('created_at', $hier)->where('status', 'Present')->count();
+        // Requêtes du jour ciblé (les 3 compteurs d'entrée)
+        $this->absentsSemaine = Pointage::whereDate('created_at', $targetDate)->where('type', 'ENTREE')->where('status', 'Absent')->count();
+        $this->retardsSemaine = Pointage::whereDate('created_at', $targetDate)->where('type', 'ENTREE')->where('status', 'Retard')->count();
+        $this->aLHeureSemaine = Pointage::whereDate('created_at', $targetDate)->where('type', 'ENTREE')->where('status', 'Present')->count();
 
-        // Absents aujourd'hui (ou dernier jour) pour comparer
-        $absentsAujourdhui = Pointage::whereDate('created_at', Carbon::today())->where('status', 'Absent')->count();
-        $retardsAujourdhui = Pointage::whereDate('created_at', Carbon::today())->where('status', 'Retard')->count();
-        $aLHeureAujourdhui = Pointage::whereDate('created_at', Carbon::today())->where('status', 'Present')->count();
+        // 2. Calcul des tendances (Différence avec le jour ouvré précédent contenant des pointages d'entrée)
+        $previousPointage = Pointage::where('type', 'ENTREE')
+            ->whereDate('created_at', '<', $targetDate)
+            ->latest('created_at')
+            ->first();
+        $prevDate = $previousPointage ? Carbon::parse($previousPointage->created_at)->startOfDay() : null;
 
-        $this->tendanceAbsents = $absentsAujourdhui - $absentsHier;
-        $this->tendanceRetards = $retardsAujourdhui - $retardsHier;
-        $this->tendanceALHeure = $aLHeureAujourdhui - $aLHeureHier;
+        if ($prevDate) {
+            $absentsHier = Pointage::whereDate('created_at', $prevDate)->where('type', 'ENTREE')->where('status', 'Absent')->count();
+            $retardsHier = Pointage::whereDate('created_at', $prevDate)->where('type', 'ENTREE')->where('status', 'Retard')->count();
+            $aLHeureHier = Pointage::whereDate('created_at', $prevDate)->where('type', 'ENTREE')->where('status', 'Present')->count();
+        } else {
+            $absentsHier = 0;
+            $retardsHier = 0;
+            $aLHeureHier = 0;
+        }
 
-        // 3. Calcul du taux de présence global sur la semaine
-        $totalPresencesPossibles = $this->totalEmployes * 5; // Nombre d'employés * 5 jours
-        if ($totalPresencesPossibles > 0) {
-            $this->tauxPresenceGlobal = round((($this->aLHeureSemaine + $this->retardsSemaine) / $totalPresencesPossibles) * 100, 1);
+        $this->tendanceAbsents = $this->absentsSemaine - $absentsHier;
+        $this->tendanceRetards = $this->retardsSemaine - $retardsHier;
+        $this->tendanceALHeure = $this->aLHeureSemaine - $aLHeureHier;
+
+        // 3. Calcul du taux de présence global sur la journée ciblée
+        if ($this->totalEmployes > 0) {
+            $this->tauxPresenceGlobal = round((($this->aLHeureSemaine + $this->retardsSemaine) / $this->totalEmployes) * 100, 1);
         }
 
         // 4. Section "Alerte Anomalies" via Horizon AI (hebdomadaire)
@@ -90,15 +94,15 @@ class Dashboard extends Page
         $predictions = $horizonAi->predictAbsenteeismRisk();
         $this->absenteeismRisks = array_filter($predictions, fn($p) => $p['score'] > 20);
 
-        // Chargement des Tops 5 et données graphiques (identique à votre ancienne logique)
+        // Chargement des Tops 5 et données graphiques
         $this->chargerTopsEtGraphique($debutSemaine, $finSemaine);
     }
 
     protected function chargerTopsEtGraphique($debutSemaine, $finSemaine)
     {
-        $this->topAbsents = Pointage::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('status', 'Absent')->select('employee_id as employe_id', DB::raw('count(*) as total'))->groupBy('employee_id')->orderByDesc('total')->with('employe')->limit(5)->get();
-        $this->topRetards = Pointage::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('status', 'Retard')->select('employee_id as employe_id', DB::raw('count(*) as total'))->groupBy('employee_id')->orderByDesc('total')->with('employe')->limit(5)->get();
-        $this->topAssidus = Pointage::whereBetween('created_at', [$debutSemaine, $finSemaine])->where('status', 'Present')->select('employee_id as employe_id', DB::raw('count(*) as total'))->groupBy('employee_id')->orderByDesc('total')->with('employe')->limit(5)->get();
+        $this->topAbsents = Pointage::where('type', 'ENTREE')->where('status', 'Absent')->select('employee_id', DB::raw('count(*) as total'))->groupBy('employee_id')->orderByDesc('total')->with('employe')->limit(5)->get();
+        $this->topRetards = Pointage::where('type', 'ENTREE')->where('status', 'Retard')->select('employee_id', DB::raw('count(*) as total'))->groupBy('employee_id')->orderByDesc('total')->with('employe')->limit(5)->get();
+        $this->topAssidus = Pointage::where('type', 'ENTREE')->where('status', 'Present')->select('employee_id', DB::raw('count(*) as total'))->groupBy('employee_id')->orderByDesc('total')->with('employe')->limit(5)->get();
 
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
         $absencesParJour = [];
@@ -106,9 +110,9 @@ class Dashboard extends Page
         $assidusParJour = [];
         for ($i = 0; $i < 5; $i++) {
             $jourCible = Carbon::now()->startOfWeek(Carbon::MONDAY)->addDays($i);
-            $absencesParJour[] = Pointage::whereDate('created_at', $jourCible)->where('status', 'Absent')->count();
-            $retardsParJour[] = Pointage::whereDate('created_at', $jourCible)->where('status', 'Retard')->count();
-            $assidusParJour[] = Pointage::whereDate('created_at', $jourCible)->where('status', 'Present')->count();
+            $absencesParJour[] = Pointage::whereDate('created_at', $jourCible)->where('type', 'ENTREE')->where('status', 'Absent')->count();
+            $retardsParJour[] = Pointage::whereDate('created_at', $jourCible)->where('type', 'ENTREE')->where('status', 'Retard')->count();
+            $assidusParJour[] = Pointage::whereDate('created_at', $jourCible)->where('type', 'ENTREE')->where('status', 'Present')->count();
         }
         $this->chartData = ['labels' => $jours, 'absences' => $absencesParJour, 'retards' => $retardsParJour, 'assidus' => $assidusParJour];
     }

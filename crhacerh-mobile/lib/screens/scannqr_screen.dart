@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/chat_service.dart';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Design Tokens (Matching home/message dark theme)
+// ═══════════════════════════════════════════════════════════════════════════════
+class _C {
+  static const bg         = Color(0xFF0D0D0D);
+  static const accent     = Color(0xFF6C63FF);
+  static const accentSoft = Color(0xFF8B83FF);
+  static const green      = Color(0xFF00C48C);
+  static const greenGlow  = Color(0x3300C48C);
+  static const red        = Color(0xFFFF4757);
+  static const redGlow    = Color(0x33FF4757);
+  static const textPri    = Color(0xFFFFFFFF);
+  static const textSec    = Color(0xFF9E9E9E);
+}
 
 class ScannQRScreen extends StatefulWidget {
   final int employeeId;
@@ -26,7 +42,6 @@ class _ScannQRScreenState extends State<ScannQRScreen>
   bool _torchOn = false;
   bool _isSubmitting = false;
 
-  // Résultat du dernier pointage
   Map<String, dynamic>? _lastScanResult;
 
   @override
@@ -77,7 +92,6 @@ class _ScannQRScreenState extends State<ScannQRScreen>
     final raw = barcodes.first.rawValue;
     if (raw == null || raw.isEmpty) return;
 
-    // Pause le scan pendant le dialogue
     setState(() => _isScanActive = false);
     _scannerController.stop();
 
@@ -85,22 +99,27 @@ class _ScannQRScreenState extends State<ScannQRScreen>
   }
 
   void _showPointageDialog(String qrValue) {
-    showDialog(
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => _PointageDialog(
-        qrValue: qrValue,
-        employeeId: widget.employeeId,
-        chatService: _chatService,
-        onConfirm: (type) async {
-          Navigator.of(ctx).pop();
-          await _submitPointage(type);
-        },
-        onCancel: () {
-          Navigator.of(ctx).pop();
-          _resumeScan();
-        },
-      ),
+      barrierLabel: 'Pointage',
+      barrierColor: Colors.black87,
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (ctx, anim1, anim2) {
+        return _PointageDialog(
+          qrValue: qrValue,
+          employeeId: widget.employeeId,
+          chatService: _chatService,
+          onConfirm: (type) async {
+            Navigator.of(ctx).pop();
+            await _submitPointage(type);
+          },
+          onCancel: () {
+            Navigator.of(ctx).pop();
+            _resumeScan();
+          },
+        );
+      },
     );
   }
 
@@ -123,15 +142,18 @@ class _ScannQRScreenState extends State<ScannQRScreen>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Erreur lors du pointage.'),
-            backgroundColor: Colors.red,
+            content: Text(
+              result['message'] ?? 'Erreur lors du pointage.',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+            ),
+            backgroundColor: _C.red,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
     }
 
-    // Dans tous les cas, reprendre le scan après 3 secondes
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) _resumeScan();
     });
@@ -148,15 +170,18 @@ class _ScannQRScreenState extends State<ScannQRScreen>
     final time = data?['time'] ?? '';
     final employee = data?['employee'] ?? '';
 
-    showDialog(
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _SuccessDialog(
+      barrierColor: Colors.black87,
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (_, __, ___) => _SuccessDialog(
         employeeName: employee,
         type: type,
         time: time,
       ),
     );
+
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted && Navigator.canPop(context)) Navigator.of(context).pop();
     });
@@ -164,12 +189,9 @@ class _ScannQRScreenState extends State<ScannQRScreen>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final frameSize = size.width * 0.72;
-    final frameTop = (size.height - frameSize) / 2 - 40;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _C.bg,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -182,46 +204,79 @@ class _ScannQRScreenState extends State<ScannQRScreen>
           else if (_permissionDenied)
             _PermissionDeniedView(onRetry: _requestCameraPermission)
           else
-            const Center(child: CircularProgressIndicator(color: Colors.white)),
+            const Center(child: CircularProgressIndicator(color: _C.accent)),
 
           // ── Overlay ─────────────────────────────────────────────
           if (_cameraReady) ...[
-            // Obscurcissement autour du cadre
             _ScannerOverlay(isScanActive: _isScanActive),
 
-            // Barre supérieure repositionnée au-dessus du cadre de scan
+            // Barre supérieure HUD
             Positioned(
-              top: frameTop - 64 < MediaQuery.of(context).padding.top
-                  ? MediaQuery.of(context).padding.top + 8
-                  : frameTop - 64,
+              top: MediaQuery.of(context).padding.top + 16,
               left: 20,
               right: 20,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Titre
-                  const Text(
-                    'Scanner QR',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'SCANNER MODE',
+                        style: GoogleFonts.outfit(
+                          color: _C.textPri,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: _C.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'SYSTEM ACTIVE',
+                            style: GoogleFonts.outfit(
+                              color: _C.green,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
                   ),
-                  // Torche
+                  // Bouton Torche avec look néon
                   GestureDetector(
                     onTap: _toggleTorch,
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _torchOn ? Colors.white : Colors.white24,
+                        color: _torchOn ? _C.accent : Colors.black.withValues(alpha: 0.5),
                         shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _torchOn ? _C.accentSoft : Colors.white24,
+                          width: 1.5,
+                        ),
+                        boxShadow: _torchOn
+                            ? [BoxShadow(color: _C.accent.withValues(alpha: 0.5), blurRadius: 10)]
+                            : [],
                       ),
                       child: Icon(
-                        _torchOn
-                            ? Icons.flash_on_rounded
-                            : Icons.flash_off_rounded,
-                        color: _torchOn ? Colors.black : Colors.white,
-                        size: 22,
+                        _torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                        color: Colors.white,
+                        size: 20,
                       ),
                     ),
                   ),
@@ -229,22 +284,31 @@ class _ScannQRScreenState extends State<ScannQRScreen>
               ),
             ),
 
-            // Indicateur de chargement au centre
+            // Indicateur HUD central (chargement)
             if (_isSubmitting)
-              const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 3),
-                    SizedBox(height: 16),
-                    Text('Enregistrement du pointage…',
-                        style: TextStyle(color: Colors.white, fontSize: 15)),
-                  ],
+              Container(
+                color: Colors.black87,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: _C.accent, strokeWidth: 3),
+                      const SizedBox(height: 24),
+                      Text(
+                        'ENREGISTREMENT DU POINTAGE…',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
-            // ── Panneau bas (décalé pour éviter la bottom bar)
+            // Panneau HUD bas (décalé du bottom nav)
             Positioned(
               bottom: 0,
               left: 0,
@@ -252,42 +316,37 @@ class _ScannQRScreenState extends State<ScannQRScreen>
               child: SafeArea(
                 top: false,
                 child: Container(
-                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 110),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Dernier résultat
                       if (_lastScanResult != null)
                         _LastScanCard(result: _lastScanResult!),
-                      const SizedBox(height: 12),
-                      // Instruction
+                      const SizedBox(height: 16),
+                      // Instruction Banner
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
+                          color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white24),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              _isScanActive
-                                  ? Icons.qr_code_scanner
-                                  : Icons.pause_circle_outline,
-                              color: Colors.white,
+                              _isScanActive ? Icons.qr_code_scanner_rounded : Icons.pause_circle_outline_rounded,
+                              color: _isScanActive ? _C.accentSoft : _C.textSec,
                               size: 20,
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 12),
                             Text(
-                              _isScanActive
-                                  ? 'Placez le QR code dans le cadre'
-                                  : 'Scan en pause…',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500),
+                              _isScanActive ? 'Placer le QR code dans le cadre' : 'Scan suspendu…',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -304,9 +363,9 @@ class _ScannQRScreenState extends State<ScannQRScreen>
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// Overlay du scanner avec cadre de visée animé
-// ──────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// Scanner Overlay ( Futuristic sci-fi UI )
+// ═══════════════════════════════════════════════════════════════════════════════
 class _ScannerOverlay extends StatefulWidget {
   final bool isScanActive;
   const _ScannerOverlay({required this.isScanActive});
@@ -344,7 +403,7 @@ class _ScannerOverlayState extends State<_ScannerOverlay>
 
     return Stack(
       children: [
-        // Assombrissement autour du cadre
+        // Assombrissement HUD autour du cadre
         CustomPaint(
           size: Size(size.width, size.height),
           painter: _OverlayPainter(
@@ -352,7 +411,7 @@ class _ScannerOverlayState extends State<_ScannerOverlay>
                 (size.width - frameSize) / 2, frameTop, frameSize, frameSize),
           ),
         ),
-        // Ligne de scan animée
+        // Ligne de scan animée néon violet/vert
         if (widget.isScanActive)
           Positioned(
             top: frameTop,
@@ -366,7 +425,7 @@ class _ScannerOverlayState extends State<_ScannerOverlay>
               ),
             ),
           ),
-        // Coins du cadre
+        // Coins du cadre néon
         Positioned(
           top: frameTop,
           left: (size.width - frameSize) / 2,
@@ -385,11 +444,11 @@ class _OverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black.withValues(alpha: 0.62);
+    final paint = Paint()..color = Colors.black.withValues(alpha: 0.75);
     final fullRect = Rect.fromLTWH(0, 0, size.width, size.height);
     final path = Path()
       ..addRect(fullRect)
-      ..addRRect(RRect.fromRectAndRadius(frameRect, const Radius.circular(20)))
+      ..addRRect(RRect.fromRectAndRadius(frameRect, const Radius.circular(24)))
       ..fillType = PathFillType.evenOdd;
     canvas.drawPath(path, paint);
   }
@@ -402,48 +461,37 @@ class _FrameCornersPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
+      ..color = _C.accent
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+
+    final glowPaint = Paint()
+      ..color = _C.accent.withValues(alpha: 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8.0
       ..strokeCap = StrokeCap.round;
 
     const len = 28.0;
-    const rad = 16.0;
+    const rad = 20.0;
     final w = size.width;
     final h = size.height;
 
-    // Coin TL
-    canvas.drawPath(
-        Path()
-          ..moveTo(0, len)
-          ..lineTo(0, rad)
-          ..quadraticBezierTo(0, 0, rad, 0)
-          ..lineTo(len, 0),
-        paint);
-    // Coin TR
-    canvas.drawPath(
-        Path()
-          ..moveTo(w - len, 0)
-          ..lineTo(w - rad, 0)
-          ..quadraticBezierTo(w, 0, w, rad)
-          ..lineTo(w, len),
-        paint);
-    // Coin BL
-    canvas.drawPath(
-        Path()
-          ..moveTo(0, h - len)
-          ..lineTo(0, h - rad)
-          ..quadraticBezierTo(0, h, rad, h)
-          ..lineTo(len, h),
-        paint);
-    // Coin BR
-    canvas.drawPath(
-        Path()
-          ..moveTo(w - len, h)
-          ..lineTo(w - rad, h)
-          ..quadraticBezierTo(w, h, w, h - rad)
-          ..lineTo(w, h - len),
-        paint);
+    final paths = [
+      // Coin TL
+      Path()..moveTo(0, len)..lineTo(0, rad)..quadraticBezierTo(0, 0, rad, 0)..lineTo(len, 0),
+      // Coin TR
+      Path()..moveTo(w - len, 0)..lineTo(w - rad, 0)..quadraticBezierTo(w, 0, w, rad)..lineTo(w, len),
+      // Coin BL
+      Path()..moveTo(0, h - len)..lineTo(0, h - rad)..quadraticBezierTo(0, h, rad, h)..lineTo(len, h),
+      // Coin BR
+      Path()..moveTo(w - len, h)..lineTo(w - rad, h)..quadraticBezierTo(w, h, w, h - rad)..lineTo(w, h - len),
+    ];
+
+    for (final p in paths) {
+      canvas.drawPath(p, glowPaint);
+      canvas.drawPath(p, paint);
+    }
   }
 
   @override
@@ -461,10 +509,10 @@ class _ScanLinePainter extends CustomPainter {
       ..shader = LinearGradient(
         colors: [
           Colors.transparent,
-          const Color(0xFF00C853).withValues(alpha: 0.9),
+          _C.accent.withValues(alpha: 0.8),
           Colors.transparent
         ],
-      ).createShader(Rect.fromLTWH(0, y - 1, size.width, 3))
+      ).createShader(Rect.fromLTWH(0, y - 1.5, size.width, 3))
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
     canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
@@ -475,9 +523,9 @@ class _ScanLinePainter extends CustomPainter {
       old.progress != progress;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// Dialogue de choix ENTRÉE / SORTIE
-// ──────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// Glassmorphic Choice Dialog (Entrée / Sortie)
+// ═══════════════════════════════════════════════════════════════════════════════
 class _PointageDialog extends StatelessWidget {
   final String qrValue;
   final int employeeId;
@@ -495,62 +543,90 @@ class _PointageDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      backgroundColor: Colors.white,
-      contentPadding: EdgeInsets.zero,
-      content: Padding(
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF161616),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.8),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            )
+          ],
+        ),
         padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Sci-fi Scan Logo
             Container(
-              width: 72,
-              height: 72,
+              width: 76,
+              height: 76,
               decoration: BoxDecoration(
-                  color: const Color(0xFFF0F4FF), shape: BoxShape.circle),
-              child: const Icon(Icons.qr_code_rounded,
-                  size: 38, color: Color(0xFF1976D2)),
+                color: _C.accent.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: _C.accent.withValues(alpha: 0.25), width: 1.5),
+              ),
+              child: const Icon(Icons.qr_code_2_rounded, size: 40, color: _C.accentSoft),
             ),
             const SizedBox(height: 20),
-            const Text('QR Code détecté',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              'QR CODE DÉTECTÉ',
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
+              ),
+            ),
             const SizedBox(height: 8),
-            const Text(
-              'Choisissez le type de pointage à enregistrer.',
+            Text(
+              'Enregistrez votre présence dans l\'établissement en sélectionnant l\'action ci-dessous.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 14, color: Color(0xFF5F5F5F), height: 1.5),
+              style: GoogleFonts.inter(
+                color: _C.textSec,
+                fontSize: 13,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 28),
+            // Actions Buttons
             Row(
               children: [
                 Expanded(
-                  child: _TypeButton(
-                    label: 'Entrée',
+                  child: _ChoiceActionButton(
+                    label: 'ENTRÉE',
                     icon: Icons.login_rounded,
-                    color: const Color(0xFF43A047),
-                    bgColor: const Color(0xFFF1F9F1),
+                    baseColor: _C.green,
+                    glowColor: _C.greenGlow,
                     onTap: () => onConfirm('ENTREE'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: _TypeButton(
-                    label: 'Sortie',
+                  child: _ChoiceActionButton(
+                    label: 'SORTIE',
                     icon: Icons.logout_rounded,
-                    color: const Color(0xFFE53935),
-                    bgColor: const Color(0xFFFFF3F3),
+                    baseColor: _C.red,
+                    glowColor: _C.redGlow,
                     onTap: () => onConfirm('SORTIE'),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             TextButton(
               onPressed: onCancel,
-              child: const Text('Annuler',
-                  style: TextStyle(color: Color(0xFF8A8A8A))),
+              style: TextButton.styleFrom(foregroundColor: _C.textSec),
+              child: Text(
+                'Annuler et reprendre',
+                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
@@ -559,18 +635,18 @@ class _PointageDialog extends StatelessWidget {
   }
 }
 
-class _TypeButton extends StatelessWidget {
+class _ChoiceActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
-  final Color color;
-  final Color bgColor;
+  final Color baseColor;
+  final Color glowColor;
   final VoidCallback onTap;
 
-  const _TypeButton({
+  const _ChoiceActionButton({
     required this.label,
     required this.icon,
-    required this.color,
-    required this.bgColor,
+    required this.baseColor,
+    required this.glowColor,
     required this.onTap,
   });
 
@@ -579,16 +655,28 @@ class _TypeButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-            color: bgColor, borderRadius: BorderRadius.circular(18)),
+          color: Colors.black.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: baseColor.withValues(alpha: 0.3), width: 1.5),
+          boxShadow: [
+            BoxShadow(color: glowColor, blurRadius: 10, spreadRadius: -2)
+          ],
+        ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 32),
+            Icon(icon, color: baseColor, size: 28),
             const SizedBox(height: 8),
-            Text(label,
-                style: TextStyle(
-                    color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                color: baseColor,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+                letterSpacing: 0.8,
+              ),
+            ),
           ],
         ),
       ),
@@ -596,63 +684,108 @@ class _TypeButton extends StatelessWidget {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// Dialogue de succès après pointage
-// ──────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// Futuristic Success Dialog
+// ═══════════════════════════════════════════════════════════════════════════════
 class _SuccessDialog extends StatelessWidget {
   final String employeeName;
   final String type;
   final String time;
 
-  const _SuccessDialog(
-      {required this.employeeName, required this.type, required this.time});
+  const _SuccessDialog({
+    required this.employeeName,
+    required this.type,
+    required this.time,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isEntree = type == 'ENTREE';
-    final color = isEntree ? const Color(0xFF43A047) : const Color(0xFFE53935);
+    final accentColor = isEntree ? _C.green : _C.red;
+    final accentGlow  = isEntree ? _C.greenGlow : _C.redGlow;
     final icon = isEntree ? Icons.login_rounded : Icons.logout_rounded;
-    final label = isEntree ? 'Entrée enregistrée' : 'Sortie enregistrée';
+    final headerText = isEntree ? 'ENTRÉE ENREGISTRÉE' : 'SORTIE ENREGISTRÉE';
 
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      backgroundColor: Colors.white,
-      contentPadding: const EdgeInsets.all(32),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 44),
-          ),
-          const SizedBox(height: 20),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-          const SizedBox(height: 8),
-          Text('Bonjour $employeeName !',
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          if (time.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text('Pointage à $time',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF5F5F5F))),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF161616),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: accentColor.withValues(alpha: 0.25), width: 1.5),
+          boxShadow: [
+            BoxShadow(color: accentGlow, blurRadius: 20),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 40)
           ],
-          const SizedBox(height: 20),
-          const Text('Le scan se reprend automatiquement…',
-              style: TextStyle(fontSize: 12, color: Color(0xFFAAAAAA))),
-        ],
+        ),
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Glowing Success Circle
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: accentColor.withValues(alpha: 0.4), width: 2),
+              ),
+              child: Icon(icon, color: accentColor, size: 40),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              headerText,
+              style: GoogleFonts.outfit(
+                color: accentColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Bonjour, $employeeName',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (time.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Pointage validé à $time',
+                style: GoogleFonts.inter(color: _C.textSec, fontSize: 13),
+              ),
+            ],
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white30),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Reprise du scanner…',
+                  style: GoogleFonts.inter(color: Colors.white30, fontSize: 11),
+                ),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// Carte du dernier pointage
-// ──────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// Last Scan Summary Card
+// ═══════════════════════════════════════════════════════════════════════════════
 class _LastScanCard extends StatelessWidget {
   final Map<String, dynamic> result;
   const _LastScanCard({required this.result});
@@ -666,38 +799,51 @@ class _LastScanCard extends StatelessWidget {
     final time = data['time'] as String? ?? '';
     final name = data['employee'] as String? ?? '';
     final isEntree = type == 'ENTREE';
-    final color = isEntree ? const Color(0xFF43A047) : const Color(0xFFE53935);
+    final accentColor = isEntree ? _C.green : _C.red;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1.2),
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
-            child: Icon(isEntree ? Icons.login_rounded : Icons.logout_rounded,
-                color: color, size: 22),
+              color: accentColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+              border: Border.all(color: accentColor.withValues(alpha: 0.2), width: 1),
+            ),
+            child: Icon(
+              isEntree ? Icons.login_rounded : Icons.logout_rounded,
+              color: accentColor,
+              size: 20,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Dernier pointage : $type',
-                    style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13)),
-                Text('$name — $time',
-                    style:
-                        const TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(
+                  'DERNIER POINTAGE : $type',
+                  style: GoogleFonts.outfit(
+                    color: accentColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$name — $time',
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                ),
               ],
             ),
           ),
@@ -707,9 +853,9 @@ class _LastScanCard extends StatelessWidget {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// Vue permission refusée
-// ──────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// Permission Denied view (Futuristic dark look)
+// ═══════════════════════════════════════════════════════════════════════════════
 class _PermissionDeniedView extends StatelessWidget {
   final VoidCallback onRetry;
   const _PermissionDeniedView({required this.onRetry});
@@ -718,40 +864,56 @@ class _PermissionDeniedView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(36),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.no_photography_rounded,
-                color: Colors.white54, size: 72),
-            const SizedBox(height: 24),
-            const Text('Caméra inaccessible',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            const Text(
-              'Autorisez l\'accès à la caméra dans les paramètres pour utiliser le scanner QR.',
-              textAlign: TextAlign.center,
-              style:
-                  TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: _C.red.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: _C.red.withValues(alpha: 0.2), width: 1.5),
+              ),
+              child: const Icon(Icons.no_photography_rounded, color: _C.red, size: 54),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
+            Text(
+              'CAMÉRA INACCESSIBLE',
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Autorisez l\'accès à l\'appareil photo dans les paramètres système de votre mobile pour scanner les QR Codes.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: _C.textSec,
+                fontSize: 13,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 36),
             ElevatedButton.icon(
               onPressed: () async {
                 await openAppSettings();
                 onRetry();
               },
-              icon: const Icon(Icons.settings_rounded),
-              label: const Text('Ouvrir les paramètres'),
+              icon: const Icon(Icons.settings_rounded, size: 18),
+              label: Text(
+                'OUVRIR LES PARAMÈTRES',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 0.8),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black87,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
+                backgroundColor: _C.accent,
+                foregroundColor: Colors.white,
+                elevation: 4,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               ),
             ),
           ],

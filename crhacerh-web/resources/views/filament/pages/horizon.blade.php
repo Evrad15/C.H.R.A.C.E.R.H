@@ -11,11 +11,15 @@
             </div>
             @foreach($messages as $msg)
             @if($msg['sender'] === 'ia')
+            @php
+                $msgCleanText = addslashes(str_replace(["\r", "\n"], ' ', strip_tags($msg['text'])));
+                $msgHash      = md5($msg['text'] . $msg['time']);
+            @endphp
             <div class="flex items-start gap-4 max-w-3xl">
                 <div class="w-8 h-8 flex-shrink-0 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-sm shadow-md">
                     ✨
                 </div>
-                <div class="flex-1 pt-1" x-init="renderChartIfPresent($el); speakLastMessage('{{ addslashes(str_replace([&quot;\r&quot;, &quot;\n&quot;], ' ', strip_tags($msg['text']))) }}', '{{ md5($msg['text'] . $msg['time']) }}');">
+                <div class="flex-1 pt-1" x-init="renderChartIfPresent($el); speakLastMessage('{{ $msgCleanText }}', '{{ $msgHash }}');">
                     <div class="text-sm font-medium text-gray-200 leading-relaxed [&_a]:text-blue-400 [&_a]:underline [&_a]:font-bold [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4">
                         {!! \Illuminate\Support\Str::markdown($msg['text']) !!}
                     </div>
