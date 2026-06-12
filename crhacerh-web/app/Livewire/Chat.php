@@ -7,13 +7,12 @@ use Livewire\WithFileUploads;
 use Cmgmyr\Messenger\Models\Thread;
 use Cmgmyr\Messenger\Models\Message;
 use Illuminate\Support\Facades\Auth;
-use Livewire\TemporaryUploadedFile;
 
 class Chat extends Component
 {
     use WithFileUploads;
 
-    public ?TemporaryUploadedFile $attachment = null;
+    public $attachment = null;
 
     protected $rules = [
         'newMessage' => 'nullable|string|max:2000',
@@ -28,9 +27,6 @@ class Chat extends Component
     public function mount()
     {
         $this->loadThreads();
-        if (!$this->activeThreadId && $this->threads->isNotEmpty()) {
-            $this->selectThread($this->threads->first()->id);
-        }
     }
 
     public function loadThreads()

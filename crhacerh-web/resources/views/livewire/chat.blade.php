@@ -1,5 +1,5 @@
-<div class="grid grid-cols-12 gap-4 h-[75vh] antialiased">
-    <div class="col-span-12 md:col-span-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden flex flex-col">
+<div class="grid grid-cols-12 gap-4 h-[75vh] antialiased" wire:poll.keep-alive.3s="loadThreads">
+    <div class="col-span-12 md:col-span-4 {{ $activeThreadId ? 'hidden md:flex' : 'flex' }} bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden flex flex-col">
         <div class="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
             <div class="flex items-center justify-between gap-3">
                 <div>
@@ -18,7 +18,7 @@
                 <div class="flex justify-between items-center mb-1">
                     <div class="space-y-1">
                         <div class="font-semibold text-sm text-gray-800 dark:text-gray-100 truncate">
-                            {{ $thread->subject ?: $thread->participantsString(Auth::id()) }}
+                            {{ $thread->subject ?: $thread->participantsString(Auth::id(), ['first_name', 'last_name']) }}
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $thread->latest_message->body ?? 'Pas de message' }}</p>
                     </div>
@@ -34,15 +34,18 @@
         </div>
     </div>
 
-    <div class="col-span-12 md:col-span-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl flex flex-col overflow-hidden">
+    <div class="col-span-12 md:col-span-8 {{ $activeThreadId ? 'flex' : 'hidden md:flex' }} bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl flex flex-col overflow-hidden">
         @if($activeThread)
         <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex flex-col gap-2 bg-gray-50 dark:bg-gray-800/50">
-            <div class="flex items-center justify-between gap-4">
-                <div>
-                    <h3 class="font-bold text-lg text-gray-900 dark:text-gray-100 truncate">{{ $activeThread->subject ?: $activeThread->participantsString(Auth::id()) }}</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Participants : {{ $activeThread->participantsString(Auth::id()) }}</p>
+            <div class="flex items-center gap-3">
+                <button wire:click="$set('activeThreadId', null)" class="md:hidden p-2 -ml-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                    <i class="fa-solid fa-arrow-left text-lg"></i>
+                </button>
+                <div class="flex-grow min-w-0">
+                    <h3 class="font-bold text-lg text-gray-900 dark:text-gray-100 truncate">{{ $activeThread->subject ?: $activeThread->participantsString(Auth::id(), ['first_name', 'last_name']) }}</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Participants : {{ $activeThread->participantsString(Auth::id(), ['first_name', 'last_name']) }}</p>
                 </div>
-                <span class="text-xs text-gray-500 dark:text-gray-400">Dernier message {{ optional($activeThread->updated_at)->diffForHumans() }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap hidden sm:inline">Dernier message {{ optional($activeThread->updated_at)->diffForHumans() }}</span>
             </div>
         </div>
 
@@ -90,13 +93,6 @@
                 @error('attachment') <span class="text-sm text-red-600 dark:text-red-400">{{ $message }}</span> @enderror
             </div>
         </form>
-        @else
-        <div class="flex-grow flex items-center justify-center text-gray-400">
-            <div class="text-center">
-                <i class="fa-solid fa-comments text-5xl mb-4 opacity-20"></i>
-                <p>Sélectionnez une discussion pour commencer</p>
-            </div>
-        </div>
         @endif
     </div>
 </div>
