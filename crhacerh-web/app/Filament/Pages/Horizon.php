@@ -3,7 +3,6 @@
 namespace App\Filament\Pages;
 
 use Filament\Pages\Page;
-use App\Models\Presence;
 use App\Models\Employe;
 use App\Services\HorizonAiService;
 use Carbon\Carbon;

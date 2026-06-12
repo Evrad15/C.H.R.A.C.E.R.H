@@ -19,4 +19,10 @@ class Pointage extends Model
     {
         return $this->belongsTo(Employe::class);
     }
+
+    // Alias pour la compatibilité avec l'ancien code
+    public function employe()
+    {
+        return $this->belongsTo(Employe::class, 'employee_id');
+    }
 }

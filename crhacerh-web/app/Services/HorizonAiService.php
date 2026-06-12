@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\Employe;
-use App\Models\Presence;
+use App\Models\Pointage;
 use App\Models\Rapport;
 use App\Notifications\HorizonAlertNotification;
 use Carbon\Carbon;
@@ -56,7 +56,7 @@ class HorizonAiService
     public function generateReport(string $period, ?Carbon $endDate = null): array
     {
         $range = $this->buildRange($period, $endDate);
-        $records = Presence::with('employe')
+        $records = Pointage::with('employe')
             ->whereBetween('created_at', [$range['from'], $range['to']])
             ->get();
 
@@ -67,7 +67,7 @@ class HorizonAiService
 
         $lateByEmployee = $records
             ->where('status', 'Retard')
-            ->groupBy('employe_id')
+            ->groupBy('employee_id')
             ->map(function ($items) {
                 $employee = $items->first()->employe;
                 return [
@@ -82,7 +82,7 @@ class HorizonAiService
 
         $absentByEmployee = $records
             ->where('status', 'Absent')
-            ->groupBy('employe_id')
+            ->groupBy('employee_id')
             ->map(function ($items) {
                 $employee = $items->first()->employe;
                 return [
@@ -112,7 +112,7 @@ class HorizonAiService
     public function detectAnomalies(string $period, ?Carbon $endDate = null): array
     {
         $range = $this->buildRange($period, $endDate);
-        $records = Presence::with('employe')
+        $records = Pointage::with('employe')
             ->whereBetween('created_at', [$range['from'], $range['to']])
             ->get();
 
