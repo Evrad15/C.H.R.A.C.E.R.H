@@ -135,7 +135,8 @@ class WeeklyReportService {
     sheet.appendRow([TextCellValue('Jours Présents :'), IntCellValue(presences)]);
     sheet.appendRow([TextCellValue('Jours Retards :'), IntCellValue(retards)]);
     sheet.appendRow([TextCellValue('Jours Absents :'), IntCellValue(absences)]);
-    sheet.appendRow([TextCellValue('Taux d\'Assiduité :'), TextCellValue('${weekEntries.isEmpty ? 0 : (presences / 5 * 100).round()}%')]);
+    final rate = weekEntries.isEmpty ? 0 : (presences / 5 * 100).round().clamp(0, 100);
+    sheet.appendRow([TextCellValue('Taux d\'Assiduité :'), TextCellValue('$rate%')]);
     sheet.appendRow([TextCellValue('')]);
 
     // Détails
@@ -268,7 +269,8 @@ class WeeklyReportService {
     final rCount = int.tryParse(_parseCellValue(_getCell(sheet, 15, 1))?.toString() ?? '') ?? 0;
     final aCount = int.tryParse(_parseCellValue(_getCell(sheet, 16, 1))?.toString() ?? '') ?? 0;
     final tauxText = _parseCellValue(_getCell(sheet, 17, 1))?.toString() ?? '0%';
-    final taux = int.tryParse(tauxText.replaceAll('%', '')) ?? 0;
+    final rawTaux = int.tryParse(tauxText.replaceAll('%', '')) ?? 0;
+    final taux = rawTaux > 100 ? 100 : rawTaux;
 
     final detailsList = <Map<String, dynamic>>[];
     for (int r = 20; r < sheet.rows.length; r++) {

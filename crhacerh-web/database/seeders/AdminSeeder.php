@@ -93,16 +93,40 @@ class AdminSeeder extends Seeder
         // Supprimer les anciens pointages pour repartir sur des données propres
         \App\Models\Pointage::query()->delete();
 
+        // On inclut tous les employés, y compris Mopi
         $employeesToSimulate = Employe::all();
 
-        // Générer une liste de dates sur les 30 derniers jours (hors week-ends)
+        // Le besoin: 30 jours en BD dont les 17 prochains jours.
+        // On génère 13 jours ouvrés dans le passé, et 17 jours ouvrés (incluant aujourd'hui) vers le futur.
         $dates = [];
-        for ($d = 0; $d <= 30; $d++) {
-            $date = \Carbon\Carbon::now()->subDays($d);
+        
+        // 13 jours ouvrés dans le passé
+        $pastDays = 0;
+        $d = -1;
+        $pastDates = [];
+        while ($pastDays < 13) {
+            $date = \Carbon\Carbon::now()->addDays($d);
             if (!$date->isWeekend()) {
-                $dates[] = $date;
+                array_unshift($pastDates, $date);
+                $pastDays++;
             }
+            $d--;
         }
+        
+        // 17 jours ouvrés (Aujourd'hui + 16 jours futurs)
+        $futureDays = 0;
+        $d = 0;
+        $futureDates = [];
+        while ($futureDays < 17) {
+            $date = \Carbon\Carbon::now()->addDays($d);
+            if (!$date->isWeekend()) {
+                $futureDates[] = $date;
+                $futureDays++;
+            }
+            $d++;
+        }
+
+        $dates = array_merge($pastDates, $futureDates);
 
         foreach ($employeesToSimulate as $emp) {
             // Définir des probabilités d'absence, retard et présence uniques et aléatoires pour chaque employé

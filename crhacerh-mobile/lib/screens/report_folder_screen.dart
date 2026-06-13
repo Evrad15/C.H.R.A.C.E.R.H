@@ -182,16 +182,30 @@ class _ReportCardState extends State<_ReportCard>
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  // Icône rapport
+                  // Icône rapport (Style Excel / XLSX)
                   Container(
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A).withValues(alpha: 0.08),
+                      color: const Color(0xFFE8F5E9),
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFA5D6A7), width: 1.5),
                     ),
-                    child: const Icon(Icons.bar_chart_rounded,
-                        color: Color(0xFF1A1A1A), size: 26),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.table_view_rounded,
+                            color: Color(0xFF2E7D32), size: 20),
+                        Text(
+                          'XLSX',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2E7D32),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 14),
                   // Titre + période

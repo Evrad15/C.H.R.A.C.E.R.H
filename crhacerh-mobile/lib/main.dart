@@ -3,9 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'screens/matriculescreen.dart';
 import 'home_screen.dart';
+import 'theme_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await ThemeManager.init();
 
   final prefs = await SharedPreferences.getInstance();
   String? cachedEmployee = prefs.getString('cached_employee');
@@ -26,18 +29,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'C.H.R.A.C.E.R.H',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: savedEmployee != null 
-          ? HomeScreen(employee: savedEmployee!) 
-          : const MatriculeScreen(),
-      routes: {
-        '/matricule': (context) => const MatriculeScreen(),
-      },
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeManager.isDarkNotifier,
+      builder: (context, isDark, _) {
+        return MaterialApp(
+          title: 'C.H.R.A.C.E.R.H',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+            brightness: isDark ? Brightness.dark : Brightness.light,
+          ),
+          home: savedEmployee != null 
+              ? HomeScreen(employee: savedEmployee!) 
+              : const MatriculeScreen(),
+          routes: {
+            '/matricule': (context) => const MatriculeScreen(),
+          },
+        );
+      }
     );
   }
 }

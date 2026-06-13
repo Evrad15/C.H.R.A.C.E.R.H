@@ -26,6 +26,6 @@ class StatsEmploye extends Page
             return;
         }
 
-        $this->employe = Employe::with(['absences', 'pointages'])->findOrFail($this->employeId);
+        $this->employe = Employe::with(['absences', 'pointages', 'conges'])->findOrFail($this->employeId);
     }
 }

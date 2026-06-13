@@ -32,6 +32,20 @@ class PointageController extends Controller
             ], 400);
         }
 
+        if (strtoupper($validated['type']) === 'SORTIE') {
+            $hasEntreeToday = Pointage::where('employee_id', $validated['employee_id'])
+                ->where('type', 'ENTREE')
+                ->whereDate('timestamp', now()->toDateString())
+                ->exists();
+
+            if (!$hasEntreeToday) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Opération impossible : Vous devez pointer à l'ENTREE avant de pouvoir enregistrer une SORTIE aujourd'hui."
+                ], 400);
+            }
+        }
+
         // --- CALCUL DU STATUT ---
         $status = 'Present';
         if (strtoupper($validated['type']) === 'ENTREE') {
@@ -68,3 +82,4 @@ class PointageController extends Controller
         ], 201);
     }
 }
+

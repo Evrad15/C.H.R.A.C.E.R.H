@@ -9,21 +9,7 @@ import '../services/chat_service.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (cohérents avec home_screen.dart)
 // ─────────────────────────────────────────────────────────────────────────────
-class _C {
-  static const bg        = Color(0xFF0D0D0D);
-  static const card      = Color(0xFF1A1A1A);
-  static const surface   = Color(0xFF242424);
-  static const accent    = Color(0xFF6C63FF);
-  static const accentSft = Color(0xFF8B83FF);
-  static const green     = Color(0xFF00C48C);
-  static const textPri   = Color(0xFFFFFFFF);
-  static const textSec   = Color(0xFF9E9E9E);
-  static const inputBg   = Color(0xFF1E1E1E);
-
-  // Bulles de message
-  static const meBubble  = Color(0xFF2D2561);
-  static const themBubble = Color(0xFF1E1E1E);
-}
+import '../theme_manager.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MessageScreen
@@ -213,7 +199,7 @@ class _MessageScreenState extends State<MessageScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: AppColors.bg,
       body: Column(
         children: [
           _buildHeader(),
@@ -231,7 +217,7 @@ class _MessageScreenState extends State<MessageScreen>
       padding: EdgeInsets.fromLTRB(
           20, MediaQuery.of(context).padding.top + 16, 20, 16),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: AppColors.card,
         border: Border(
             bottom:
                 BorderSide(color: Colors.white.withValues(alpha: 0.06))),
@@ -250,17 +236,17 @@ class _MessageScreenState extends State<MessageScreen>
               ),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.support_agent_rounded,
-                color: _C.accentSft, size: 22),
+            child: Icon(Icons.support_agent_rounded,
+                color: AppColors.accentSft, size: 22),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Ressources Humaines',
                     style: TextStyle(
-                      color: _C.textPri,
+                      color: AppColors.textPri,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     )),
@@ -271,7 +257,7 @@ class _MessageScreenState extends State<MessageScreen>
                     SizedBox(width: 5),
                     Text('Aux heures ouvrables',
                         style:
-                            TextStyle(color: _C.textSec, fontSize: 11)),
+                            TextStyle(color: AppColors.textSec, fontSize: 11)),
                   ],
                 ),
               ],
@@ -285,8 +271,8 @@ class _MessageScreenState extends State<MessageScreen>
   // ── Body (messages list) ──────────────────────────────────────────────────
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: _C.accent),
+      return Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
       );
     }
 
@@ -342,21 +328,21 @@ class _MessageScreenState extends State<MessageScreen>
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: _C.accent.withValues(alpha: 0.1),
+              color: AppColors.accent.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.chat_bubble_outline_rounded,
-                size: 32, color: _C.accent),
+            child: Icon(Icons.chat_bubble_outline_rounded,
+                size: 32, color: AppColors.accent),
           ),
           const SizedBox(height: 16),
-          const Text('Aucun message',
+          Text('Aucun message',
               style: TextStyle(
-                  color: _C.textPri,
+                  color: AppColors.textPri,
                   fontSize: 16,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
-          const Text('Envoyez un message pour démarrer.',
-              style: TextStyle(color: _C.textSec, fontSize: 13),
+          Text('Envoyez un message pour démarrer.',
+              style: TextStyle(color: AppColors.textSec, fontSize: 13),
               textAlign: TextAlign.center),
         ],
       ),
@@ -372,10 +358,10 @@ class _MessageScreenState extends State<MessageScreen>
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: _C.accent.withValues(alpha: 0.25)),
+            color: AppColors.accent.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -390,10 +376,10 @@ class _MessageScreenState extends State<MessageScreen>
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                  color: _C.accent.withValues(alpha: 0.1),
+                  color: AppColors.accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10)),
-              child: const Icon(Icons.insert_drive_file_rounded,
-                  color: _C.accentSft, size: 22),
+              child: Icon(Icons.insert_drive_file_rounded,
+                  color: AppColors.accentSft, size: 22),
             ),
           const SizedBox(width: 12),
           Expanded(
@@ -401,21 +387,21 @@ class _MessageScreenState extends State<MessageScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(_selectedFileName ?? 'Fichier',
-                    style: const TextStyle(
-                        color: _C.textPri,
+                    style: TextStyle(
+                        color: AppColors.textPri,
                         fontWeight: FontWeight.w600,
                         fontSize: 13),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
-                const Text('Prêt à envoyer',
-                    style: TextStyle(color: _C.accentSft, fontSize: 11)),
+                Text('Prêt à envoyer',
+                    style: TextStyle(color: AppColors.accentSft, fontSize: 11)),
               ],
             ),
           ),
           GestureDetector(
             onTap: _clearFile,
-            child: const Icon(Icons.close_rounded,
-                color: _C.textSec, size: 20),
+            child: Icon(Icons.close_rounded,
+                color: AppColors.textSec, size: 20),
           ),
         ],
       ),
@@ -428,7 +414,7 @@ class _MessageScreenState extends State<MessageScreen>
       padding: EdgeInsets.fromLTRB(
           12, 10, 12, MediaQuery.of(context).padding.bottom + 10),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: AppColors.card,
         border: Border(
             top:
                 BorderSide(color: Colors.white.withValues(alpha: 0.06))),
@@ -449,11 +435,11 @@ class _MessageScreenState extends State<MessageScreen>
               constraints: const BoxConstraints(maxHeight: 120),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                color: _C.inputBg,
+                color: AppColors.inputBg,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                     color: _focusNode.hasFocus
-                        ? _C.accent.withValues(alpha: 0.4)
+                        ? AppColors.accent.withValues(alpha: 0.4)
                         : Colors.white.withValues(alpha: 0.08)),
               ),
               child: TextField(
@@ -463,10 +449,10 @@ class _MessageScreenState extends State<MessageScreen>
                 onSubmitted: _isSending ? null : (_) => _sendMessage(),
                 enabled: !_isSending,
                 maxLines: null,
-                style: const TextStyle(color: _C.textPri, fontSize: 14),
-                decoration: const InputDecoration(
+                style: TextStyle(color: AppColors.textPri, fontSize: 14),
+                decoration: InputDecoration(
                   hintText: 'Écrire un message…',
-                  hintStyle: TextStyle(color: _C.textSec, fontSize: 14),
+                  hintStyle: TextStyle(color: AppColors.textSec, fontSize: 14),
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(vertical: 10),
@@ -481,15 +467,15 @@ class _MessageScreenState extends State<MessageScreen>
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: _C.accent.withValues(alpha: 0.2),
+                    color: AppColors.accent.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Center(
+                  child: Center(
                     child: SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          color: _C.accent, strokeWidth: 2),
+                          color: AppColors.accent, strokeWidth: 2),
                     ),
                   ),
                 )
@@ -516,19 +502,19 @@ class _InfoBanner extends StatelessWidget {
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: _C.accent.withValues(alpha: 0.2)),
+            color: AppColors.accent.withValues(alpha: 0.2)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(Icons.info_outline_rounded,
-                  color: _C.accentSft, size: 16),
+                  color: AppColors.accentSft, size: 16),
               SizedBox(width: 8),
               Text('Espace professionnel',
                   style: TextStyle(
-                      color: _C.accentSft,
+                      color: AppColors.accentSft,
                       fontSize: 13,
                       fontWeight: FontWeight.w700)),
             ],
@@ -537,7 +523,7 @@ class _InfoBanner extends StatelessWidget {
           Text(
             'Cet espace est dédié à vos échanges avec l\'administration du CHRACERH.',
             style: TextStyle(
-                color: _C.textSec, fontSize: 12, height: 1.5),
+                color: AppColors.textSec, fontSize: 12, height: 1.5),
           ),
           SizedBox(height: 8),
           _InfoLine(text: 'Signaler une anomalie de pointage'),
@@ -560,12 +546,12 @@ class _InfoLine extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('•  ',
-              style: TextStyle(color: _C.accent, fontSize: 12)),
+          Text('•  ',
+              style: TextStyle(color: AppColors.accent, fontSize: 12)),
           Expanded(
             child: Text(text,
-                style: const TextStyle(
-                    color: _C.textSec, fontSize: 12, height: 1.4)),
+                style: TextStyle(
+                    color: AppColors.textSec, fontSize: 12, height: 1.4)),
           ),
         ],
       ),
@@ -593,8 +579,8 @@ class _DateDivider extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(label,
-                style: const TextStyle(
-                    color: _C.textSec,
+                style: TextStyle(
+                    color: AppColors.textSec,
                     fontSize: 11,
                     fontWeight: FontWeight.w500)),
           ),
@@ -651,7 +637,7 @@ class _ChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final align =
         isSentByMe ? Alignment.centerRight : Alignment.centerLeft;
-    final bubbleColor = isSentByMe ? _C.meBubble : _C.themBubble;
+    final bubbleColor = isSentByMe ? AppColors.meBubble : AppColors.themBubble;
     final radius = BorderRadius.only(
       topLeft: const Radius.circular(18),
       topRight: const Radius.circular(18),
@@ -670,7 +656,7 @@ class _ChatBubble extends StatelessWidget {
           borderRadius: radius,
           border: isSentByMe
               ? Border.all(
-                  color: _C.accent.withValues(alpha: 0.3))
+                  color: AppColors.accent.withValues(alpha: 0.3))
               : null,
           boxShadow: [
             BoxShadow(
@@ -729,8 +715,8 @@ class _ChatBubble extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(text,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 14, height: 1.5)),
+                    style: TextStyle(
+                        color: isSentByMe ? Colors.white : AppColors.textPri, fontSize: 14, height: 1.5)),
               ),
             if (text.isNotEmpty && !text.startsWith('📎'))
               const SizedBox(height: 4),
@@ -741,14 +727,14 @@ class _ChatBubble extends StatelessWidget {
               children: [
                 Text(time,
                     style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: isSentByMe ? Colors.white.withValues(alpha: 0.7) : AppColors.textSec,
                         fontSize: 10)),
                 if (isSentByMe) ...[
                   const SizedBox(width: 4),
                   Icon(Icons.done_all_rounded,
                       size: 12,
                       color:
-                          Colors.white.withValues(alpha: 0.45)),
+                          Colors.white.withValues(alpha: 0.7)),
                 ],
               ],
             ),
@@ -774,27 +760,27 @@ class _FileTile extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: _C.accentSft, size: 26),
+          Icon(icon, color: AppColors.accentSft, size: 26),
           const SizedBox(width: 10),
           Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name,
-                    style: const TextStyle(
-                        color: _C.textPri,
+                    style: TextStyle(
+                        color: AppColors.textPri,
                         fontWeight: FontWeight.w600,
                         fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 3),
-                const Row(children: [
+                Row(children: [
                   Icon(Icons.download_rounded,
-                      size: 12, color: _C.accentSft),
+                      size: 12, color: AppColors.accentSft),
                   SizedBox(width: 4),
                   Text('Télécharger',
                       style: TextStyle(
-                          color: _C.accentSft, fontSize: 11)),
+                          color: AppColors.accentSft, fontSize: 11)),
                 ]),
               ],
             ),
@@ -816,10 +802,10 @@ class _OnlineDot extends StatelessWidget {
     return Container(
       width: 7,
       height: 7,
-      decoration: const BoxDecoration(
-        color: _C.green,
+      decoration: BoxDecoration(
+        color: AppColors.green,
         shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: _C.green, blurRadius: 4)],
+        boxShadow: [BoxShadow(color: AppColors.green, blurRadius: 4)],
       ),
     );
   }
@@ -842,12 +828,12 @@ class _InputActionButton extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           color: active
-              ? _C.accent.withValues(alpha: 0.15)
-              : _C.surface,
+              ? AppColors.accent.withValues(alpha: 0.15)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Icon(icon,
-            color: active ? _C.accent : _C.textSec, size: 20),
+            color: active ? AppColors.accent : AppColors.textSec, size: 20),
       ),
     );
   }
@@ -868,18 +854,18 @@ class _SendButton extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           gradient: enabled
-              ? const LinearGradient(
-                  colors: [_C.accent, _C.accentSft],
+              ? LinearGradient(
+                  colors: [AppColors.accent, AppColors.accentSft],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
               : null,
-          color: enabled ? null : _C.surface,
+          color: enabled ? null : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: enabled
               ? [
                   BoxShadow(
-                      color: _C.accent.withValues(alpha: 0.35),
+                      color: AppColors.accent.withValues(alpha: 0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 4))
                 ]
@@ -887,10 +873,12 @@ class _SendButton extends StatelessWidget {
         ),
         child: Icon(
           Icons.send_rounded,
-          color: enabled ? Colors.white : _C.textSec,
+          color: enabled ? Colors.white : AppColors.textSec,
           size: 18,
         ),
       ),
     );
   }
 }
+
+

@@ -6,17 +6,8 @@ import '../services/local_storage_service.dart';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Design Tokens
 // ═══════════════════════════════════════════════════════════════════════════════
-class _C {
-  static const bg         = Color(0xFF0D0D0D);
-  static const card       = Color(0xFF1A1A1A);
-  static const accent     = Color(0xFF6C63FF);
-  static const accentSoft = Color(0xFF8B83FF);
-  static const green      = Color(0xFF00C48C);
-  static const orange     = Color(0xFFFF8C42);
-  static const red        = Color(0xFFFF4757);
-  static const textPri    = Color(0xFFFFFFFF);
-  static const textSec    = Color(0xFF9E9E9E);
-}
+import '../theme_manager.dart';
+import 'leaves_screen.dart';
 
 class ProfilScreen extends StatefulWidget {
   final Map<String, dynamic> employee;
@@ -64,7 +55,10 @@ class _ProfilScreenState extends State<ProfilScreen> {
       }
     }
 
-    // Load stats from cache
+    // Force a sync to fetch latest stats from the API
+    await _localSvc.syncNow(widget.employee['id']);
+
+    // Load stats from cache (which should now be updated)
     final local = await _localSvc.loadDashboardData(widget.employee['id']);
     if (local != null) {
       final stats = local['stats'] as Map<String, dynamic>?;
@@ -94,20 +88,20 @@ class _ProfilScreenState extends State<ProfilScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _C.card,
+        backgroundColor: AppColors.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Vider le cache local ?',
-          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
+          style: GoogleFonts.outfit(color: AppColors.textPri, fontWeight: FontWeight.bold),
         ),
         content: Text(
           'Cela supprimera les rapports sauvegardés localement. Vous devrez vous synchroniser à nouveau pour récupérer les données.',
-          style: GoogleFonts.inter(color: _C.textSec, fontSize: 13, height: 1.5),
+          style: GoogleFonts.inter(color: AppColors.textSec, fontSize: 13, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Annuler', style: GoogleFonts.inter(color: _C.textSec)),
+            child: Text('Annuler', style: GoogleFonts.inter(color: AppColors.textSec)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -116,13 +110,13 @@ class _ProfilScreenState extends State<ProfilScreen> {
               await prefs.remove('dashboard_${widget.employee['id']}');
               if (ctx.mounted) Navigator.of(ctx).pop();
               _loadStatsAndSync();
-              sm.showSnackBar(const SnackBar(
+              sm.showSnackBar(SnackBar(
                 content: Text('Cache local vidé avec succès'),
-                backgroundColor: _C.accent,
+                backgroundColor: AppColors.accent,
                 behavior: SnackBarBehavior.floating,
               ));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _C.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
             child: Text('Vider', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
@@ -138,12 +132,12 @@ class _ProfilScreenState extends State<ProfilScreen> {
     final dept = widget.employee['departement'] ?? 'Sans Département';
 
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: AppColors.bg,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: _C.accent))
+          ? Center(child: CircularProgressIndicator(color: AppColors.accent))
           : RefreshIndicator(
-              color: _C.accent,
-              backgroundColor: _C.card,
+              color: AppColors.accent,
+              backgroundColor: AppColors.card,
               onRefresh: _loadStatsAndSync,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -157,15 +151,15 @@ class _ProfilScreenState extends State<ProfilScreen> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_C.accent, _C.accentSoft],
+                        gradient: LinearGradient(
+                          colors: [AppColors.accent, AppColors.accentSoft],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: _C.accent.withValues(alpha: 0.3),
+                            color: AppColors.accent.withValues(alpha: 0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           )
@@ -186,7 +180,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     Text(
                       name,
                       style: GoogleFonts.outfit(
-                        color: _C.textPri,
+                        color: AppColors.textPri,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.5,
@@ -196,7 +190,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     Text(
                       'Matricule : $matricule',
                       style: GoogleFonts.inter(
-                        color: _C.textSec,
+                        color: AppColors.textSec,
                         fontSize: 13,
                       ),
                     ),
@@ -204,14 +198,14 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _C.accent.withValues(alpha: 0.12),
+                        color: AppColors.accent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _C.accent.withValues(alpha: 0.2), width: 1),
+                        border: Border.all(color: AppColors.accent.withValues(alpha: 0.2), width: 1),
                       ),
                       child: Text(
                         dept.toUpperCase(),
                         style: GoogleFonts.outfit(
-                          color: _C.accentSoft,
+                          color: AppColors.accentSoft,
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.8,
@@ -227,7 +221,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           child: _buildStatCard(
                             label: 'Assiduité',
                             value: '${_presenceRate.toInt()}%',
-                            color: _presenceRate >= 80 ? _C.green : _C.orange,
+                            color: _presenceRate >= 80 ? AppColors.green : AppColors.orange,
                             icon: Icons.offline_pin_rounded,
                           ),
                         ),
@@ -236,7 +230,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           child: _buildStatCard(
                             label: 'Retards',
                             value: '$_lates',
-                            color: _C.orange,
+                            color: AppColors.orange,
                             icon: Icons.schedule_rounded,
                           ),
                         ),
@@ -245,7 +239,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           child: _buildStatCard(
                             label: 'Absences',
                             value: '$_absences',
-                            color: _C.red,
+                            color: AppColors.red,
                             icon: Icons.cancel_rounded,
                           ),
                         ),
@@ -261,7 +255,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         child: Text(
                           'PARAMÈTRES SYSTÈME',
                           style: GoogleFonts.outfit(
-                            color: _C.textSec,
+                            color: AppColors.textSec,
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.0,
@@ -271,12 +265,25 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     ),
                     Container(
                       decoration: BoxDecoration(
-                        color: _C.card,
+                        color: AppColors.card,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                       ),
                       child: Column(
                         children: [
+                          _buildSettingTile(
+                            icon: Icons.calendar_month_rounded,
+                            title: 'Mes Congés & Permissions',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LeavesScreen(employeeId: widget.employee['id']),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDivider(),
                           _buildSettingTile(
                             icon: Icons.sync_rounded,
                             title: 'Dernière synchronisation',
@@ -293,9 +300,11 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           _buildSettingTile(
                             icon: Icons.cleaning_services_rounded,
                             title: 'Vider le cache local',
-                            trailingColor: _C.red,
+                            trailingColor: AppColors.red,
                             onTap: _clearCache,
                           ),
+                          _buildDivider(),
+                          _buildThemeToggleTile(),
                         ],
                       ),
                     ),
@@ -308,15 +317,15 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [_C.red, Color(0xFFD63031)],
+                          gradient: LinearGradient(
+                            colors: [AppColors.red, Color(0xFFD63031)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: _C.red.withValues(alpha: 0.25),
+                              color: AppColors.red.withValues(alpha: 0.25),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             )
@@ -359,7 +368,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
@@ -380,13 +389,49 @@ class _ProfilScreenState extends State<ProfilScreen> {
           Text(
             label,
             style: GoogleFonts.inter(
-              color: _C.textSec,
+              color: AppColors.textSec,
               fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildThemeToggleTile() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeManager.isDarkNotifier,
+      builder: (context, isDark, _) {
+        return InkWell(
+          onTap: ThemeManager.toggleTheme,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              children: [
+                Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: AppColors.accentSoft, size: 20),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    'Mode Sombre',
+                    style: GoogleFonts.inter(
+                      color: AppColors.textPri,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: isDark,
+                  onChanged: (val) => ThemeManager.toggleTheme(),
+                  activeColor: AppColors.accent,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
     );
   }
 
@@ -404,13 +449,13 @@ class _ProfilScreenState extends State<ProfilScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         child: Row(
           children: [
-            Icon(icon, color: _C.accentSoft, size: 20),
+            Icon(icon, color: AppColors.accentSoft, size: 20),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 title,
                 style: GoogleFonts.inter(
-                  color: Colors.white,
+                  color: AppColors.textPri,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -420,7 +465,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
               Text(
                 trailing,
                 style: GoogleFonts.inter(
-                  color: trailingColor ?? _C.textSec,
+                  color: trailingColor ?? AppColors.textSec,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -443,3 +488,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
     );
   }
 }
+
+
+

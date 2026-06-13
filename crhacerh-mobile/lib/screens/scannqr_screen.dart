@@ -7,17 +7,7 @@ import '../services/chat_service.dart';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Design Tokens (Matching home/message dark theme)
 // ═══════════════════════════════════════════════════════════════════════════════
-class _C {
-  static const bg         = Color(0xFF0D0D0D);
-  static const accent     = Color(0xFF6C63FF);
-  static const accentSoft = Color(0xFF8B83FF);
-  static const green      = Color(0xFF00C48C);
-  static const greenGlow  = Color(0x3300C48C);
-  static const red        = Color(0xFFFF4757);
-  static const redGlow    = Color(0x33FF4757);
-  static const textPri    = Color(0xFFFFFFFF);
-  static const textSec    = Color(0xFF9E9E9E);
-}
+import '../theme_manager.dart';
 
 class ScannQRScreen extends StatefulWidget {
   final int employeeId;
@@ -146,7 +136,7 @@ class _ScannQRScreenState extends State<ScannQRScreen>
               result['message'] ?? 'Erreur lors du pointage.',
               style: GoogleFonts.inter(fontWeight: FontWeight.w500),
             ),
-            backgroundColor: _C.red,
+            backgroundColor: AppColors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -191,7 +181,7 @@ class _ScannQRScreenState extends State<ScannQRScreen>
   Widget build(BuildContext context) {
 
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: AppColors.bg,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -204,7 +194,7 @@ class _ScannQRScreenState extends State<ScannQRScreen>
           else if (_permissionDenied)
             _PermissionDeniedView(onRetry: _requestCameraPermission)
           else
-            const Center(child: CircularProgressIndicator(color: _C.accent)),
+            Center(child: CircularProgressIndicator(color: AppColors.accent)),
 
           // ── Overlay ─────────────────────────────────────────────
           if (_cameraReady) ...[
@@ -225,7 +215,7 @@ class _ScannQRScreenState extends State<ScannQRScreen>
                       Text(
                         'SCANNER MODE',
                         style: GoogleFonts.outfit(
-                          color: _C.textPri,
+                          color: AppColors.textPri,
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.0,
@@ -237,8 +227,8 @@ class _ScannQRScreenState extends State<ScannQRScreen>
                           Container(
                             width: 6,
                             height: 6,
-                            decoration: const BoxDecoration(
-                              color: _C.green,
+                            decoration: BoxDecoration(
+                              color: AppColors.green,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -246,7 +236,7 @@ class _ScannQRScreenState extends State<ScannQRScreen>
                           Text(
                             'SYSTEM ACTIVE',
                             style: GoogleFonts.outfit(
-                              color: _C.green,
+                              color: AppColors.green,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.0,
@@ -263,14 +253,14 @@ class _ScannQRScreenState extends State<ScannQRScreen>
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _torchOn ? _C.accent : Colors.black.withValues(alpha: 0.5),
+                        color: _torchOn ? AppColors.accent : Colors.black.withValues(alpha: 0.5),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: _torchOn ? _C.accentSoft : Colors.white24,
+                          color: _torchOn ? AppColors.accentSoft : Colors.white24,
                           width: 1.5,
                         ),
                         boxShadow: _torchOn
-                            ? [BoxShadow(color: _C.accent.withValues(alpha: 0.5), blurRadius: 10)]
+                            ? [BoxShadow(color: AppColors.accent.withValues(alpha: 0.5), blurRadius: 10)]
                             : [],
                       ),
                       child: Icon(
@@ -292,7 +282,7 @@ class _ScannQRScreenState extends State<ScannQRScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(color: _C.accent, strokeWidth: 3),
+                      CircularProgressIndicator(color: AppColors.accent, strokeWidth: 3),
                       const SizedBox(height: 24),
                       Text(
                         'ENREGISTREMENT DU POINTAGE…',
@@ -336,7 +326,7 @@ class _ScannQRScreenState extends State<ScannQRScreen>
                           children: [
                             Icon(
                               _isScanActive ? Icons.qr_code_scanner_rounded : Icons.pause_circle_outline_rounded,
-                              color: _isScanActive ? _C.accentSoft : _C.textSec,
+                              color: _isScanActive ? AppColors.accentSoft : AppColors.textSec,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
@@ -461,13 +451,13 @@ class _FrameCornersPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = _C.accent
+      ..color = AppColors.accent
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5
       ..strokeCap = StrokeCap.round;
 
     final glowPaint = Paint()
-      ..color = _C.accent.withValues(alpha: 0.3)
+      ..color = AppColors.accent.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8.0
       ..strokeCap = StrokeCap.round;
@@ -509,7 +499,7 @@ class _ScanLinePainter extends CustomPainter {
       ..shader = LinearGradient(
         colors: [
           Colors.transparent,
-          _C.accent.withValues(alpha: 0.8),
+          AppColors.accent.withValues(alpha: 0.8),
           Colors.transparent
         ],
       ).createShader(Rect.fromLTWH(0, y - 1.5, size.width, 3))
@@ -568,11 +558,11 @@ class _PointageDialog extends StatelessWidget {
               width: 76,
               height: 76,
               decoration: BoxDecoration(
-                color: _C.accent.withValues(alpha: 0.1),
+                color: AppColors.accent.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
-                border: Border.all(color: _C.accent.withValues(alpha: 0.25), width: 1.5),
+                border: Border.all(color: AppColors.accent.withValues(alpha: 0.25), width: 1.5),
               ),
-              child: const Icon(Icons.qr_code_2_rounded, size: 40, color: _C.accentSoft),
+              child: Icon(Icons.qr_code_2_rounded, size: 40, color: AppColors.accentSoft),
             ),
             const SizedBox(height: 20),
             Text(
@@ -589,7 +579,7 @@ class _PointageDialog extends StatelessWidget {
               'Enregistrez votre présence dans l\'établissement en sélectionnant l\'action ci-dessous.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                color: _C.textSec,
+                color: AppColors.textSec,
                 fontSize: 13,
                 height: 1.5,
               ),
@@ -602,8 +592,8 @@ class _PointageDialog extends StatelessWidget {
                   child: _ChoiceActionButton(
                     label: 'ENTRÉE',
                     icon: Icons.login_rounded,
-                    baseColor: _C.green,
-                    glowColor: _C.greenGlow,
+                    baseColor: AppColors.green,
+                    glowColor: AppColors.greenGlow,
                     onTap: () => onConfirm('ENTREE'),
                   ),
                 ),
@@ -612,8 +602,8 @@ class _PointageDialog extends StatelessWidget {
                   child: _ChoiceActionButton(
                     label: 'SORTIE',
                     icon: Icons.logout_rounded,
-                    baseColor: _C.red,
-                    glowColor: _C.redGlow,
+                    baseColor: AppColors.red,
+                    glowColor: AppColors.redGlow,
                     onTap: () => onConfirm('SORTIE'),
                   ),
                 ),
@@ -622,7 +612,7 @@ class _PointageDialog extends StatelessWidget {
             const SizedBox(height: 16),
             TextButton(
               onPressed: onCancel,
-              style: TextButton.styleFrom(foregroundColor: _C.textSec),
+              style: TextButton.styleFrom(foregroundColor: AppColors.textSec),
               child: Text(
                 'Annuler et reprendre',
                 style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
@@ -701,8 +691,8 @@ class _SuccessDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEntree = type == 'ENTREE';
-    final accentColor = isEntree ? _C.green : _C.red;
-    final accentGlow  = isEntree ? _C.greenGlow : _C.redGlow;
+    final accentColor = isEntree ? AppColors.green : AppColors.red;
+    final accentGlow  = isEntree ? AppColors.greenGlow : AppColors.redGlow;
     final icon = isEntree ? Icons.login_rounded : Icons.logout_rounded;
     final headerText = isEntree ? 'ENTRÉE ENREGISTRÉE' : 'SORTIE ENREGISTRÉE';
 
@@ -748,7 +738,7 @@ class _SuccessDialog extends StatelessWidget {
               'Bonjour, $employeeName',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                color: Colors.white,
+                color: AppColors.textPri,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -757,7 +747,7 @@ class _SuccessDialog extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 'Pointage validé à $time',
-                style: GoogleFonts.inter(color: _C.textSec, fontSize: 13),
+                style: GoogleFonts.inter(color: AppColors.textSec, fontSize: 13),
               ),
             ],
             const SizedBox(height: 24),
@@ -799,7 +789,7 @@ class _LastScanCard extends StatelessWidget {
     final time = data['time'] as String? ?? '';
     final name = data['employee'] as String? ?? '';
     final isEntree = type == 'ENTREE';
-    final accentColor = isEntree ? _C.green : _C.red;
+    final accentColor = isEntree ? AppColors.green : AppColors.red;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -842,7 +832,7 @@ class _LastScanCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '$name — $time',
-                  style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(color: AppColors.textPri, fontSize: 13, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -871,11 +861,11 @@ class _PermissionDeniedView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: _C.red.withValues(alpha: 0.1),
+                color: AppColors.red.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
-                border: Border.all(color: _C.red.withValues(alpha: 0.2), width: 1.5),
+                border: Border.all(color: AppColors.red.withValues(alpha: 0.2), width: 1.5),
               ),
-              child: const Icon(Icons.no_photography_rounded, color: _C.red, size: 54),
+              child: Icon(Icons.no_photography_rounded, color: AppColors.red, size: 54),
             ),
             const SizedBox(height: 28),
             Text(
@@ -892,7 +882,7 @@ class _PermissionDeniedView extends StatelessWidget {
               'Autorisez l\'accès à l\'appareil photo dans les paramètres système de votre mobile pour scanner les QR Codes.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                color: _C.textSec,
+                color: AppColors.textSec,
                 fontSize: 13,
                 height: 1.6,
               ),
@@ -909,7 +899,7 @@ class _PermissionDeniedView extends StatelessWidget {
                 style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 0.8),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _C.accent,
+                backgroundColor: AppColors.accent,
                 foregroundColor: Colors.white,
                 elevation: 4,
                 padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
@@ -922,3 +912,5 @@ class _PermissionDeniedView extends StatelessWidget {
     );
   }
 }
+
+

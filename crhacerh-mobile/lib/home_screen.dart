@@ -11,17 +11,7 @@ import 'services/local_storage_service.dart';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Design tokens
 // ═══════════════════════════════════════════════════════════════════════════════
-class _C {
-  static const bg         = Color(0xFF0D0D0D);
-  static const card       = Color(0xFF1A1A1A);
-  static const accent     = Color(0xFF6C63FF);
-  static const accentSoft = Color(0xFF8B83FF);
-  static const green      = Color(0xFF00C48C);
-  static const orange     = Color(0xFFFF8C42);
-  static const red        = Color(0xFFFF4757);
-  static const textPri    = Color(0xFFFFFFFF);
-  static const textSec    = Color(0xFF9E9E9E);
-}
+import 'theme_manager.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HomeScreen — shell avec bottom nav premium
@@ -80,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen>
     ];
 
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: IndexedStack(index: _selectedIndex, children: pages),
       ),
@@ -155,7 +145,7 @@ class _PremiumNavBar extends StatelessWidget {
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
                               colors: isSelected
-                                  ? [_C.accent, _C.accentSoft]
+                                  ? [AppColors.accent, AppColors.accentSoft]
                                   : [const Color(0xFF1E1E1E), const Color(0xFF282828)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -169,7 +159,7 @@ class _PremiumNavBar extends StatelessWidget {
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: _C.accent.withValues(alpha: 0.4),
+                                      color: AppColors.accent.withValues(alpha: 0.4),
                                       blurRadius: 14,
                                       offset: const Offset(0, 4),
                                     )
@@ -196,7 +186,7 @@ class _PremiumNavBar extends StatelessWidget {
                     tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
                     duration: const Duration(milliseconds: 200),
                     builder: (context, t, child) {
-                      final color = Color.lerp(_C.textSec, _C.accentSoft, t);
+                      final color = Color.lerp(AppColors.textSec, AppColors.accentSoft, t);
                       final iconScale = 1.0 + (t * 0.08);
                       return Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -216,8 +206,8 @@ class _PremiumNavBar extends StatelessWidget {
                             child: Container(
                               width: 4,
                               height: 4,
-                              decoration: const BoxDecoration(
-                                color: _C.accentSoft,
+                              decoration: BoxDecoration(
+                                color: AppColors.accentSoft,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -348,12 +338,12 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   Color _getClockColor() {
     final pointed = _history
         .any((p) => p['status'] == 'Present' || p['status'] == 'Retard');
-    if (pointed) return _C.textPri;
+    if (pointed) return AppColors.textPri;
     final now = DateTime.now();
     if (now.hour > 8 || (now.hour == 8 && now.minute > 15)) {
-      return _C.red;
+      return AppColors.red;
     }
-    return _C.green;
+    return AppColors.green;
   }
 
   String _greet() {
@@ -378,8 +368,8 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     final clockColor = _getClockColor();
 
     return RefreshIndicator(
-      color: _C.accent,
-      backgroundColor: _C.card,
+      color: AppColors.accent,
+      backgroundColor: AppColors.card,
       onRefresh: _loadData,
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -403,9 +393,9 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
           ),
 
           if (_isLoading)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               child: Center(
-                child: CircularProgressIndicator(color: _C.accent),
+                child: CircularProgressIndicator(color: AppColors.accent),
               ),
             )
           else ...[
@@ -474,7 +464,7 @@ class _HeroHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: _C.accent.withValues(alpha: 0.25),
+            color: AppColors.accent.withValues(alpha: 0.25),
             blurRadius: 30,
             offset: const Offset(0, 12),
           ),
@@ -614,10 +604,10 @@ class _StatusIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: (isGood ? _C.green : _C.orange).withValues(alpha: 0.15),
+        color: (isGood ? AppColors.green : AppColors.orange).withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: (isGood ? _C.green : _C.orange).withValues(alpha: 0.3),
+          color: (isGood ? AppColors.green : AppColors.orange).withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -627,11 +617,11 @@ class _StatusIndicator extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: isGood ? _C.green : _C.orange,
+              color: isGood ? AppColors.green : AppColors.orange,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (isGood ? _C.green : _C.orange)
+                  color: (isGood ? AppColors.green : AppColors.orange)
                       .withValues(alpha: 0.6),
                   blurRadius: 6,
                 )
@@ -642,7 +632,7 @@ class _StatusIndicator extends StatelessWidget {
           Text(
             isGood ? 'Assiduité excellente' : 'Assiduité à améliorer',
             style: TextStyle(
-              color: isGood ? _C.green : _C.orange,
+              color: isGood ? AppColors.green : AppColors.orange,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -669,21 +659,21 @@ class _StatPillsRow extends StatelessWidget {
           _StatPill(
             value: '${(stats['presence'] ?? 0).toInt()}%',
             label: 'Présence',
-            color: _C.green,
+            color: AppColors.green,
             icon: Icons.check_circle_rounded,
           ),
           const SizedBox(width: 10),
           _StatPill(
             value: '${(stats['retard'] ?? 0).toInt()}%',
             label: 'Retards',
-            color: _C.orange,
+            color: AppColors.orange,
             icon: Icons.schedule_rounded,
           ),
           const SizedBox(width: 10),
           _StatPill(
             value: '${(stats['absence'] ?? 0).toInt()}%',
             label: 'Absences',
-            color: _C.red,
+            color: AppColors.red,
             icon: Icons.cancel_rounded,
           ),
         ],
@@ -708,7 +698,7 @@ class _StatPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
-          color: _C.card,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
@@ -728,8 +718,8 @@ class _StatPill extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
-                color: _C.textSec,
+              style: TextStyle(
+                color: AppColors.textSec,
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
@@ -753,7 +743,7 @@ class _AttendanceSection extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
@@ -765,10 +755,10 @@ class _AttendanceSection extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Historique des pointages',
                   style: TextStyle(
-                    color: _C.textPri,
+                    color: AppColors.textPri,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -777,13 +767,13 @@ class _AttendanceSection extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _C.accent.withValues(alpha: 0.15),
+                    color: AppColors.accent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '${history.length} entrées',
-                    style: const TextStyle(
-                      color: _C.accentSoft,
+                    style: TextStyle(
+                      color: AppColors.accentSoft,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -794,11 +784,11 @@ class _AttendanceSection extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           if (history.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(20, 8, 20, 20),
               child: Text(
                 'Aucun pointage récent.',
-                style: TextStyle(color: _C.textSec, fontSize: 14),
+                style: TextStyle(color: AppColors.textSec, fontSize: 14),
               ),
             )
           else
@@ -832,13 +822,13 @@ class _AttendanceRow extends StatelessWidget {
   Color get _statusColor {
     switch (status.toUpperCase()) {
       case 'PRESENT':
-        return _C.green;
+        return AppColors.green;
       case 'RETARD':
-        return _C.orange;
+        return AppColors.orange;
       case 'ABSENT':
-        return _C.red;
+        return AppColors.red;
       default:
-        return _C.textSec;
+        return AppColors.textSec;
     }
   }
 
@@ -888,8 +878,8 @@ class _AttendanceRow extends StatelessWidget {
             flex: 3,
             child: Text(
               date,
-              style: const TextStyle(
-                color: _C.textPri,
+              style: TextStyle(
+                color: AppColors.textPri,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -898,8 +888,8 @@ class _AttendanceRow extends StatelessWidget {
           // Time
           Text(
             time,
-            style: const TextStyle(
-              color: _C.textSec,
+            style: TextStyle(
+              color: AppColors.textSec,
               fontSize: 13,
             ),
           ),
@@ -960,9 +950,9 @@ class _MiniDonut extends CustomPainter {
       start += sweep;
     }
 
-    drawArc(presence, _C.green);
-    drawArc(retard, _C.orange);
-    drawArc(absence, _C.red);
+    drawArc(presence, AppColors.green);
+    drawArc(retard, AppColors.orange);
+    drawArc(absence, AppColors.red);
   }
 
   @override
@@ -1088,3 +1078,4 @@ class _BiometricScannerPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter old) => false;
 }
+
