@@ -668,7 +668,7 @@ class _StatPillsRow extends StatelessWidget {
         children: [
           _StatPill(
             value: '${(stats['presence'] ?? 0).toInt()}%',
-            label: 'Assiduité',
+            label: 'Présence',
             color: _C.green,
             icon: Icons.check_circle_rounded,
           ),
@@ -1065,7 +1065,7 @@ class _BiometricScannerPainter extends CustomPainter {
     // Corners
     final r = w * 0.12;
     final paths = [
-      [Offset(r, 0), Offset(0, r), Offset(0, 0)],
+      [Offset(r, 0), Offset(0, r), const Offset(0, 0)],
       [Offset(w - r, 0), Offset(w, r), Offset(w, 0)],
       [Offset(0, h - r), Offset(r, h), Offset(0, h)],
       [Offset(w, h - r), Offset(w - r, h), Offset(w, h)],

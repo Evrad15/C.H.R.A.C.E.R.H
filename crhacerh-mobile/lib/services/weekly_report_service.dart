@@ -164,34 +164,7 @@ class WeeklyReportService {
     return excelFile;
   }
 
-  // ── Rapport d'exemple ─────────────────────────────────────────────────────
-
-  /// Crée un rapport d'exemple (semaine précédente) si aucun rapport
-  /// n'existe encore pour le mois en cours.
-  Future<File> createExampleReport(Map<String, dynamic> employee) async {
-    final now = DateTime.now();
-
-    // Semaine précédente
-    final lastWeek = now.subtract(const Duration(days: 7));
-    final monday = _mondayOf(lastWeek);
-    final friday = _fridayOf(lastWeek);
-    final fmt = DateFormat('yyyy-MM-dd');
-
-    // Données factices réalistes
-    final fakeHistory = [
-      {'date': fmt.format(monday),        'time': '07:52', 'status': 'Present', 'is_late': false},
-      {'date': fmt.format(monday.add(const Duration(days: 1))), 'time': '08:18', 'status': 'Retard',  'is_late': true},
-      {'date': fmt.format(monday.add(const Duration(days: 2))), 'time': '07:45', 'status': 'Present', 'is_late': false},
-      {'date': fmt.format(monday.add(const Duration(days: 3))), 'time': '—',     'status': 'Absent',  'is_late': false},
-      {'date': fmt.format(friday),        'time': '07:58', 'status': 'Present', 'is_late': false},
-    ];
-
-    return generateWeeklyReport(
-      employee: employee,
-      history: fakeHistory,
-      forDate: lastWeek,
-    );
-  }
+  // ── Les rapports d'exemple ont été retirés ───────────────────────────────
 
   // ── Lecture ───────────────────────────────────────────────────────────────
 
@@ -337,6 +310,40 @@ class WeeklyReportService {
       },
       'detail': detailsList,
     };
+  }
+
+  // ── Génération automatique à partir des pointages ──────────────────────────
+
+  /// Génère tous les rapports hebdomadaires à partir de l'historique complet [history].
+  Future<void> generateAllReportsFromHistory({
+    required Map<String, dynamic> employee,
+    required List<dynamic> history,
+  }) async {
+    if (history.isEmpty) return;
+
+    // Collecter les semaines uniques pour générer un rapport par semaine
+    final Set<String> processedWeeks = {};
+    for (final entry in history) {
+      try {
+        final date = DateTime.parse(entry['date'].toString());
+        final weekNum = _weekNumber(date);
+        final year = date.year;
+        final weekKey = '${year}_$weekNum';
+        
+        if (!processedWeeks.contains(weekKey)) {
+          processedWeeks.add(weekKey);
+          
+          await generateWeeklyReport(
+            employee: employee,
+            history: history,
+            forDate: date,
+          );
+        }
+      } catch (e) {
+        // ignore: avoid_print
+        print('Erreur lors de la génération du rapport historique: $e');
+      }
+    }
   }
 
   // ── Génération automatique (fin de semaine) ────────────────────────────────

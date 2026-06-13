@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import '../services/weekly_report_service.dart';
 import '../services/local_storage_service.dart';
+import '../services/auth_service.dart';
 import 'report_folder_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,7 +27,7 @@ class _RapportsScreenState extends State<RapportsScreen>
 
   List<Directory> _monthFolders = [];
   bool _loading = true;
-  bool _generatingExample = false;
+  bool _generatingReports = false;
   DateTime? _lastSync;
 
   late AnimationController _fadeCtrl;
@@ -69,12 +70,30 @@ class _RapportsScreenState extends State<RapportsScreen>
     } else {
       _loading = true;
     }
-    // 1. Crée un rapport d'exemple si l'employé est connu et qu'il n'y a pas de rapports
+    // 1. Génère automatiquement les rapports à partir des pointages réels s'il n'y a aucun dossier
     final emp = widget.employee ?? await _loadEmployeeFromCache();
     if (emp != null) {
       final folders = await _reportSvc.listMonthFolders();
       if (folders.isEmpty) {
-        await _reportSvc.createExampleReport(emp);
+        try {
+          final result = await AuthService().fetchDashboardData(emp['id']);
+          List<dynamic> history = [];
+          if (result['success'] == true) {
+            history = result['data']['all_history'] ?? [];
+            await _localSvc.saveDashboardData(emp['id'], result['data']);
+          } else {
+            final local = await _localSvc.loadDashboardData(emp['id']);
+            if (local != null) {
+              history = local['all_history'] ?? [];
+            }
+          }
+          if (history.isNotEmpty) {
+            await _reportSvc.generateAllReportsFromHistory(
+              employee: emp,
+              history: history,
+            );
+          }
+        } catch (_) {}
       }
     }
     // 2. Recharge la liste
@@ -104,21 +123,40 @@ class _RapportsScreenState extends State<RapportsScreen>
     }
   }
 
-  Future<void> _generateExampleReport() async {
+  Future<void> _generateRealReports() async {
     final emp = widget.employee ?? await _loadEmployeeFromCache();
     if (emp == null) {
-      _showSnack('Connectez-vous d\'abord pour générer un rapport.', isError: true);
+      _showSnack('Connectez-vous d\'abord pour générer vos rapports.', isError: true);
       return;
     }
-    setState(() => _generatingExample = true);
+    setState(() => _generatingReports = true);
     try {
-      final file = await _reportSvc.createExampleReport(emp);
-      await _refreshFolders();
-      _showSnack('Rapport d\'exemple créé : ${file.path.split(Platform.pathSeparator).last}');
+      final result = await AuthService().fetchDashboardData(emp['id']);
+      List<dynamic> history = [];
+      if (result['success'] == true) {
+        history = result['data']['all_history'] ?? [];
+        await _localSvc.saveDashboardData(emp['id'], result['data']);
+      } else {
+        final local = await _localSvc.loadDashboardData(emp['id']);
+        if (local != null) {
+          history = local['all_history'] ?? [];
+        }
+      }
+
+      if (history.isEmpty) {
+        _showSnack('Aucun pointage trouvé pour générer des rapports.', isError: true);
+      } else {
+        await _reportSvc.generateAllReportsFromHistory(
+          employee: emp,
+          history: history,
+        );
+        await _refreshFolders();
+        _showSnack('Rapports générés automatiquement avec succès.');
+      }
     } catch (e) {
-      _showSnack('Erreur lors de la création : $e', isError: true);
+      _showSnack('Erreur lors de la génération : $e', isError: true);
     } finally {
-      if (mounted) setState(() => _generatingExample = false);
+      if (mounted) setState(() => _generatingReports = false);
     }
   }
 
@@ -352,16 +390,15 @@ class _RapportsScreenState extends State<RapportsScreen>
             ),
             const SizedBox(height: 10),
             const Text(
-              'Les rapports hebdomadaires sont générés automatiquement chaque vendredi.\n'
-              'Vous pouvez en créer un maintenant.',
+              'Les rapports hebdomadaires sont générés automatiquement à partir de vos pointages.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Color(0xFF888888)),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _generatingExample ? null : _generateExampleReport,
+              onPressed: _generatingReports ? null : _generateRealReports,
               icon: const Icon(Icons.add_chart_rounded),
-              label: const Text('Créer un rapport d\'exemple'),
+              label: const Text('Générer mes rapports'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1A1A1A),
                 foregroundColor: Colors.white,
@@ -381,14 +418,14 @@ class _RapportsScreenState extends State<RapportsScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Bouton : générer rapport exemple
+        // Bouton : générer rapports
         FloatingActionButton.small(
           heroTag: 'fab_example',
           backgroundColor: const Color(0xFF1A1A1A),
           foregroundColor: Colors.white,
-          tooltip: 'Générer rapport d\'exemple',
-          onPressed: _generatingExample ? null : _generateExampleReport,
-          child: _generatingExample
+          tooltip: 'Générer mes rapports',
+          onPressed: _generatingReports ? null : _generateRealReports,
+          child: _generatingReports
               ? const SizedBox(
                   width: 18,
                   height: 18,

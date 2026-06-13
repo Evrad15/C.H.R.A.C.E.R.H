@@ -78,7 +78,6 @@ class AttendanceController extends Controller
             if ($totalMouvements === 0) {
                 $presencePercent = 0; $retardPercent = 0; $absencePercent = 0;
             } else {
-                $totalEntrees = $pointagesStats->where('type', 'ENTREE')->count();
                 $totalPresents = $pointagesStats->where('status', 'Present')->count();
                 $totalRetards = $pointagesStats->where('status', 'Retard')->count();
                 $totalAbsents = $pointagesStats->where('status', 'Absent')->count();
@@ -86,9 +85,19 @@ class AttendanceController extends Controller
                 // Somme des jours d'activité réels pour ramener le total sur un pourcentage de base
                 $denominateur = $totalPresents + $totalRetards + $totalAbsents;
                 
-                $presencePercent = $denominateur > 0 ? round((($totalPresents + $totalRetards) / $denominateur) * 100) : 0;
-                $absencePercent = $denominateur > 0 ? round(($totalAbsents / $denominateur) * 100) : 0;
-                $retardPercent = ($totalPresents + $totalRetards) > 0 ? round(($totalRetards / ($totalPresents + $totalRetards)) * 100) : 0;
+                if ($denominateur > 0) {
+                    $presencePercent = round(($totalPresents / $denominateur) * 100);
+                    $retardPercent = round(($totalRetards / $denominateur) * 100);
+                    // S'assurer que la somme fait exactement 100%
+                    $absencePercent = 100 - $presencePercent - $retardPercent;
+                    if ($absencePercent < 0) {
+                        $absencePercent = 0;
+                    }
+                } else {
+                    $presencePercent = 0;
+                    $retardPercent = 0;
+                    $absencePercent = 0;
+                }
             }
 
             // 2. FILTRE UNIQUEMENT LA JOURNÉE D'AUJOURD'HUI POUR LE TABLEAU FLUTTER
@@ -106,9 +115,24 @@ class AttendanceController extends Controller
                     ];
                 })->values()->toArray();
 
+            // 3. TOUT L'HISTORIQUE POUR LES RAPPORTS SUR LE MOBILE
+            $tousLesPointages = DB::table('pointages')
+                ->where('employee_id', $idFinal)
+                ->orderBy('timestamp', 'desc')
+                ->get()
+                ->map(function($p) {
+                    return [
+                        'date' => date('Y-m-d', strtotime($p->timestamp)), // Format requis pour le mobile
+                        'time' => date('H:i', strtotime($p->timestamp)),
+                        'status' => $p->status,
+                        'is_late' => ($p->status === 'Retard'),
+                    ];
+                })->values()->toArray();
+
             return response()->json([
                 'status' => 'success',
                 'history' => $historiqueAujourdHui, // Envoie seulement l'historique du jour
+                'all_history' => $tousLesPointages, // Envoie tout l'historique pour générer les rapports
                 'stats' => [
                     'presence' => (int)$presencePercent,
                     'retard' => (int)$retardPercent,

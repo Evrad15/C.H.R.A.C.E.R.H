@@ -391,26 +391,25 @@ class _ReportCardState extends State<_ReportCard>
         // Ouvrir Excel
         InkWell(
           onTap: () async {
+            final messenger = ScaffoldMessenger.of(context);
             try {
               await OpenFilex.open(xlsxPath);
             } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Impossible d\'ouvrir le fichier : $e'),
-                  backgroundColor: Colors.red[700],
-                ));
-              }
+              messenger.showSnackBar(SnackBar(
+                content: Text('Impossible d\'ouvrir le fichier : $e'),
+                backgroundColor: Colors.red[700],
+              ));
             }
           },
           borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.table_view_rounded, size: 16, color: Color(0xFF27AE60)),
-                const SizedBox(width: 4),
-                const Text(
+                Icon(Icons.table_view_rounded, size: 16, color: Color(0xFF27AE60)),
+                SizedBox(width: 4),
+                Text(
                   'Ouvrir',
                   style: TextStyle(
                     fontSize: 12,
@@ -426,6 +425,7 @@ class _ReportCardState extends State<_ReportCard>
         // Partager Excel
         InkWell(
           onTap: () async {
+            final messenger = ScaffoldMessenger.of(context);
             try {
               await SharePlus.instance.share(
                 ShareParams(
@@ -434,23 +434,21 @@ class _ReportCardState extends State<_ReportCard>
                 ),
               );
             } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Impossible de partager le fichier : $e'),
-                  backgroundColor: Colors.red[700],
-                ));
-              }
+              messenger.showSnackBar(SnackBar(
+                content: Text('Impossible de partager le fichier : $e'),
+                backgroundColor: Colors.red[700],
+              ));
             }
           },
           borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.share_rounded, size: 16, color: Color(0xFF2F80ED)),
-                const SizedBox(width: 4),
-                const Text(
+                Icon(Icons.share_rounded, size: 16, color: Color(0xFF2F80ED)),
+                SizedBox(width: 4),
+                Text(
                   'Partager',
                   style: TextStyle(
                     fontSize: 12,

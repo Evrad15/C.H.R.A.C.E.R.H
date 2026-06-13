@@ -110,7 +110,7 @@ class _MatriculeScreenState extends State<MatriculeScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -239,7 +239,7 @@ class _MatriculeScreenState extends State<MatriculeScreen> {
         await LocalStorageService().saveEmployee(
             Map<String, dynamic>.from(employee));
 
-        if (mounted) {
+        if (context.mounted) {
           _showSnackBar(
             context, 
             'Bienvenue ${employee['first_name']} ${employee['last_name']}', 
@@ -256,20 +256,22 @@ class _MatriculeScreenState extends State<MatriculeScreen> {
         }
       } else {
         // Gestion des erreurs renvoyées par Laravel (ex: 404 introuvable)
-        if (mounted) {
+        if (context.mounted) {
           String errorMsg = responseData['message'] ?? 'Matricule invalide.';
           _showSnackBar(context, errorMsg, Colors.red);
         }
       }
     } catch (e) {
       // Gestion des pannes réseaux globales
-      _showSnackBar(
-        context, 
-        'Impossible de joindre le serveur. Vérifiez que votre serveur local et le tunnel sont actifs.', 
-        Colors.orange
-      );
+      if (context.mounted) {
+        _showSnackBar(
+          context, 
+          'Impossible de joindre le serveur. Vérifiez que votre serveur local et le tunnel sont actifs.', 
+          Colors.orange
+        );
+      }
     } finally {
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _model.isLoading = false;
         });
