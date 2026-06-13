@@ -1,0 +1,184 @@
+/* Custom CSS for Filament to match SnowUI / ByeWind Design System */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+
+/* Global Font Override */
+body, html, input, select, textarea, button {
+    font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+/* Backgrounds & Page Layout */
+body, .fi-layout, .fi-main {
+    background-color: #fbfbfb !important;
+}
+.dark body, .dark .fi-layout, .dark .fi-main {
+    background-color: #0d0d0d !important;
+}
+
+/* Topbar Styling */
+.fi-topbar {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e3e3e0 !important;
+    box-shadow: none !important;
+}
+.dark .fi-topbar {
+    background-color: #1a1a1a !important;
+    border-bottom: 1px solid #2c2c2c !important;
+}
+
+/* Sidebar Styling */
+.fi-sidebar {
+    background-color: #ffffff !important;
+    border-right: 1px solid #e3e3e0 !important;
+    box-shadow: none !important;
+}
+.dark .fi-sidebar {
+    background-color: #1a1a1a !important;
+    border-right: 1px solid #2c2c2c !important;
+}
+
+/* Sidebar Header / Brand area */
+.fi-sidebar-header {
+    border-bottom: 1px solid #e3e3e0 !important;
+}
+.dark .fi-sidebar-header {
+    border-bottom: 1px solid #2c2c2c !important;
+}
+
+/* Sidebar Navigation Items */
+.fi-sidebar-item-button, .fi-sidebar-item-action {
+    border-radius: 8px !important;
+    margin: 2px 8px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    transition: all 0.2s ease !important;
+    color: #555552 !important;
+}
+.dark .fi-sidebar-item-button, .dark .fi-sidebar-item-action {
+    color: #a1a09a !important;
+}
+
+/* Active Sidebar Item */
+.fi-sidebar-item-button.fi-active, .fi-sidebar-item-button[aria-current="page"] {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+    color: #1c1c1c !important;
+    font-weight: 600 !important;
+}
+.dark .fi-sidebar-item-button.fi-active, .dark .fi-sidebar-item-button[aria-current="page"] {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: #ffffff !important;
+}
+
+/* Inactive Item Hover */
+.fi-sidebar-item-button:not(.fi-active):hover {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+    color: #1c1c1c !important;
+}
+.dark .fi-sidebar-item-button:not(.fi-active):hover {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    color: #ffffff !important;
+}
+
+/* Sidebar Group Titles */
+.fi-sidebar-group-label {
+    text-transform: uppercase !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    color: #888885 !important;
+    margin-left: 12px !important;
+    margin-bottom: 6px !important;
+}
+.dark .fi-sidebar-group-label {
+    color: #70706d !important;
+}
+
+/* Page Headers */
+.fi-header-heading {
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #1c1c1c !important;
+}
+.dark .fi-header-heading {
+    color: #ffffff !important;
+}
+
+/* Cards & Section Boxes (Tables, Forms, Widgets) */
+.fi-ta-container, .fi-section, .fi-fo-card, .fi-card, .fi-widget {
+    background-color: #ffffff !important;
+    border: 1px solid #e3e3e0 !important;
+    border-radius: 16px !important;
+    box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.05) !important;
+    overflow: hidden !important;
+}
+.dark .fi-ta-container, .dark .fi-section, .dark .fi-fo-card, .dark .fi-card, .dark .fi-widget {
+    background-color: #1a1a1a !important;
+    border: 1px solid #2c2c2c !important;
+    box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Table Headers */
+.fi-ta-header-cell {
+    background-color: #fcfcfc !important;
+    border-bottom: 1px solid #e3e3e0 !important;
+}
+.dark .fi-ta-header-cell {
+    background-color: #171717 !important;
+    border-bottom: 1px solid #2c2c2c !important;
+}
+
+/* Global Search Field */
+.fi-global-search-field input, .fi-global-search input {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+    border: none !important;
+    border-radius: 9999px !important;
+    font-size: 13px !important;
+    padding-left: 36px !important;
+    color: #1c1c1c !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+.dark .fi-global-search-field input, .dark .fi-global-search input {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: #ededec !important;
+}
+.fi-global-search-field input:focus, .fi-global-search input:focus {
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4) !important;
+    background-color: rgba(0, 0, 0, 0.06) !important;
+}
+.dark .fi-global-search-field input:focus, .dark .fi-global-search input:focus {
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.6) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Form inputs & fields styling */
+.fi-fo-text-input input, .fi-fo-select select, .fi-input {
+    border-radius: 8px !important;
+    border: 1px solid #e3e3e0 !important;
+    background-color: #ffffff !important;
+}
+.dark .fi-fo-text-input input, .dark .fi-fo-select select, .dark .fi-input {
+    border: 1px solid #3e3e3a !important;
+    background-color: #1c1c1c !important;
+}
+
+/* Filament Native Widgets customization */
+.fi-wi-stats-overview-stat-card {
+    background-color: #ffffff !important;
+    border: 1px solid #e3e3e0 !important;
+    border-radius: 16px !important;
+    box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.05) !important;
+}
+.dark .fi-wi-stats-overview-stat-card {
+    background-color: #1a1a1a !important;
+    border: 1px solid #2c2c2c !important;
+}
+
+/* Modal Styling */
+.fi-modal-window {
+    border-radius: 16px !important;
+    border: 1px solid #e3e3e0 !important;
+}
+.dark .fi-modal-window {
+    border: 1px solid #2c2c2c !important;
+}
