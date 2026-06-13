@@ -434,6 +434,36 @@
             0% { transform: scale(1); }
             100% { transform: scale(1.03); }
         }
+
+        /* Success flash & glow */
+        .success-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(46, 125, 50, 0.4);
+            box-shadow: inset 0 0 30px rgba(46, 125, 50, 0.8);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 2;
+            border-radius: 50%;
+        }
+        .success-flash.active {
+            opacity: 1;
+            animation: pulse-success 1.5s ease-out;
+        }
+        @keyframes pulse-success {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .webcam-wrapper.success-glow {
+            border-color: #2E7D32 !important;
+            box-shadow: 0 0 30px rgba(46, 125, 50, 0.6) !important;
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -506,6 +536,8 @@
 
                 <div class="webcam-wrapper">
                     <video id="webcam" autoplay playsinline muted width="320" height="320"></video>
+                    <!-- Success Flash Overlay -->
+                    <div id="success-flash" class="success-flash"></div>
                     <!-- Pulsing face detection overlay -->
                     <div class="face-scanner-overlay">
                         <div class="scanner-laser"></div>
@@ -513,7 +545,7 @@
                     </div>
                 </div>
                 
-                <canvas id="hidden-canvas" style="display: none;" width="640" height="640"></canvas>
+                <canvas id="hidden-canvas" style="display: none;" width="320" height="320"></canvas>
 
                 <div id="face-feedback" class="face-feedback instruction">
                     Placez votre visage au centre du cadre pour enregistrer votre présence.
@@ -695,7 +727,7 @@
 
             try {
                 canvasCtx.drawImage(webcamElement, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
-                const imageDataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.85);
+                const imageDataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.70);
 
                 const response = await fetch('/api/kiosk/face-verify', {
                     method: 'POST',
@@ -715,6 +747,19 @@
                     faceFeedback.innerText = `Reconnu : ${user} (${typeLabel} à ${result.data.time})`;
                     faceFeedback.className = "face-feedback instruction feedback-success";
                     
+                    // Trigger Premium animations (flash & glow)
+                    const flash = document.getElementById('success-flash');
+                    const wrapper = webcamElement.parentElement;
+                    if (flash) {
+                        flash.classList.remove('active');
+                        void flash.offsetWidth; // Force reflow
+                        flash.classList.add('active');
+                    }
+                    if (wrapper) {
+                        wrapper.classList.add('success-glow');
+                        setTimeout(() => wrapper.classList.remove('success-glow'), 3000);
+                    }
+
                     fetchRecentPointages();
 
                     stopFaceScanning();

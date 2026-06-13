@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../services/local_storage_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -32,6 +35,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
   int _lates = 0;
   int _absences = 0;
   String _syncTime = 'Jamais';
+  bool? _isFaceRegistered;
 
   @override
   void initState() {
@@ -71,10 +75,52 @@ class _ProfilScreenState extends State<ProfilScreen> {
       }
     }
 
+    await _checkFaceStatus();
+
     if (mounted) {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _checkFaceStatus() async {
+    final String baseUrl = kIsWeb
+        ? 'http://localhost:8000/api'
+        : 'https://crhacerh-api.loca.lt/api';
+    final String url = '$baseUrl/employee/${widget.employee['id']}/face-status';
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/json',
+          'bypass-tunnel-reminder': 'true',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _isFaceRegistered = data['registered'] == true;
+            if (_isFaceRegistered != (widget.employee['consent_facial_at'] != null)) {
+              _updateLocalEmployeeStatus(_isFaceRegistered!, data['consent_facial_at']);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      print("Erreur check face status: $e");
+    }
+  }
+
+  Future<void> _updateLocalEmployeeStatus(bool registered, String? consentTime) async {
+    final prefs = await SharedPreferences.getInstance();
+    var localEmp = Map<String, dynamic>.from(widget.employee);
+    localEmp['consent_facial_at'] = registered ? (consentTime ?? DateTime.now().toIso8601String()) : null;
+    await prefs.setString('cached_employee', jsonEncode(localEmp));
+    await LocalStorageService().saveEmployee(localEmp);
+    if (widget.onReload != null) {
+      widget.onReload!();
     }
   }
 
@@ -289,14 +335,15 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           _buildSettingTile(
                             icon: Icons.face_rounded,
                             title: 'Enregistrement Facial',
-                            trailing: widget.employee['consent_facial_at'] != null ? 'Enregistré' : 'Non configuré',
-                            trailingColor: widget.employee['consent_facial_at'] != null ? AppColors.green : AppColors.orange,
+                            trailing: (_isFaceRegistered ?? (widget.employee['consent_facial_at'] != null)) ? 'Enregistré' : 'Non configuré',
+                            trailingColor: (_isFaceRegistered ?? (widget.employee['consent_facial_at'] != null)) ? AppColors.green : AppColors.orange,
                             onTap: () async {
                               final res = await Navigator.pushNamed(
                                 context,
                                 '/face_register',
                                 arguments: widget.employee,
                               );
+                              await _checkFaceStatus();
                               if (widget.onReload != null) {
                                 widget.onReload!();
                               }

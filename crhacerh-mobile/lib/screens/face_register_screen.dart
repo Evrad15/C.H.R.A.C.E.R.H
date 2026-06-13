@@ -6,6 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../theme_manager.dart';
 import '../services/local_storage_service.dart';
 
@@ -23,6 +24,7 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
+  bool _isPermissionDenied = false;
   bool _isCapturing = false;
   XFile? _capturedImage;
   bool _isUploading = false;
@@ -49,7 +51,6 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
     try {
       _cameras = await availableCameras();
       if (_cameras != null && _cameras!.isNotEmpty) {
-        // Sélectionner la caméra frontale par défaut
         final frontCamera = _cameras!.firstWhere(
           (camera) => camera.lensDirection == CameraLensDirection.front,
           orElse: () => _cameras!.first,
@@ -65,18 +66,27 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
         if (mounted) {
           setState(() {
             _isCameraInitialized = true;
+            _isPermissionDenied = false;
           });
         }
       }
     } catch (e) {
       print("Erreur initialisation caméra: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Impossible d'accéder à la caméra : $e"),
-            backgroundColor: AppColors.red,
-          ),
-        );
+      if (e is CameraException && e.code == 'cameraPermissionDenied') {
+        if (mounted) {
+          setState(() {
+            _isPermissionDenied = true;
+          });
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Impossible d'accéder à la caméra : $e"),
+              backgroundColor: AppColors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -234,12 +244,14 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
         centerTitle: true,
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 10),
+        child: _isPermissionDenied
+            ? _buildPermissionDeniedView()
+            : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 10),
               Text(
                 'Enregistrement de votre visage',
                 style: GoogleFonts.outfit(
@@ -405,6 +417,71 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
               const SizedBox(height: 20),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPermissionDeniedView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.red.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.videocam_off_rounded,
+                color: AppColors.red,
+                size: 60,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Accès Caméra Requis',
+              style: GoogleFonts.outfit(
+                color: AppColors.textPri,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Pour enregistrer votre visage, l\'application doit pouvoir accéder à votre caméra. Veuillez autoriser cet accès dans les paramètres du système.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: AppColors.textSec,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final success = await openAppSettings();
+                if (success) {
+                  _initCamera();
+                }
+              },
+              icon: const Icon(Icons.settings_rounded, size: 18),
+              label: const Text('OUVRIR LES PARAMÈTRES'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -240,4 +240,26 @@ class FaceApiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Vérifie si un employé a enregistré son visage.
+     */
+    public function checkFaceStatus($id): JsonResponse
+    {
+        $employee = Employe::find($id);
+        if (!$employee) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Employé introuvable.'
+            ], 404);
+        }
+
+        $isRegistered = !empty($employee->consent_facial_at) && Storage::disk('public')->exists("faces/{$employee->id}.jpg");
+
+        return response()->json([
+            'status' => 'success',
+            'registered' => $isRegistered,
+            'consent_facial_at' => $employee->consent_facial_at ? $employee->consent_facial_at->toDateTimeString() : null
+        ], 200);
+    }
 }
