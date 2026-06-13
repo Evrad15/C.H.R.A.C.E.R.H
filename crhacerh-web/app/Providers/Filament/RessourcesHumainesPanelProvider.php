@@ -25,7 +25,7 @@ class RessourcesHumainesPanelProvider extends PanelProvider
             ->default()
             ->id('ressources-humaines')
             ->path('ressources-humaines')
-            ->login()
+            ->login(\App\Filament\Pages\Auth\CustomLogin::class)
             ->colors([
                 'primary' => Color::Amber,
             ])
