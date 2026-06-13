@@ -17,6 +17,7 @@ class Horizon extends Page
 
     protected static string $view = 'filament.pages.horizon';
     protected static ?string $title = 'Horizon';
+    protected ?string $heading = '';
     protected static ?int $navigationSort = 5;
 
     public string $messageInterne = '';
@@ -28,7 +29,7 @@ class Horizon extends Page
     public static function getNavigationIcon(): string | Htmlable | null
     {
         return new HtmlString(
-            '<img src="' . asset('images/ia-avatar.png') . '" ' .
+            '<img src="' . asset('images/Horizon.jpg') . '" ' .
                 'style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; max-width: 20px;" ' .
                 'alt="Horizon">'
         );

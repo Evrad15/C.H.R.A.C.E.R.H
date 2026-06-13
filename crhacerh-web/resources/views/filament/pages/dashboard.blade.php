@@ -1,160 +1,153 @@
 <x-filament-panels::page>
-    <div class="mb-6">
-        <p class="text-gray-500 dark:text-gray-400 mt-2">
-            Semaine {{ now()->weekOfYear }} • {{ now()->translatedFormat('l j F Y') }}
-        </p>
+<style>
+    @keyframes rFadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .r-page { animation:rFadeIn .3s ease-out; display:flex; flex-direction:column; gap:2rem; }
+
+    .r-card {
+        background:#fff; border:1px solid #f1f5f9; border-radius:20px;
+        box-shadow:0 1px 4px rgba(0,0,0,.04); transition:transform .22s,box-shadow .22s;
+        overflow:hidden; position:relative;
+    }
+    .r-card:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,.08) !important; }
+
+    .r-kpi { display:flex; flex-direction:column; padding:1.25rem 1.5rem; justify-content:space-between; flex:1; min-height:140px; }
+    .r-kpi-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
+    .r-kpi-title { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; }
+    .r-kpi-val { font-size:2rem; font-weight:900; line-height:1; margin-top:.5rem; }
+    
+    .r-section-title { font-size:1.1rem; font-weight:800; color:#111827; display:flex; align-items:center; gap:.5rem; margin-bottom:1.25rem; }
+    .r-section-title span { display:inline-block; width:6px; height:20px; border-radius:3px; }
+
+    .r-list-item { 
+        display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; 
+        padding:.75rem 1rem; border-radius:12px; border:1px solid transparent; 
+        transition:background .2s, border .2s; margin-bottom:.5rem;
+    }
+    .r-list-item:hover { background:#f8fafc; border-color:#f1f5f9; }
+
+    .r-badge { display:inline-block; padding:.2rem .6rem; border-radius:6px; font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+
+    /* Dark mode overrides (optional if user doesn't use it much, but good practice) */
+    .dark .r-card { background:#1f2937; border-color:#374151; box-shadow:none; }
+    .dark .r-section-title { color:#f9fafb; }
+    .dark .r-kpi-title { color:#9ca3af; }
+</style>
+
+<div class="r-page">
+    {{-- HEADER DATE --}}
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <div style="font-size:1.5rem; font-weight:900; color:#111827;" class="dark:text-white">Tableau de bord</div>
+            <p style="font-size:.85rem; color:#6b7280; margin-top:.2rem;">
+                Semaine {{ now()->weekOfYear }} • {{ now()->translatedFormat('l j F Y') }}
+            </p>
+        </div>
     </div>
 
-    <div class="mb-8" style="width: 100%;">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <span class="w-1 h-6 bg-primary-500 rounded-full"></span>
-            Indicateurs Clés
-        </h2>
-
-        <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 1rem; width: 100%;">
-
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300" style="flex: 1;">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        Total Employés
-                    </span>
-                    <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-lg">
-                        👥
-                    </div>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white">
-                        {{ $this->totalEmployes }}
-                    </p>
-                </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Effectif global actif</p>
+    {{-- KPI ROW --}}
+    <div style="display:flex; flex-wrap:wrap; gap:1.25rem;">
+        {{-- KPI: Employés --}}
+        <div class="r-card r-kpi">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div class="r-kpi-title">Total Employés</div>
+                <div class="r-kpi-icon" style="background:#e0e7ff; color:#4338ca;">👥</div>
             </div>
+            <div>
+                <div class="r-kpi-val text-gray-900 dark:text-white">{{ $this->totalEmployes }}</div>
+                <div style="font-size:.7rem; color:#6b7280; margin-top:.4rem; font-weight:500;">Effectif global actif</div>
+            </div>
+        </div>
 
-            <div class="bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/30 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300 border-l-4 border-l-red-500" style="flex: 1;">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        Absents (Jour)
-                    </span>
-                    <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-lg">
-                        ❌
-                    </div>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-3xl font-bold text-red-600 dark:text-red-400">
-                        {{ $this->absentsSemaine }}
-                    </p>
+        {{-- KPI: Absents --}}
+        <div class="r-card r-kpi">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div class="r-kpi-title">Absents (Jour)</div>
+                <div class="r-kpi-icon" style="background:#fee2e2; color:#b91c1c;">❌</div>
+            </div>
+            <div>
+                <div style="display:flex; align-items:baseline; gap:.75rem;">
+                    <div class="r-kpi-val" style="color:#ef4444;">{{ $this->absentsSemaine }}</div>
                     @if($this->tendanceAbsents >= 0)
-                    <span class="text-xs font-bold text-red-600 dark:text-red-400">
-                        ↑ +{{ $this->tendanceAbsents }}
-                    </span>
+                        <span style="font-size:.7rem; font-weight:800; color:#ef4444; background:#fef2f2; padding:2px 6px; border-radius:4px;">↑ +{{ $this->tendanceAbsents }}</span>
                     @else
-                    <span class="text-xs font-bold text-green-600 dark:text-green-400">
-                        ↓ {{ abs($this->tendanceAbsents) }}
-                    </span>
+                        <span style="font-size:.7rem; font-weight:800; color:#22c55e; background:#f0fdf4; padding:2px 6px; border-radius:4px;">↓ {{ abs($this->tendanceAbsents) }}</span>
                     @endif
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">vs jour précédent</p>
+                <div style="font-size:.7rem; color:#6b7280; margin-top:.4rem; font-weight:500;">vs jour précédent</div>
             </div>
+            <div style="position:absolute; bottom:0; left:0; right:0; height:4px; background:#ef4444;"></div>
+        </div>
 
-            <div class="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-900/30 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300 border-l-4 border-l-amber-500" style="flex: 1;">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        En Retard (Jour)
-                    </span>
-                    <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-lg">
-                        ⏰
-                    </div>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-3xl font-bold text-amber-600 dark:text-amber-400">
-                        {{ $this->retardsSemaine }}
-                    </p>
+        {{-- KPI: Retards --}}
+        <div class="r-card r-kpi">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div class="r-kpi-title">En Retard (Jour)</div>
+                <div class="r-kpi-icon" style="background:#fef3c7; color:#b45309;">⏰</div>
+            </div>
+            <div>
+                <div style="display:flex; align-items:baseline; gap:.75rem;">
+                    <div class="r-kpi-val" style="color:#f59e0b;">{{ $this->retardsSemaine }}</div>
                     @if($this->tendanceRetards >= 0)
-                    <span class="text-xs font-bold text-amber-600 dark:text-amber-400">
-                        ↑ +{{ $this->tendanceRetards }}
-                    </span>
+                        <span style="font-size:.7rem; font-weight:800; color:#f59e0b; background:#fffbeb; padding:2px 6px; border-radius:4px;">↑ +{{ $this->tendanceRetards }}</span>
                     @else
-                    <span class="text-xs font-bold text-green-600 dark:text-green-400">
-                        ↓ {{ abs($this->tendanceRetards) }}
-                    </span>
+                        <span style="font-size:.7rem; font-weight:800; color:#22c55e; background:#f0fdf4; padding:2px 6px; border-radius:4px;">↓ {{ abs($this->tendanceRetards) }}</span>
                     @endif
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">vs jour précédent</p>
+                <div style="font-size:.7rem; color:#6b7280; margin-top:.4rem; font-weight:500;">vs jour précédent</div>
             </div>
+            <div style="position:absolute; bottom:0; left:0; right:0; height:4px; background:#f59e0b;"></div>
+        </div>
 
-            <div class="bg-white dark:bg-gray-800 border border-green-200 dark:border-green-900/30 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300 border-l-4 border-l-green-500" style="flex: 1;">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        À l'Heure (Jour)
-                    </span>
-                    <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-lg">
-                        ✅
-                    </div>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-3xl font-bold text-green-600 dark:text-green-400">
-                        {{ $this->aLHeureSemaine }}
-                    </p>
+        {{-- KPI: A l'heure --}}
+        <div class="r-card r-kpi">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div class="r-kpi-title">À l'Heure (Jour)</div>
+                <div class="r-kpi-icon" style="background:#dcfce7; color:#15803d;">✅</div>
+            </div>
+            <div>
+                <div style="display:flex; align-items:baseline; gap:.75rem;">
+                    <div class="r-kpi-val" style="color:#22c55e;">{{ $this->aLHeureSemaine }}</div>
                     @if($this->tendanceALHeure >= 0)
-                    <span class="text-xs font-bold text-green-600 dark:text-green-400">
-                        ↑ +{{ $this->tendanceALHeure }}
-                    </span>
+                        <span style="font-size:.7rem; font-weight:800; color:#22c55e; background:#f0fdf4; padding:2px 6px; border-radius:4px;">↑ +{{ $this->tendanceALHeure }}</span>
                     @else
-                    <span class="text-xs font-bold text-red-600 dark:text-red-400">
-                        ↓ {{ abs($this->tendanceALHeure) }}
-                    </span>
+                        <span style="font-size:.7rem; font-weight:800; color:#ef4444; background:#fef2f2; padding:2px 6px; border-radius:4px;">↓ {{ abs($this->tendanceALHeure) }}</span>
                     @endif
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">vs jour précédent</p>
+                <div style="font-size:.7rem; color:#6b7280; margin-top:.4rem; font-weight:500;">vs jour précédent</div>
             </div>
-
+            <div style="position:absolute; bottom:0; left:0; right:0; height:4px; background:#22c55e;"></div>
         </div>
     </div>
 
-    <div class="lg:col-span-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 flex flex-col">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <span class="w-1 h-4 bg-primary-500 rounded-full"></span>
-            Évolution des Présences (Semaine en cours)
+    {{-- GRAPHIQUE --}}
+    <div class="r-card" style="padding:1.5rem;">
+        <h3 class="r-section-title">
+            <span style="background:#6366f1;"></span> Évolution des Présences (Semaine en cours)
         </h3>
-
-        {{-- Légende --}}
-        <div class="flex items-center gap-6 mb-4 text-xs font-medium">
-            <span class="flex items-center gap-1.5">
-                <span class="inline-block w-3 h-3 rounded-full" style="background:#22c55e;"></span>
-                <span class="text-gray-600 dark:text-gray-300">Présents</span>
-            </span>
-            <span class="flex items-center gap-1.5">
-                <span class="inline-block w-3 h-3 rounded-full" style="background:#f59e0b;"></span>
-                <span class="text-gray-600 dark:text-gray-300">Retards</span>
-            </span>
-            <span class="flex items-center gap-1.5">
-                <span class="inline-block w-3 h-3 rounded-full" style="background:#ef4444;"></span>
-                <span class="text-gray-600 dark:text-gray-300">Absents</span>
-            </span>
+        
+        <div style="display:flex; gap:1.5rem; margin-bottom:1rem; font-size:.75rem; font-weight:600;">
+            <div style="display:flex; align-items:center; gap:.4rem;"><div style="width:10px;height:10px;border-radius:3px;background:#22c55e;"></div> Présents</div>
+            <div style="display:flex; align-items:center; gap:.4rem;"><div style="width:10px;height:10px;border-radius:3px;background:#f59e0b;"></div> Retards</div>
+            <div style="display:flex; align-items:center; gap:.4rem;"><div style="width:10px;height:10px;border-radius:3px;background:#ef4444;"></div> Absents</div>
         </div>
 
-        <div class="relative" style="height: 256px;">
+        <div style="height:260px; position:relative; width:100%;">
             <canvas id="presenceWeekChart"></canvas>
         </div>
     </div>
 
-    {{-- Chart.js (CDN) --}}
+    {{-- CHART SCRIPT --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
     <script>
         (function () {
             var chartData = @json($this->chartData);
-
             function initChart() {
                 var canvas = document.getElementById('presenceWeekChart');
                 if (!canvas) { return; }
-                if (typeof Chart === 'undefined') {
-                    setTimeout(initChart, 100);
-                    return;
-                }
+                if (typeof Chart === 'undefined') { setTimeout(initChart, 100); return; }
 
-                // detect dark mode
                 var isDark = document.documentElement.classList.contains('dark');
-                var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+                var gridColor  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
                 var labelColor = isDark ? '#9ca3af' : '#6b7280';
 
                 new Chart(canvas.getContext('2d'), {
@@ -163,343 +156,225 @@
                         labels: chartData.labels || [],
                         datasets: [
                             {
-                                label: 'Présents',
-                                data: chartData.assidus || [],
-                                borderColor: '#22c55e',
-                                backgroundColor: 'rgba(34,197,94,0.12)',
-                                pointBackgroundColor: '#22c55e',
-                                pointRadius: 5,
-                                pointHoverRadius: 7,
-                                tension: 0.4,
-                                fill: true,
-                                borderWidth: 2,
+                                label: 'Présents', data: chartData.assidus || [],
+                                borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.05)',
+                                tension: 0.4, fill: true, borderWidth: 3, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#fff', pointBorderColor: '#22c55e', pointBorderWidth: 2
                             },
                             {
-                                label: 'Retards',
-                                data: chartData.retards || [],
-                                borderColor: '#f59e0b',
-                                backgroundColor: 'rgba(245,158,11,0.10)',
-                                pointBackgroundColor: '#f59e0b',
-                                pointRadius: 5,
-                                pointHoverRadius: 7,
-                                tension: 0.4,
-                                fill: true,
-                                borderWidth: 2,
+                                label: 'Retards', data: chartData.retards || [],
+                                borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)',
+                                tension: 0.4, fill: true, borderWidth: 3, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#fff', pointBorderColor: '#f59e0b', pointBorderWidth: 2
                             },
                             {
-                                label: 'Absents',
-                                data: chartData.absences || [],
-                                borderColor: '#ef4444',
-                                backgroundColor: 'rgba(239,68,68,0.10)',
-                                pointBackgroundColor: '#ef4444',
-                                pointRadius: 5,
-                                pointHoverRadius: 7,
-                                tension: 0.4,
-                                fill: true,
-                                borderWidth: 2,
-                            },
+                                label: 'Absents', data: chartData.absences || [],
+                                borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)',
+                                tension: 0.4, fill: true, borderWidth: 3, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#fff', pointBorderColor: '#ef4444', pointBorderWidth: 2
+                            }
                         ]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                        responsive: true, maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: isDark ? '#1f2937' : '#ffffff',
-                                titleColor: isDark ? '#f3f4f6' : '#111827',
-                                bodyColor: isDark ? '#d1d5db' : '#374151',
-                                borderColor: isDark ? '#374151' : '#e5e7eb',
-                                borderWidth: 1,
-                                padding: 10,
-                                callbacks: {
-                                    label: function(ctx) {
-                                        return '  ' + ctx.dataset.label + ' : ' + ctx.parsed.y;
-                                    }
-                                }
-                            }
-                        },
+                        plugins: { legend: { display: false }, tooltip: { padding: 12, cornerRadius: 8 } },
                         scales: {
-                            x: {
-                                grid: { color: gridColor },
-                                ticks: { color: labelColor, font: { size: 12 } }
-                            },
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: gridColor },
-                                ticks: { color: labelColor, font: { size: 12 }, stepSize: 1 }
-                            }
+                            x: { grid: { color: gridColor, drawBorder: false }, ticks: { color: labelColor, font: { size: 11, family: 'Inter' } } },
+                            y: { beginAtZero: true, grid: { color: gridColor, drawBorder: false }, ticks: { color: labelColor, font: { size: 11, family: 'Inter' }, stepSize: 1 } }
                         }
                     }
                 });
             }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initChart);
-            } else {
-                initChart();
-            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initChart);
+            else initChart();
         })();
     </script>
 
-    <div class="mb-8" style="width: 100%;">
-        <div style="display: flex; flex-direction: row; gap: 1.5rem; width: 100%; items: stretch;">
+    {{-- ROW 3: Anomalies, Risques, Taux --}}
+    <div style="display:flex; flex-wrap:wrap; gap:1.25rem; align-items:stretch;">
+        
+        {{-- ANOMALIES --}}
+        <div class="r-card" style="flex:1; min-width:280px; display:flex; flex-direction:column; padding:1.5rem;">
+            <h3 class="r-section-title"><span style="background:#ef4444; animation:rFadeIn 1s infinite alternate;"></span> Anomalies de la Semaine</h3>
+            
+            <div style="flex:1; overflow-y:auto; max-height:300px; padding-right:.5rem;">
+                @php $hasAnomalies = false; @endphp
 
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300" style="flex: 1; min-height: 380px; display: flex; flex-direction: column; justify-content: space-between;">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <span class="inline-block w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
-                    Anomalies de la Semaine
-                </h3>
+                @if(!empty($this->anomaliesReport['contradictions']))
+                    @php $hasAnomalies = true; @endphp
+                    @foreach($this->anomaliesReport['contradictions'] as $item)
+                        <div class="r-list-item" style="background:#fef2f2;">
+                            <div>
+                                <div style="font-size:.75rem; font-weight:800; color:#b91c1c;">Contradiction statut</div>
+                                <div style="font-size:.85rem; font-weight:700; color:#111827; margin:.2rem 0;">{{ $item['nom'] }}</div>
+                                <div style="font-size:.65rem; color:#6b7280;">Le {{ $item['date'] }} — {{ implode(', ', $item['status']) }}</div>
+                            </div>
+                            <div class="r-badge" style="background:#fee2e2; color:#991b1b;">Critique</div>
+                        </div>
+                    @endforeach
+                @endif
 
-                <div class="space-y-2 overflow-y-auto pr-1" style="flex: 1; max-height: 260px;">
+                @if(!empty($this->anomaliesReport['duplicates']))
+                    @php $hasAnomalies = true; @endphp
+                    @foreach($this->anomaliesReport['duplicates'] as $item)
+                        <div class="r-list-item" style="background:#fffbeb;">
+                            <div>
+                                <div style="font-size:.75rem; font-weight:800; color:#b45309;">Double pointage</div>
+                                <div style="font-size:.85rem; font-weight:700; color:#111827; margin:.2rem 0;">{{ $item['nom'] }}</div>
+                                <div style="font-size:.65rem; color:#6b7280;">Le {{ $item['date'] }} — {{ $item['compte'] }} pointages</div>
+                            </div>
+                            <div class="r-badge" style="background:#fef3c7; color:#92400e;">Suspect</div>
+                        </div>
+                    @endforeach
+                @endif
+
+                @if(!empty($this->anomaliesReport['late_streaks']))
+                    @php $hasAnomalies = true; @endphp
+                    @foreach($this->anomaliesReport['late_streaks'] as $item)
+                        <div class="r-list-item" style="background:#eff6ff;">
+                            <div>
+                                <div style="font-size:.75rem; font-weight:800; color:#1d4ed8;">Retards répétitifs</div>
+                                <div style="font-size:.85rem; font-weight:700; color:#111827; margin:.2rem 0;">{{ $item['nom'] }}</div>
+                                <div style="font-size:.65rem; color:#6b7280;">{{ $item['retards'] }} retards cette semaine</div>
+                            </div>
+                            <div class="r-badge" style="background:#dbeafe; color:#1e40af;">Alerte</div>
+                        </div>
+                    @endforeach
+                @endif
+
+                @if(!$hasAnomalies)
+                    <div style="padding:3rem 1rem; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
+                        <div style="font-size:2.5rem; margin-bottom:.5rem;">✨</div>
+                        <div style="font-weight:700; font-size:.85rem; color:#111827;">Aucune anomalie !</div>
+                        <div style="font-size:.7rem; color:#6b7280; margin-top:.2rem;">Tout est parfait cette semaine.</div>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- RISQUES --}}
+        <div class="r-card" style="flex:1.2; min-width:300px; display:flex; flex-direction:column; padding:1.5rem;">
+            <h3 class="r-section-title"><span style="background:#8b5cf6;"></span> Risques d'Absences (30j)</h3>
+            
+            <div style="flex:1; overflow-y:auto; max-height:300px; padding-right:.5rem;">
+                @forelse($this->absenteeismRisks as $risk)
                     @php
-                        $hasAnomalies = false;
+                        $bg = 'bg-gray-50'; $bdgBg = '#f3f4f6'; $bdgCol = '#374151';
+                        if($risk['score'] >= 60) { $bg = 'bg-red-50'; $bdgBg = '#fee2e2'; $bdgCol = '#991b1b'; }
+                        elseif($risk['score'] >= 30) { $bg = 'bg-orange-50'; $bdgBg = '#ffedd5'; $bdgCol = '#c2410c'; }
                     @endphp
-
-                    {{-- 1. Contradictions --}}
-                    @if(!empty($this->anomaliesReport['contradictions']))
-                        @php $hasAnomalies = true; @endphp
-                        @foreach($this->anomaliesReport['contradictions'] as $item)
-                        <div class="p-3 rounded-lg bg-red-50/50 dark:bg-red-950/10 border border-red-200/30 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-bold text-red-800 dark:text-red-400">
-                                        Contradiction statut
-                                    </p>
-                                    <p class="text-xs text-gray-755 dark:text-gray-300 font-semibold mt-1">
-                                        {{ $item['nom'] }}
-                                    </p>
-                                    <p class="text-[9px] text-gray-500 mt-1">
-                                        Le {{ $item['date'] }} — Statuts : {{ implode(', ', $item['status']) }}
-                                    </p>
-                                </div>
-                                <span class="flex-shrink-0 inline-block px-2 py-0.5 rounded text-[9px] font-bold bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-400 uppercase">
-                                    Critique
-                                </span>
-                            </div>
+                    <div class="r-list-item {{ $bg }}">
+                        <div>
+                            <div style="font-size:.85rem; font-weight:800; color:#111827;">{{ $risk['nom'] }}</div>
+                            <div style="font-size:.7rem; font-weight:600; color:#6b7280; margin-top:.15rem;">{{ $risk['departement'] }}</div>
+                            <div style="font-size:.65rem; color:#9ca3af; margin-top:.25rem; font-style:italic;">{{ $risk['raisons'] }}</div>
                         </div>
-                        @endforeach
-                    @endif
-
-                    {{-- 2. Multiples Pointages --}}
-                    @if(!empty($this->anomaliesReport['duplicates']))
-                        @php $hasAnomalies = true; @endphp
-                        @foreach($this->anomaliesReport['duplicates'] as $item)
-                        <div class="p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/10 border border-amber-200/30 dark:border-amber-900/30 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-bold text-amber-800 dark:text-amber-400">
-                                        Double pointage
-                                    </p>
-                                    <p class="text-xs text-gray-755 dark:text-gray-300 font-semibold mt-1">
-                                        {{ $item['nom'] }}
-                                    </p>
-                                    <p class="text-[9px] text-gray-500 mt-1">
-                                        Le {{ $item['date'] }} — {{ $item['compte'] }} pointages enregistrés.
-                                    </p>
-                                </div>
-                                <span class="flex-shrink-0 inline-block px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 uppercase">
-                                    Suspect
-                                </span>
-            </div>
-                        </div>
-                        @endforeach
-                    @endif
-
-                    {{-- 3. Séries de retards --}}
-                    @if(!empty($this->anomaliesReport['late_streaks']))
-                        @php $hasAnomalies = true; @endphp
-                        @foreach($this->anomaliesReport['late_streaks'] as $item)
-                        <div class="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/10 border border-blue-200/30 dark:border-blue-900/30 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-bold text-blue-800 dark:text-blue-400">
-                                        Retards répétitifs
-                                    </p>
-                                    <p class="text-xs text-gray-755 dark:text-gray-300 font-semibold mt-1">
-                                        {{ $item['nom'] }}
-                                    </p>
-                                    <p class="text-[9px] text-gray-500 mt-1">
-                                        {{ $item['retards'] }} retards enregistrés cette semaine.
-                                    </p>
-                                </div>
-                                <span class="flex-shrink-0 inline-block px-2 py-0.5 rounded text-[9px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 uppercase">
-                                    Alerte
-                                </span>
-                            </div>
-                        </div>
-                        @endforeach
-                    @endif
-
-                    @if(!$hasAnomalies)
-                    <div class="flex flex-col items-center justify-center h-full text-center py-8">
-                        <p class="text-2xl mb-2">✨</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold">Aucune anomalie détectée cette semaine !</p>
-                    </div>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Prédiction des Risques d'Absences -->
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300" style="flex: 1.2; min-height: 380px; display: flex; flex-direction: column; justify-content: space-between;">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <span class="text-lg">🔮</span>
-                    Risques d'Absences (30j)
-                </h3>
-
-                <div class="space-y-2 overflow-y-auto pr-1" style="flex: 1; max-height: 260px;">
-                    @forelse($this->absenteeismRisks as $risk)
-                        <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-150 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-900/80 transition-colors">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-xs font-bold text-gray-900 dark:text-white truncate">
-                                        {{ $risk['nom'] }}
-                                    </p>
-                                    <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                        {{ $risk['departement'] }}
-                                    </p>
-                                    <p class="text-[9px] text-gray-400 dark:text-gray-500 mt-1 italic">
-                                        {{ $risk['raisons'] }}
-                                    </p>
-                                </div>
-                                <div class="text-right flex-shrink-0 flex flex-col items-end">
-                                    <span class="inline-block px-2 py-0.5 rounded text-[9px] font-bold 
-                                        @if($risk['score'] >= 60) bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-400
-                                        @elseif($risk['score'] >= 30) bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400
-                                        @else bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400
-                                        @endif uppercase">
-                                        {{ $risk['score'] }}%
-                                    </span>
-                                    <span class="block text-[8px] text-gray-500 dark:text-gray-400 mt-1 uppercase font-semibold">
-                                        {{ $risk['niveau'] }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="flex flex-col items-center justify-center h-full text-center py-8">
-                            <p class="text-2xl mb-2">✅</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold">Aucun risque modéré/élevé détecté !</p>
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300" style="flex: 0.8; min-height: 380px; display: flex; flex-direction: column; items: center; justify-content: space-between;">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 text-center">
-                    <span class="text-lg">📈</span>
-                    <span class="block text-sm mt-1">Taux Présence</span>
-                </h3>
-
-                <div class="relative w-36 h-36 flex items-center justify-center my-auto">
-                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" stroke-width="2.5" class="text-gray-200 dark:text-gray-700" />
-                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" stroke-width="2.5"
-                            stroke-dasharray="{{ $this->tauxPresenceGlobal }}, 100"
-                            stroke-linecap="round" class="text-primary-500 transition-all duration-1000" />
-                    </svg>
-                    <div class="absolute text-center">
-                        <div class="text-3xl font-bold text-gray-900 dark:text-white">
-                            {{ $this->tauxPresenceGlobal }}%
+                        <div style="text-align:right;">
+                            <div class="r-badge" style="background:{{ $bdgBg }}; color:{{ $bdgCol }};">{{ $risk['score'] }}%</div>
+                            <div style="font-size:.6rem; font-weight:700; text-transform:uppercase; color:#9ca3af; margin-top:.3rem;">{{ $risk['niveau'] }}</div>
                         </div>
                     </div>
-                </div>
-
-                <p class="text-xs text-gray-500 dark:text-gray-400 text-center font-medium mt-4">
-                    Objectif: <span class="font-bold text-primary-600 dark:text-primary-400">95%</span>
-                </p>
+                @empty
+                    <div style="padding:3rem 1rem; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
+                        <div style="font-size:2.5rem; margin-bottom:.5rem;">✅</div>
+                        <div style="font-weight:700; font-size:.85rem; color:#111827;">Aucun risque majeur détecté</div>
+                    </div>
+                @endforelse
             </div>
-
         </div>
-    </div>
-    <div class="w-full">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <span class="w-1 h-6 bg-primary-500 rounded-full"></span>
-            Classement Général des Employés
-        </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-6">
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm min-h-[320px] flex flex-col">
-                <h4 class="text-sm font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-5 flex items-center gap-2">
-                    🔻 Top 5 Absents
-                </h4>
-                <ol class="space-y-4 flex-1">
-                    @forelse($this->topAbsents as $index => $row)
-                    <li class="flex items-center gap-4 py-1">
-                        <div class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                            <span class="text-xs font-bold text-red-700 dark:text-red-400">{{ $index + 1 }}</span>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {{ $row->employe->full_name ?? 'Inconnu' }}
-                            </p>
-                        </div>
-                        <span class="flex-shrink-0 inline-block px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs font-bold">
-                            {{ $row->total }} j
-                        </span>
-                    </li>
-                    @empty
-                    <div class="flex items-center justify-center h-full text-center">
-                        <p class="text-sm text-gray-400 py-4">Aucune donnée</p>
-                    </div>
-                    @endforelse
-                </ol>
+        {{-- TAUX --}}
+        <div class="r-card" style="flex:0.8; min-width:240px; display:flex; flex-direction:column; align-items:center; padding:1.5rem; justify-content:center;">
+            <h3 class="r-section-title" style="margin-bottom:0;"><span style="background:#14b8a6;"></span> Taux Présence</h3>
+            
+            <div style="position:relative; width:140px; height:140px; display:flex; align-items:center; justify-content:center; margin:2rem 0;">
+                <svg style="width:100%; height:100%; transform:rotate(-90deg);" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" stroke-width="2.5"></circle>
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#14b8a6" stroke-width="2.5"
+                        stroke-dasharray="{{ $this->tauxPresenceGlobal }}, 100" stroke-linecap="round"
+                        style="transition:stroke-dasharray 1s ease-out;"></circle>
+                </svg>
+                <div style="position:absolute; text-align:center;">
+                    <div style="font-size:2rem; font-weight:900; color:#111827;">{{ $this->tauxPresenceGlobal }}<span style="font-size:1.2rem;">%</span></div>
+                </div>
             </div>
-
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm min-h-[320px] flex flex-col">
-                <h4 class="text-sm font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-5 flex items-center gap-2">
-                    ⏰ Top 5 Retards
-                </h4>
-                <ol class="space-y-4 flex-1">
-                    @forelse($this->topRetards as $index => $row)
-                    <li class="flex items-center gap-4 py-1">
-                        <div class="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                            <span class="text-xs font-bold text-amber-700 dark:text-amber-400">{{ $index + 1 }}</span>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {{ $row->employe->full_name ?? 'Inconnu' }}
-                            </p>
-                        </div>
-                        <span class="flex-shrink-0 inline-block px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-bold">
-                            {{ $row->total }} j
-                        </span>
-                    </li>
-                    @empty
-                    <div class="flex items-center justify-center h-full text-center">
-                        <p class="text-sm text-gray-400 py-4">Aucune donnée</p>
-                    </div>
-                    @endforelse
-                </ol>
-            </div>
-
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm min-h-[320px] flex flex-col">
-                <h4 class="text-sm font-bold text-green-600 dark:text-green-400 uppercase tracking-wider mb-5 flex items-center gap-2">
-                    🏆 Top 5 Assidus
-                </h4>
-                <ol class="space-y-4 flex-1">
-                    @forelse($this->topAssidus as $index => $row)
-                    <li class="flex items-center gap-4 py-1">
-                        <div class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                            <span class="text-xs font-bold text-green-700 dark:text-green-400">{{ $index + 1 }}</span>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {{ $row->employe->full_name ?? 'Inconnu' }}
-                            </p>
-                        </div>
-                        <span class="flex-shrink-0 inline-block px-2.5 py-1 rounded-full bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs font-bold">
-                            {{ $row->total }} j
-                        </span>
-                    </li>
-                    @empty
-                    <div class="flex items-center justify-center h-full text-center">
-                        <p class="text-sm text-gray-400 py-4">Aucune donnée</p>
-                    </div>
-                    @endforelse
-                </ol>
+            
+            <div style="font-size:.75rem; font-weight:600; color:#6b7280; background:#f8fafc; padding:.4rem 1rem; border-radius:10px;">
+                Objectif : <span style="font-weight:800; color:#14b8a6;">95%</span>
             </div>
         </div>
     </div>
+
+    {{-- CLASSEMENTS --}}
+    <h3 class="r-section-title" style="margin-top:1rem; margin-bottom:0;"><span style="background:#3b82f6;"></span> Classement Général des Employés</h3>
+    
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.25rem;">
+        
+        {{-- Top Absents --}}
+        <div class="r-card" style="padding:1.5rem;">
+            <div style="font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#b91c1c; display:flex; align-items:center; gap:.5rem; margin-bottom:1.25rem;">
+                <div style="width:24px;height:24px;background:#fee2e2;border-radius:6px;display:flex;align-items:center;justify-content:center;">🔻</div> Top 5 Absents
+            </div>
+            <div style="display:flex; flex-direction:column; gap:.75rem;">
+                @forelse($this->topAbsents as $index => $row)
+                    <div style="display:flex; align-items:center; gap:.75rem;">
+                        <div style="width:24px; height:24px; border-radius:50%; background:#fef2f2; color:#ef4444; font-size:.65rem; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            {{ $index + 1 }}
+                        </div>
+                        <div style="flex:1; font-size:.85rem; font-weight:700; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            {{ $row->employe->full_name ?? 'Inconnu' }}
+                        </div>
+                        <div class="r-badge" style="background:#fee2e2; color:#991b1b;">{{ $row->total }} j</div>
+                    </div>
+                @empty
+                    <div style="font-size:.75rem; color:#9ca3af; text-align:center; padding:1rem 0;">Aucune donnée</div>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- Top Retards --}}
+        <div class="r-card" style="padding:1.5rem;">
+            <div style="font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#b45309; display:flex; align-items:center; gap:.5rem; margin-bottom:1.25rem;">
+                <div style="width:24px;height:24px;background:#fef3c7;border-radius:6px;display:flex;align-items:center;justify-content:center;">⏰</div> Top 5 Retards
+            </div>
+            <div style="display:flex; flex-direction:column; gap:.75rem;">
+                @forelse($this->topRetards as $index => $row)
+                    <div style="display:flex; align-items:center; gap:.75rem;">
+                        <div style="width:24px; height:24px; border-radius:50%; background:#fffbeb; color:#f59e0b; font-size:.65rem; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            {{ $index + 1 }}
+                        </div>
+                        <div style="flex:1; font-size:.85rem; font-weight:700; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            {{ $row->employe->full_name ?? 'Inconnu' }}
+                        </div>
+                        <div class="r-badge" style="background:#fef3c7; color:#92400e;">{{ $row->total }} j</div>
+                    </div>
+                @empty
+                    <div style="font-size:.75rem; color:#9ca3af; text-align:center; padding:1rem 0;">Aucune donnée</div>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- Top Assidus --}}
+        <div class="r-card" style="padding:1.5rem;">
+            <div style="font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#15803d; display:flex; align-items:center; gap:.5rem; margin-bottom:1.25rem;">
+                <div style="width:24px;height:24px;background:#dcfce7;border-radius:6px;display:flex;align-items:center;justify-content:center;">🏆</div> Top 5 Assidus
+            </div>
+            <div style="display:flex; flex-direction:column; gap:.75rem;">
+                @forelse($this->topAssidus as $index => $row)
+                    <div style="display:flex; align-items:center; gap:.75rem;">
+                        <div style="width:24px; height:24px; border-radius:50%; background:#f0fdf4; color:#22c55e; font-size:.65rem; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            {{ $index + 1 }}
+                        </div>
+                        <div style="flex:1; font-size:.85rem; font-weight:700; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            {{ $row->employe->full_name ?? 'Inconnu' }}
+                        </div>
+                        <div class="r-badge" style="background:#dcfce7; color:#166534;">{{ $row->total }} j</div>
+                    </div>
+                @empty
+                    <div style="font-size:.75rem; color:#9ca3af; text-align:center; padding:1rem 0;">Aucune donnée</div>
+                @endforelse
+            </div>
+        </div>
+
+    </div>
+
+</div>
 </x-filament-panels::page>

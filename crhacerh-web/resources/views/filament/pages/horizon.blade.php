@@ -159,53 +159,10 @@
                 Que souhaitez-vous faire aujourd'hui ?
             </p>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem;width:100%;max-width:560px;">
-
-                <button wire:click="genererRapport('week')" class="h-suggestion" type="button">
-                    <div class="h-suggestion-icon" style="background:#EEF2FF;">📈</div>
-                    <div>
-                        <div style="font-size:.8rem;font-weight:700;color:#111827;">Rapport hebdomadaire</div>
-                        <div style="font-size:.68rem;color:#667085;margin-top:.15rem;">Bilan de la semaine en cours</div>
-                    </div>
-                </button>
-
-                <button wire:click="genererRapport('day')" class="h-suggestion" type="button">
-                    <div class="h-suggestion-icon" style="background:#ECFDF3;">📊</div>
-                    <div>
-                        <div style="font-size:.8rem;font-weight:700;color:#111827;">Rapport du jour</div>
-                        <div style="font-size:.68rem;color:#667085;margin-top:.15rem;">Présences & absences aujourd'hui</div>
-                    </div>
-                </button>
-
-                <button wire:click="detecterAnomalies('week')" class="h-suggestion" type="button">
-                    <div class="h-suggestion-icon" style="background:#FEF3F2;">🚨</div>
-                    <div>
-                        <div style="font-size:.8rem;font-weight:700;color:#111827;">Détecter les anomalies</div>
-                        <div style="font-size:.68rem;color:#667085;margin-top:.15rem;">Doublons, contradictions, retards</div>
-                    </div>
-                </button>
-
-                <button wire:click="genererRapport('month')" class="h-suggestion" type="button">
-                    <div class="h-suggestion-icon" style="background:#F5F3FF;">📅</div>
-                    <div>
-                        <div style="font-size:.8rem;font-weight:700;color:#111827;">Rapport mensuel</div>
-                        <div style="font-size:.68rem;color:#667085;margin-top:.15rem;">Analyse globale du mois</div>
-                    </div>
-                </button>
-
-            </div>
         </div>
 
         @else
         {{-- CONVERSATION --}}
-        <div class="h-chips">
-            <button wire:click="genererRapport('day')"   type="button" class="h-chip h-chip-blue">📊 Rapport jour</button>
-            <button wire:click="genererRapport('week')"  type="button" class="h-chip h-chip-cyan">📈 Rapport semaine</button>
-            <button wire:click="genererRapport('month')" type="button" class="h-chip h-chip-violet">📅 Rapport mois</button>
-            <button wire:click="genererRapport('year')"  type="button" class="h-chip h-chip-green">🗓 Rapport année</button>
-            <button wire:click="detecterAnomalies('week')" type="button" class="h-chip h-chip-orange">🚨 Anomalies</button>
-        </div>
-
         @foreach($messages as $msg)
             @if($msg['sender'] === 'ia')
             @php
@@ -254,11 +211,15 @@
 
             <div class="h-input-wrap">
                 <textarea
+                    x-data="{ resize() { $el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 150) + 'px'; } }"
+                    x-on:input="resize()"
+                    x-init="resize()"
                     wire:model.defer="messageInterne"
-                    rows="2"
+                    rows="1"
                     class="h-textarea"
+                    style="max-height: 150px; overflow-y: auto; padding: 2px 0;"
                     placeholder="Posez-moi une question sur les présences ou demandez un rapport..."
-                    onkeydown="if(event.keyCode===13&&!event.shiftKey){event.preventDefault();@this.call('envoyerMessage');}"></textarea>
+                    onkeydown="if(event.keyCode===13&&!event.shiftKey){event.preventDefault();@this.call('envoyerMessage'); $el.style.height='auto';}"></textarea>
 
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.6rem;
                             padding-top:.6rem;border-top:1px solid #F3F4F6;">

@@ -2,16 +2,21 @@
     
     <!-- Custom CSS for strict theme-based colors and animations -->
     <style>
-        /* ByeWind / SnowUI style additions */
-        .snow-card {
+        /* New UI style to match Rapports/Dashboard */
+        .r-card {
             background-color: #ffffff !important;
-            border: 1px solid #e3e3e0 !important;
-            border-radius: 16px !important;
-            box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.05) !important;
+            border: 1px solid #f1f5f9 !important;
+            border-radius: 20px !important;
+            box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.04) !important;
+            transition: box-shadow 0.2s ease;
         }
-        .dark .snow-card {
-            background-color: #1c1c1c !important;
-            border: 1px solid #3e3e3a !important;
+        .r-card:hover {
+            box-shadow: 0px 12px 32px 0px rgba(0, 0, 0, 0.08) !important;
+        }
+        .dark .r-card {
+            background-color: #1f2937 !important;
+            border: 1px solid #374151 !important;
+            box-shadow: none !important;
         }
 
         .snow-search-container {
@@ -169,7 +174,7 @@
     </style>
     
     <!-- Conversations List Panel -->
-    <div class="col-span-12 {{ $activeThreadId ? 'hidden' : 'flex' }} h-full snow-card overflow-hidden flex flex-col">
+    <div class="col-span-12 {{ $activeThreadId ? 'hidden' : 'flex' }} h-full r-card overflow-hidden flex flex-col">
         
         <!-- Header & Search -->
         <div class="p-4 border-b border-gray-100 dark:border-gray-800 space-y-3">
@@ -246,7 +251,7 @@
     </div>
 
     <!-- Active Conversation Panel -->
-    <div class="col-span-12 {{ $activeThreadId ? 'flex' : 'hidden' }} h-full snow-card flex flex-col overflow-hidden">
+    <div class="col-span-12 {{ $activeThreadId ? 'flex' : 'hidden' }} h-full r-card flex flex-col overflow-hidden">
         
         @if($activeThread)
             

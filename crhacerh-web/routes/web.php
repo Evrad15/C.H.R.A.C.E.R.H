@@ -49,4 +49,19 @@ Route::get('/ressources-humaines/calendrier/callback', function (Request $reques
     return redirect('/ressources-humaines/calendrier');
 });
 
+// --- Routes de gestion des rapports (Contourne l'erreur 403 du symlink) ---
+Route::get('/reports/open/{filename}', function ($filename) {
+    $path = 'reports/' . $filename;
+    if (Storage::disk('public')->exists($path)) {
+        return response()->file(Storage::disk('public')->path($path));
+    }
+    abort(404, 'Rapport introuvable');
+})->name('report.open');
 
+Route::get('/reports/download/{filename}', function ($filename) {
+    $path = 'reports/' . $filename;
+    if (Storage::disk('public')->exists($path)) {
+        return response()->download(Storage::disk('public')->path($path));
+    }
+    abort(404, 'Rapport introuvable');
+})->name('report.download');

@@ -174,10 +174,10 @@
 
                     {{-- Actions --}}
                     <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem;padding-top:.65rem;border-top:1px solid #f3f4f6;">
-                        <a href="{{ $file['url'] }}" target="_blank" class="r-btn r-btn-open">
+                        <a href="{{ $file['url_open'] }}" target="_blank" class="r-btn r-btn-open">
                             <i class="fa-regular fa-eye"></i> Ouvrir
                         </a>
-                        <a href="{{ $file['url'] }}" download="{{ $file['name'] }}" class="r-btn r-btn-dl">
+                        <a href="{{ $file['url_download'] }}" class="r-btn r-btn-dl">
                             <i class="fa-solid fa-download"></i> Télécharger
                         </a>
                         <button type="button"

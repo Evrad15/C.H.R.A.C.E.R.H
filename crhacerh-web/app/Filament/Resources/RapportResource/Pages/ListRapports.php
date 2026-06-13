@@ -82,7 +82,8 @@ class ListRapports extends ListRecords
             return [
                 'path'        => $path,
                 'name'        => $name,
-                'url'         => $disk->url($path),
+                'url_open'    => route('report.open', ['filename' => $name]),
+                'url_download'=> route('report.download', ['filename' => $name]),
                 'size'        => $disk->size($path),
                 'modified'    => $carbonDate,
                 'folder_key'  => $folderKey,
