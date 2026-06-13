@@ -370,7 +370,31 @@ class HorizonAiService
             throw new \RuntimeException('PhpSpreadsheet missing. Run: composer require phpoffice/phpspreadsheet');
         }
 
-        $filename = $filename ?? ('rapport_' . $report['period'] . '_' . now()->format('Ymd_His') . '.xlsx');
+        if ($filename === null) {
+            $monthsFr = [
+                1=>'Janvier',2=>'Février',3=>'Mars',4=>'Avril',5=>'Mai',6=>'Juin',
+                7=>'Juillet',8=>'Août',9=>'Septembre',10=>'Octobre',11=>'Novembre',12=>'Décembre'
+            ];
+            $month = $monthsFr[now()->month];
+            $year  = now()->year;
+            $day   = now()->day;
+
+            if ($report['period'] === 'week') {
+                // Interval: Du lundi au vendredi de la semaine
+                $monday  = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+                $friday  = now()->startOfWeek(\Carbon\Carbon::MONDAY)->addDays(4);
+                $from    = $monday->format('d');
+                $to      = $friday->format('d');
+                $mMonth  = $monthsFr[$friday->month];
+                $filename = "Du-{$from}-au-{$to}_{$mMonth}-{$year}.xlsx";
+            } elseif ($report['period'] === 'day') {
+                $filename = "Journalier_{$day}-{$month}-{$year}.xlsx";
+            } elseif ($report['period'] === 'year') {
+                $filename = "Annuel_{$year}.xlsx";
+            } else {
+                $filename = "Mensuel_{$month}-{$year}.xlsx";
+            }
+        }
         $path = 'reports/' . $filename;
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -515,7 +539,30 @@ class HorizonAiService
      */
     public function exportReportAsPdf(array $report, string $filename = null): string
     {
-        $filename = $filename ?? ('rapport_' . $report['period'] . '_' . now()->format('Ymd_His') . '.pdf');
+        if ($filename === null) {
+            $monthsFr = [
+                1=>'Janvier',2=>'Février',3=>'Mars',4=>'Avril',5=>'Mai',6=>'Juin',
+                7=>'Juillet',8=>'Août',9=>'Septembre',10=>'Octobre',11=>'Novembre',12=>'Décembre'
+            ];
+            $month = $monthsFr[now()->month];
+            $year  = now()->year;
+            $day   = now()->day;
+
+            if ($report['period'] === 'week') {
+                $monday  = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+                $friday  = now()->startOfWeek(\Carbon\Carbon::MONDAY)->addDays(4);
+                $from    = $monday->format('d');
+                $to      = $friday->format('d');
+                $mMonth  = $monthsFr[$friday->month];
+                $filename = "Du-{$from}-au-{$to}_{$mMonth}-{$year}.pdf";
+            } elseif ($report['period'] === 'day') {
+                $filename = "Journalier_{$day}-{$month}-{$year}.pdf";
+            } elseif ($report['period'] === 'year') {
+                $filename = "Annuel_{$year}.pdf";
+            } else {
+                $filename = "Mensuel_{$month}-{$year}.pdf";
+            }
+        }
         $path = storage_path('app/public/reports/' . $filename);
 
         $html = '<h2>Rapport (' . e($report['from']) . ' → ' . e($report['to']) . ')</h2>';

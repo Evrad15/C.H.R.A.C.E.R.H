@@ -54,7 +54,7 @@ class RessourcesHumainesPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->icons([
-                'custom-horizon' => fn () => new HtmlString('
+                'custom-horizon' => fn () => new \Illuminate\Support\HtmlString('
                     <img src="' . asset('images/Horizon.png') . '" 
                          style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; max-width: 20px;" 
                          alt="Horizon">

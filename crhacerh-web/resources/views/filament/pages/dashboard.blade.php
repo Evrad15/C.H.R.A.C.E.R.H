@@ -302,7 +302,7 @@
                                 <span class="flex-shrink-0 inline-block px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 uppercase">
                                     Suspect
                                 </span>
-                            </div>
+            </div>
                         </div>
                         @endforeach
                     @endif
