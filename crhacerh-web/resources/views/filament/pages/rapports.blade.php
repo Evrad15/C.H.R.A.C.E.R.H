@@ -116,7 +116,7 @@
                 } else {
                     $parts       = preg_split('/[_\-]+/', $rawName);
                     $displayName = implode(' ', array_map('ucfirst', $parts));
-                    $displaySub  = $file['modified']->translatedFormat('F Y');
+                    $displaySub  = $file['modified']->safeTranslatedFormat('F Y');
                     $isMensuel   = false;
                 }
             @endphp

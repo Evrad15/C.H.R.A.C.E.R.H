@@ -1,5 +1,7 @@
 import 'dart:math' as math;
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/message_screen.dart';
 import 'screens/scannqr_screen.dart';
@@ -28,12 +30,27 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   late AnimationController _navCtrl;
+  Map<String, dynamic>? _currentEmployee;
 
   @override
   void initState() {
     super.initState();
+    _currentEmployee = widget.employee;
     _navCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 200));
+    _loadLocalEmployee();
+  }
+
+  Future<void> _loadLocalEmployee() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString('cached_employee');
+    if (cached != null) {
+      if (mounted) {
+        setState(() {
+          _currentEmployee = jsonDecode(cached).cast<String, dynamic>();
+        });
+      }
+    }
   }
 
   @override
@@ -53,19 +70,22 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final emp = _currentEmployee ?? widget.employee;
     final pages = [
       HomeTab(
-        employeeId: widget.employee['id'],
-        name: '${widget.employee['first_name']} ${widget.employee['last_name']}',
+        employeeId: emp['id'],
+        name: '${emp['first_name']} ${emp['last_name']}',
         onLogout: () => _logout(context),
-        employee: widget.employee,
+        employee: emp,
+        onReload: _loadLocalEmployee,
       ),
-      MessageScreen(employeeId: widget.employee['id']),
-      ScannQRScreen(employeeId: widget.employee['id']),
-      RapportsScreen(employee: widget.employee),
+      MessageScreen(employeeId: emp['id']),
+      ScannQRScreen(employeeId: emp['id']),
+      RapportsScreen(employee: emp),
       ProfilScreen(
-        employee: widget.employee,
+        employee: emp,
         onLogout: () => _logout(context),
+        onReload: _loadLocalEmployee,
       ),
     ];
 
@@ -76,7 +96,10 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       bottomNavigationBar: _PremiumNavBar(
         selectedIndex: _selectedIndex,
-        onTap: (i) => setState(() => _selectedIndex = i),
+        onTap: (i) {
+          _loadLocalEmployee();
+          setState(() => _selectedIndex = i);
+        },
       ),
     );
   }
@@ -234,6 +257,7 @@ class HomeTab extends StatefulWidget {
   final String name;
   final VoidCallback onLogout;
   final Map<String, dynamic> employee;
+  final VoidCallback? onReload;
 
   const HomeTab({
     super.key,
@@ -241,6 +265,7 @@ class HomeTab extends StatefulWidget {
     required this.name,
     required this.onLogout,
     required this.employee,
+    this.onReload,
   });
 
   @override
@@ -392,6 +417,16 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
             ),
           ),
 
+          SliverToBoxAdapter(
+            child: SlideTransition(
+              position: _cardsSlide,
+              child: FadeTransition(
+                opacity: _heroFade,
+                child: _buildFaceEnrollmentBanner(context),
+              ),
+            ),
+          ),
+
           if (_isLoading)
             SliverFillRemaining(
               child: Center(
@@ -423,6 +458,91 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
 
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFaceEnrollmentBanner(BuildContext context) {
+    if (widget.employee['consent_facial_at'] != null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.orange.withValues(alpha: 0.25), AppColors.orange.withValues(alpha: 0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.orange.withValues(alpha: 0.4), width: 1.2),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.orange.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.face_rounded, color: AppColors.orange, size: 24),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Enregistrement facial requis',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Enregistrez votre visage pour pouvoir pointer en cas d\'oubli ou perte de votre téléphone.',
+                  style: GoogleFonts.inter(
+                    color: AppColors.textSec,
+                    fontSize: 11,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton(
+            onPressed: () async {
+              final res = await Navigator.pushNamed(
+                context,
+                '/face_register',
+                arguments: widget.employee,
+              );
+              if (widget.onReload != null) {
+                widget.onReload!();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.orange,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+            ),
+            child: Text(
+              'Enregistrer',
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );

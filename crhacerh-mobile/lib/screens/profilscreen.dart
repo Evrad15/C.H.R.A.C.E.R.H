@@ -12,11 +12,13 @@ import 'leaves_screen.dart';
 class ProfilScreen extends StatefulWidget {
   final Map<String, dynamic> employee;
   final VoidCallback onLogout;
+  final VoidCallback? onReload;
 
   const ProfilScreen({
     super.key,
     required this.employee,
     required this.onLogout,
+    this.onReload,
   });
 
   @override
@@ -281,6 +283,23 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                   builder: (context) => LeavesScreen(employeeId: widget.employee['id']),
                                 ),
                               );
+                            },
+                          ),
+                          _buildDivider(),
+                          _buildSettingTile(
+                            icon: Icons.face_rounded,
+                            title: 'Enregistrement Facial',
+                            trailing: widget.employee['consent_facial_at'] != null ? 'Enregistré' : 'Non configuré',
+                            trailingColor: widget.employee['consent_facial_at'] != null ? AppColors.green : AppColors.orange,
+                            onTap: () async {
+                              final res = await Navigator.pushNamed(
+                                context,
+                                '/face_register',
+                                arguments: widget.employee,
+                              );
+                              if (widget.onReload != null) {
+                                widget.onReload!();
+                              }
                             },
                           ),
                           _buildDivider(),

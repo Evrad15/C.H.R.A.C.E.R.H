@@ -30,3 +30,8 @@ Route::get('/employee/{id}/messages/{messageId}/download', [\App\Http\Controller
 // Routes pour les congés et permissions
 Route::get('/employee/{id}/leaves', [\App\Http\Controllers\Api\CongeApiController::class, 'index']);
 Route::post('/employee/{id}/leaves', [\App\Http\Controllers\Api\CongeApiController::class, 'store']);
+
+// Routes pour la reconnaissance faciale
+Route::post('/employee/{id}/register-face', [\App\Http\Controllers\Api\FaceApiController::class, 'registerFace']);
+Route::post('/kiosk/face-verify', [\App\Http\Controllers\Api\FaceApiController::class, 'verifyFace']);
+

@@ -281,6 +281,159 @@
                 order: -1; /* QR Code on top for smaller screens */
             }
         }
+
+        /* Mode Selector */
+        .mode-selector {
+            display: flex;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            border-radius: 30px;
+            padding: 4px;
+            gap: 4px;
+            width: fit-content;
+            box-shadow: 0 8px 32px rgba(212, 184, 149, 0.1);
+        }
+        .mode-btn {
+            background: transparent;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mode-btn:hover {
+            color: var(--text-main);
+        }
+        .mode-btn.active {
+            background: linear-gradient(135deg, #D4B895, #C2A17A);
+            color: white;
+            box-shadow: 0 4px 15px rgba(212, 184, 149, 0.4);
+        }
+
+        /* Content Cards transition */
+        .content-card {
+            display: none !important;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.4s ease;
+        }
+        .content-card.active {
+            display: flex !important;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Disclaimer */
+        .kiosk-disclaimer {
+            background: rgba(245, 158, 11, 0.1);
+            color: #D84315;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Webcam wrapper */
+        .webcam-wrapper {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid var(--primary);
+            box-shadow: 0 20px 45px rgba(0,0,0,0.08);
+            background: #000;
+        }
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        /* Scanning HUD */
+        .face-scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .scanner-laser {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right, transparent, var(--primary-light), var(--primary), var(--primary-light), transparent);
+            top: 0;
+            animation: scan-vertical 3s infinite linear;
+            box-shadow: 0 0 8px var(--primary);
+        }
+        .scanner-brackets {
+            width: 80%;
+            height: 80%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            position: relative;
+            animation: pulse-border 2s infinite alternate ease-in-out;
+        }
+        .scanner-brackets::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            clip-path: polygon(0 0, 30% 0, 30% 100%, 0 100%);
+            animation: rotate-brackets 8s infinite linear;
+        }
+
+        @keyframes scan-vertical {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+        @keyframes pulse-border {
+            0% { transform: scale(0.96); opacity: 0.4; }
+            100% { transform: scale(1.02); opacity: 1; }
+        }
+        @keyframes rotate-brackets {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Success & Error styles */
+        .feedback-success {
+            color: #2E7D32 !important;
+            font-weight: 600;
+            animation: text-pulse 1s infinite alternate;
+        }
+        .feedback-error {
+            color: #C62828 !important;
+            font-weight: 600;
+        }
+        @keyframes text-pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.03); }
+        }
     </style>
 </head>
 <body>
@@ -311,9 +464,22 @@
             </div>
         </section>
 
-        <!-- Section QR Code -->
+        <!-- Section Pointage (QR ou Reconnaissance Faciale) -->
         <section class="qr-section">
-            <div class="r-card qr-card">
+            <!-- Sélecteur de Mode de Pointage -->
+            <div class="mode-selector">
+                <button id="mode-qr-btn" class="mode-btn active" onclick="switchMode('qr')">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 00-1 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                    Code QR
+                </button>
+                <button id="mode-face-btn" class="mode-btn" onclick="switchMode('face')">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Visage
+                </button>
+            </div>
+
+            <!-- Conteneur QR Code -->
+            <div id="qr-container" class="r-card qr-card content-card active">
                 <div class="qr-wrapper" id="qr-wrapper">
                     <div id="qrcode"></div>
                 </div>
@@ -327,6 +493,30 @@
 
                 <div class="instruction">
                     Ouvrez l'application mobile et scannez ce code QR pour valider votre arrivée ou votre départ.
+                </div>
+            </div>
+
+            <!-- Conteneur Reconnaissance Faciale -->
+            <div id="face-container" class="r-card qr-card content-card">
+                <!-- Message explicatif d'oubli/perte -->
+                <div class="kiosk-disclaimer">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right: 6px;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    À utiliser uniquement en cas de perte ou d'oubli de votre téléphone.
+                </div>
+
+                <div class="webcam-wrapper">
+                    <video id="webcam" autoplay playsinline muted width="320" height="320"></video>
+                    <!-- Pulsing face detection overlay -->
+                    <div class="face-scanner-overlay">
+                        <div class="scanner-laser"></div>
+                        <div class="scanner-brackets"></div>
+                    </div>
+                </div>
+                
+                <canvas id="hidden-canvas" style="display: none;" width="640" height="640"></canvas>
+
+                <div id="face-feedback" class="face-feedback instruction">
+                    Placez votre visage au centre du cadre pour enregistrer votre présence.
                 </div>
             </div>
         </section>
@@ -420,11 +610,139 @@
             }
         }
 
+        // 3. Gestion de la Reconnaissance Faciale
+        let webcamStream = null;
+        let faceIntervalId = null;
+        const webcamElement = document.getElementById('webcam');
+        const faceFeedback = document.getElementById('face-feedback');
+        const hiddenCanvas = document.getElementById('hidden-canvas');
+        const canvasCtx = hiddenCanvas.getContext('2d');
+        let isProcessingFace = false;
+
+        function switchMode(mode) {
+            const qrBtn = document.getElementById('mode-qr-btn');
+            const faceBtn = document.getElementById('mode-face-btn');
+            const qrContainer = document.getElementById('qr-container');
+            const faceContainer = document.getElementById('face-container');
+
+            if (mode === 'qr') {
+                qrBtn.classList.add('active');
+                faceBtn.classList.remove('active');
+                qrContainer.classList.add('active');
+                faceContainer.classList.remove('active');
+                stopWebcam();
+            } else {
+                faceBtn.classList.add('active');
+                qrBtn.classList.remove('active');
+                faceContainer.classList.add('active');
+                qrContainer.classList.remove('active');
+                startWebcam();
+            }
+        }
+
+        async function startWebcam() {
+            faceFeedback.innerText = "Démarrage de la caméra...";
+            faceFeedback.className = "face-feedback instruction";
+            
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 320, height: 320, facingMode: 'user' } 
+                });
+                webcamElement.srcObject = webcamStream;
+                webcamElement.onloadedmetadata = () => {
+                    webcamElement.play();
+                    faceFeedback.innerText = "Alignez votre visage au centre pour pointer.";
+                    setTimeout(() => {
+                        if (webcamStream) {
+                            startFaceScanning();
+                        }
+                    }, 2000);
+                };
+            } catch (err) {
+                console.error("Erreur d'accès à la webcam: ", err);
+                faceFeedback.innerText = "Erreur : Impossible d'accéder à la webcam. Vérifiez vos autorisations.";
+                faceFeedback.className = "face-feedback instruction feedback-error";
+            }
+        }
+
+        function stopWebcam() {
+            stopFaceScanning();
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            webcamElement.srcObject = null;
+        }
+
+        function startFaceScanning() {
+            stopFaceScanning();
+            faceIntervalId = setInterval(captureAndVerifyFace, 3000);
+        }
+
+        function stopFaceScanning() {
+            if (faceIntervalId) {
+                clearInterval(faceIntervalId);
+                faceIntervalId = null;
+            }
+        }
+
+        async function captureAndVerifyFace() {
+            if (isProcessingFace || !webcamStream) return;
+            isProcessingFace = true;
+            
+            faceFeedback.innerText = "Analyse faciale en cours...";
+            faceFeedback.className = "face-feedback instruction";
+
+            try {
+                canvasCtx.drawImage(webcamElement, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+                const imageDataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.85);
+
+                const response = await fetch('/api/kiosk/face-verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ image: imageDataUrl })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.status === 'success') {
+                    const user = result.data.employee;
+                    const typeLabel = result.data.type === 'ENTREE' ? 'Arrivée' : 'Départ';
+                    faceFeedback.innerText = `Reconnu : ${user} (${typeLabel} à ${result.data.time})`;
+                    faceFeedback.className = "face-feedback instruction feedback-success";
+                    
+                    fetchRecentPointages();
+
+                    stopFaceScanning();
+                    setTimeout(() => {
+                        if (webcamStream) {
+                            faceFeedback.innerText = "Alignez votre visage au centre pour pointer.";
+                            faceFeedback.className = "face-feedback instruction";
+                            startFaceScanning();
+                        }
+                    }, 5000);
+                } else {
+                    faceFeedback.innerText = result.message || "Visage non reconnu. Réessayez.";
+                    faceFeedback.className = "face-feedback instruction feedback-error";
+                }
+            } catch (error) {
+                console.error("Erreur reconnaissance faciale:", error);
+                faceFeedback.innerText = "Erreur de connexion avec le serveur.";
+                faceFeedback.className = "face-feedback instruction feedback-error";
+            } finally {
+                isProcessingFace = false;
+            }
+        }
+
         // Lancement initial
         generateNewQR();
         requestAnimationFrame(updateCycle);
         fetchRecentPointages();
-        setInterval(fetchRecentPointages, 3000); // Check every 3 seconds for fast UI update
+        setInterval(fetchRecentPointages, 3000);
     </script>
 </body>
 </html>

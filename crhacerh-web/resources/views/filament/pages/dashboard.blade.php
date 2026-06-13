@@ -39,7 +39,7 @@
         <div>
             <div style="font-size:1.5rem; font-weight:900; color:#111827;" class="dark:text-white">Tableau de bord</div>
             <p style="font-size:.85rem; color:#6b7280; margin-top:.2rem;">
-                Semaine {{ now()->weekOfYear }} • {{ now()->translatedFormat('l j F Y') }}
+                Semaine {{ now()->weekOfYear }} • {{ now()->safeTranslatedFormat('l j F Y') }}
             </p>
         </div>
     </div>

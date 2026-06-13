@@ -31,7 +31,7 @@ class HorizonReportCommand extends Command
         }
 
         // Crée également l'entrée en base
-        $title   = 'Rapport auto ' . ucfirst($period) . ' — ' . now()->translatedFormat('d F Y');
+        $title   = 'Rapport auto ' . ucfirst($period) . ' — ' . now()->safeTranslatedFormat('d F Y');
         $content = $service->formatReportText($report, $title);
         $service->createReportRecord($title, $content);
 

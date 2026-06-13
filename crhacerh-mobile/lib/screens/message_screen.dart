@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
 import '../services/chat_service.dart';
+import 'leave_form_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (cohérents avec home_screen.dart)
@@ -261,6 +262,34 @@ class _MessageScreenState extends State<MessageScreen>
                   ],
                 ),
               ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Bouton Demande de Congés
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LeaveFormScreen(employeeId: widget.employeeId),
+                ),
+              );
+            },
+            icon: Icon(Icons.calendar_month_rounded, color: AppColors.accent, size: 18),
+            label: Text(
+              'Congés',
+              style: TextStyle(
+                color: AppColors.accent,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              backgroundColor: AppColors.accent.withValues(alpha: 0.1),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ],

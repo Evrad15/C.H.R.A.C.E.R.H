@@ -140,7 +140,7 @@
                                         {{ $p->type === 'ENTREE' ? 'Arrivée' : 'Départ' }}
                                     </p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">
-                                        {{ \Carbon\Carbon::parse($p->created_at)->translatedFormat('l d F Y à H:i') }}
+                                        {{ \Carbon\Carbon::parse($p->created_at)->safeTranslatedFormat('l d F Y à H:i') }}
                                     </p>
                                 </div>
                             </div>

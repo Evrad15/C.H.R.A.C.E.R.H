@@ -77,10 +77,10 @@ class CongeResource extends Resource
                         'Maladie' => 'danger',
                     }),
                 Tables\Columns\TextColumn::make('date_debut')
-                    ->dateTime('d/m/Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? \Carbon\Carbon::parse($state)->format('d/m/Y H:i') : '')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('date_fin')
-                    ->dateTime('d/m/Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? \Carbon\Carbon::parse($state)->format('d/m/Y H:i') : '')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('statut')
                     ->badge()
@@ -90,7 +90,7 @@ class CongeResource extends Resource
                         'Rejetée' => 'danger',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
+                    ->formatStateUsing(fn ($state) => $state ? \Carbon\Carbon::parse($state)->format('d/m/Y H:i') : '')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

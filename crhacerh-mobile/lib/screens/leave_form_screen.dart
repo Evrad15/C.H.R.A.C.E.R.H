@@ -18,14 +18,14 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
   final LeaveService _leaveSvc = LeaveService();
   final _formKey = GlobalKey<FormState>();
 
-  String _selectedType = 'Cong';
+  String _selectedType = 'Congé';
   DateTime? _startDate;
   DateTime? _endDate;
   final TextEditingController _motifController = TextEditingController();
   
   bool _isSubmitting = false;
 
-  final List<String> _types = ['Cong', 'Permission', 'Maladie'];
+  final List<String> _types = ['Congé', 'Permission', 'Maladie'];
 
   Future<void> _pickDate(bool isStart) async {
     final initialDate = isStart

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'screens/matriculescreen.dart';
+import 'screens/face_register_screen.dart';
 import 'home_screen.dart';
 import 'theme_manager.dart';
 
@@ -44,6 +45,10 @@ class MyApp extends StatelessWidget {
               : const MatriculeScreen(),
           routes: {
             '/matricule': (context) => const MatriculeScreen(),
+            '/face_register': (context) {
+              final employee = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+              return FaceRegisterScreen(employee: employee);
+            },
           },
         );
       }
