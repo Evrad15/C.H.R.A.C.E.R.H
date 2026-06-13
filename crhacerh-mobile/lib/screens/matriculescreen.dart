@@ -220,53 +220,67 @@ class _MatriculeScreenState extends State<MatriculeScreen> {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'bypass-tunnel-reminder': 'true', // Force le bypass de la sécurité Localtunnel sur mobile
+          'Bypass-Tunnel-Reminder': 'true', // Force le bypass de la sécurité Localtunnel sur mobile
         },
         body: jsonEncode({'matricule': matricule}),
       );
 
-      final responseData = jsonDecode(response.body);
+      try {
+        final responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200) {
-        var employee = responseData['employee'];
-        
-        // 1. Enregistrer les informations de l'employé en cache local JSON
-        final prefs = await SharedPreferences.getInstance();
-        String employeeJson = jsonEncode(employee);
-        await prefs.setString('cached_employee', employeeJson);
+        if (response.statusCode == 200) {
+          var employee = responseData['employee'];
+          
+          // 1. Enregistrer les informations de l'employé en cache local JSON
+          final prefs = await SharedPreferences.getInstance();
+          String employeeJson = jsonEncode(employee);
+          await prefs.setString('cached_employee', employeeJson);
 
-        // 2. Sauvegarde étendue via LocalStorageService (fichier JSON dédié)
-        await LocalStorageService().saveEmployee(
-            Map<String, dynamic>.from(employee));
+          // 2. Sauvegarde étendue via LocalStorageService (fichier JSON dédié)
+          await LocalStorageService().saveEmployee(
+              Map<String, dynamic>.from(employee));
 
+          if (context.mounted) {
+            _showSnackBar(
+              context, 
+              'Bienvenue ${employee['first_name']} ${employee['last_name']}', 
+              Colors.green
+            );
+
+            // 2. Redirection vers la page d'accueil (en écrasant l'historique)
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(employee: employee),
+              ),
+            );
+          }
+        } else {
+          // Gestion des erreurs renvoyées par Laravel (ex: 404 introuvable)
+          if (context.mounted) {
+            String errorMsg = responseData['message'] ?? 'Matricule invalide.';
+            _showSnackBar(context, errorMsg, Colors.red);
+          }
+        }
+      } catch (e) {
+        // Le décodage JSON a échoué (probablement une page HTML d'erreur ou Localtunnel)
+        print("Erreur de décodage JSON. Status: ${response.statusCode}");
+        print("Body: ${response.body}");
         if (context.mounted) {
           _showSnackBar(
             context, 
-            'Bienvenue ${employee['first_name']} ${employee['last_name']}', 
-            Colors.green
+            'Erreur serveur (${response.statusCode}). L\'URL Localtunnel est-elle correcte ?', 
+            Colors.orange
           );
-
-          // 2. Redirection vers la page d'accueil (en écrasant l'historique)
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HomeScreen(employee: employee),
-            ),
-          );
-        }
-      } else {
-        // Gestion des erreurs renvoyées par Laravel (ex: 404 introuvable)
-        if (context.mounted) {
-          String errorMsg = responseData['message'] ?? 'Matricule invalide.';
-          _showSnackBar(context, errorMsg, Colors.red);
         }
       }
     } catch (e) {
-      // Gestion des pannes réseaux globales
+      // Gestion des pannes réseaux globales (ex: pas d'internet, serveur éteint)
+      print("Erreur réseau: $e");
       if (context.mounted) {
         _showSnackBar(
           context, 
-          'Impossible de joindre le serveur. Vérifiez que votre serveur local et le tunnel sont actifs.', 
+          'Impossible de joindre le serveur. Vérifiez votre connexion et Localtunnel.', 
           Colors.orange
         );
       }

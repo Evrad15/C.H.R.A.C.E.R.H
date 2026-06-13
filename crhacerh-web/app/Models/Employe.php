@@ -83,6 +83,12 @@ class Employe extends Authenticatable implements FilamentUser, HasName
                     // 💡 Note : Si dans ta BDD c'est écrit en minuscule 'absent', remplace 'Absent' par 'absent' ici.
     }
     
+    // Un employé a plusieurs congés/permissions
+    public function conges(): HasMany
+    {
+        return $this->hasMany(Conge::class, 'employe_id');
+    }
+    
     // Les messages envoyés par l'employé
     public function sentMessages()
     {

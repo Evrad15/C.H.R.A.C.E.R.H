@@ -27,3 +27,6 @@ Route::get('/employee/{id}/messages', [\App\Http\Controllers\Api\ChatApiControll
 Route::post('/employee/{id}/messages', [\App\Http\Controllers\Api\ChatApiController::class, 'sendMessage']);
 Route::get('/employee/{id}/messages/{messageId}/download', [\App\Http\Controllers\Api\ChatApiController::class, 'downloadAttachment']);
 
+// Routes pour les congés et permissions
+Route::get('/employee/{id}/leaves', [\App\Http\Controllers\Api\CongeApiController::class, 'index']);
+Route::post('/employee/{id}/leaves', [\App\Http\Controllers\Api\CongeApiController::class, 'store']);
