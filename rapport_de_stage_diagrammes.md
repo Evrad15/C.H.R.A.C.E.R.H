@@ -517,6 +517,57 @@ CREATE INDEX idx_pointages_employee_ts ON pointages(employee_id, timestamp DESC)
 CREATE INDEX idx_pointages_status ON pointages(status);
 ```
 
+#### Diagramme du Schéma Physique (ERD)
+```mermaid
+erDiagram
+    departments {
+        int id PK
+        varchar name UK
+        timestamp created_at
+        timestamp updated_at
+    }
+    employees {
+        int id PK
+        varchar matricule UK
+        varchar email UK
+        varchar password
+        varchar first_name
+        varchar last_name
+        varchar role
+        int department_id FK
+        varchar phone
+        bytea face_embeddings
+        timestamp consent_facial_at
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    pointages {
+        int id PK
+        int employee_id FK
+        varchar type
+        varchar status
+        varchar source
+        timestamp timestamp
+        double_precision confidence_score
+        boolean anomaly_detected
+        timestamp created_at
+        timestamp updated_at
+    }
+    ml_predictions {
+        int id PK
+        int employee_id FK
+        varchar prediction_type
+        double_precision risk_score
+        text details
+        timestamp created_at
+    }
+
+    departments ||--o{ employees : "contient"
+    employees ||--o{ pointages : "enregistre"
+    employees ||--o{ ml_predictions : "fait_l_objet_de"
+```
+
 ---
 
 ### 15. Diagrammes d'interface utilisateur (Maquettes/wireframes)

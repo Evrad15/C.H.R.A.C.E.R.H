@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dictionnaire de Données - C.H.R.A.C.E.R.H</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --primary: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --th-bg: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            margin: 0 0 8px 0;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 10px;
+        }
+
+        th {
+            background-color: var(--th-bg);
+            color: var(--primary);
+            font-weight: 600;
+            padding: 14px 16px;
+            font-size: 0.95rem;
+            border-bottom: 2px solid var(--border-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        td {
+            padding: 16px;
+            font-size: 0.95rem;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .field-name {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--accent);
+            background: #eff6ff;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .type-badge {
+            font-weight: 500;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+
+        .primary-key {
+            border-left: 4px solid #f59e0b;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            .container {
+                padding: 20px;
+            }
+            td, th {
+                padding: 10px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Dictionnaire de Données</h1>
+        <p class="subtitle">Base de données relationnelle du Projet C.H.R.A.C.E.R.H (PostgreSQL)</p>
+    </header>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Code / Champ</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Taille</th>
+                <th>Règles / Contraintes</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="primary-key">
+                <td><span class="field-name">EMP_ID</span></td>
+                <td>Identifiant unique de l'employé</td>
+                <td><span class="type-badge">SERIAL</span></td>
+                <td>-</td>
+                <td>Clé primaire, Auto-incrémenté</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">EMP_MAT</span></td>
+                <td>Matricule unique de l'employé</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>50</td>
+                <td>Unique (Format strict: <code>chr-20xx-xxxx</code>)</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">EMP_EMAIL</span></td>
+                <td>Email de connexion</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>150</td>
+                <td>Unique, Format email valide</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">EMP_PWD</span></td>
+                <td>Mot de passe sécurisé</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>255</td>
+                <td>Haché en base (Bcrypt)</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">EMP_FN</span></td>
+                <td>Prénom</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>100</td>
+                <td>Obligatoire</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">EMP_LN</span></td>
+                <td>Nom de famille</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>100</td>
+                <td>Obligatoire</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">EMP_ROLE</span></td>
+                <td>Rôle de l'utilisateur</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>50</td>
+                <td><code>Employés</code>, <code>Manager</code>, <code>RH_Admin</code></td>
+            </tr>
+            <tr>
+                <td><span class="field-name">EMP_TEL</span></td>
+                <td>Numéro de téléphone</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>20</td>
+                <td>Optionnel</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">EMP_EMB</span></td>
+                <td>Empreintes biométriques faciales</td>
+                <td><span class="type-badge">BYTEA (Binary)</span></td>
+                <td>-</td>
+                <td>Vecteur d'embeddings faciaux (128 dimensions)</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">EMP_RGPD</span></td>
+                <td>Date de consentement RGPD</td>
+                <td><span class="type-badge">TIMESTAMP</span></td>
+                <td>-</td>
+                <td>Enregistre l'acceptation de la biométrie</td>
+            </tr>
+            <tr class="primary-key">
+                <td><span class="field-name">DEP_ID</span></td>
+                <td>Identifiant du département</td>
+                <td><span class="type-badge">SERIAL</span></td>
+                <td>-</td>
+                <td>Clé primaire</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">DEP_NOM</span></td>
+                <td>Nom du département</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>100</td>
+                <td>Unique</td>
+            </tr>
+            <tr class="primary-key">
+                <td><span class="field-name">PTG_ID</span></td>
+                <td>Identifiant unique du pointage</td>
+                <td><span class="type-badge">SERIAL</span></td>
+                <td>-</td>
+                <td>Clé primaire</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">PTG_TYP</span></td>
+                <td>Type de pointage</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>20</td>
+                <td><code>ENTREE</code>, <code>SORTIE</code></td>
+            </tr>
+            <tr>
+                <td><span class="field-name">PTG_STT</span></td>
+                <td>Statut du pointage</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>20</td>
+                <td><code>Present</code>, <code>Retard</code>, <code>Absent</code></td>
+            </tr>
+            <tr>
+                <td><span class="field-name">PTG_SRC</span></td>
+                <td>Source du pointage</td>
+                <td><span class="type-badge">VARCHAR</span></td>
+                <td>20</td>
+                <td><code>QR</code>, <code>FACE</code> (Reconnaissance Faciale)</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">PTG_TS</span></td>
+                <td>Date et heure du pointage</td>
+                <td><span class="type-badge">TIMESTAMP</span></td>
+                <td>-</td>
+                <td>Rempli automatiquement à la transaction</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">PTG_CONF</span></td>
+                <td>Score de confiance faciale</td>
+                <td><span class="type-badge">DOUBLE</span></td>
+                <td>-</td>
+                <td>Taux de correspondance (entre 0.0 et 1.0)</td>
+            </tr>
+            <tr>
+                <td><span class="field-name">PTG_ANOM</span></td>
+                <td>Anomalie détectée</td>
+                <td><span class="type-badge">BOOLEAN</span></td>
+                <td>-</td>
+                <td><code>TRUE</code> si usurpation suspectée</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>
