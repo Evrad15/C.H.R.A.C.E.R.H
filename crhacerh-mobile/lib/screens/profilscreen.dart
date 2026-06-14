@@ -5,10 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../services/local_storage_service.dart';
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Design Tokens
-// ═══════════════════════════════════════════════════════════════════════════════
 import '../theme_manager.dart';
 import 'leaves_screen.dart';
 
@@ -28,7 +24,8 @@ class ProfilScreen extends StatefulWidget {
   State<ProfilScreen> createState() => _ProfilScreenState();
 }
 
-class _ProfilScreenState extends State<ProfilScreen> {
+class _ProfilScreenState extends State<ProfilScreen>
+    with SingleTickerProviderStateMixin {
   final LocalStorageService _localSvc = LocalStorageService();
   bool _isLoading = true;
   double _presenceRate = 0.0;
@@ -37,16 +34,28 @@ class _ProfilScreenState extends State<ProfilScreen> {
   String _syncTime = 'Jamais';
   bool? _isFaceRegistered;
 
+  late AnimationController _fadeCtrl;
+  late Animation<double> _fadeAnim;
+
   @override
   void initState() {
     super.initState();
+    _fadeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    _fadeAnim =
+        CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _loadStatsAndSync();
+  }
+
+  @override
+  void dispose() {
+    _fadeCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadStatsAndSync() async {
     if (mounted) setState(() => _isLoading = true);
-    
-    // Load last sync time
+
     final lastSync = await _localSvc.getLastSyncTime();
     if (lastSync != null) {
       final diff = DateTime.now().difference(lastSync);
@@ -61,10 +70,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
       }
     }
 
-    // Force a sync to fetch latest stats from the API
     await _localSvc.syncNow(widget.employee['id']);
 
-    // Load stats from cache (which should now be updated)
     final local = await _localSvc.loadDashboardData(widget.employee['id']);
     if (local != null) {
       final stats = local['stats'] as Map<String, dynamic>?;
@@ -78,9 +85,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
     await _checkFaceStatus();
 
     if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
+      _fadeCtrl.forward();
     }
   }
 
@@ -102,26 +108,28 @@ class _ProfilScreenState extends State<ProfilScreen> {
         if (mounted) {
           setState(() {
             _isFaceRegistered = data['registered'] == true;
-            if (_isFaceRegistered != (widget.employee['consent_facial_at'] != null)) {
-              _updateLocalEmployeeStatus(_isFaceRegistered!, data['consent_facial_at']);
+            if (_isFaceRegistered !=
+                (widget.employee['consent_facial_at'] != null)) {
+              _updateLocalEmployeeStatus(
+                  _isFaceRegistered!, data['consent_facial_at']);
             }
           });
         }
       }
     } catch (e) {
-      print("Erreur check face status: $e");
+      debugPrint("Erreur check face status: $e");
     }
   }
 
-  Future<void> _updateLocalEmployeeStatus(bool registered, String? consentTime) async {
+  Future<void> _updateLocalEmployeeStatus(
+      bool registered, String? consentTime) async {
     final prefs = await SharedPreferences.getInstance();
     var localEmp = Map<String, dynamic>.from(widget.employee);
-    localEmp['consent_facial_at'] = registered ? (consentTime ?? DateTime.now().toIso8601String()) : null;
+    localEmp['consent_facial_at'] =
+        registered ? (consentTime ?? DateTime.now().toIso8601String()) : null;
     await prefs.setString('cached_employee', jsonEncode(localEmp));
     await LocalStorageService().saveEmployee(localEmp);
-    if (widget.onReload != null) {
-      widget.onReload!();
-    }
+    if (widget.onReload != null) widget.onReload!();
   }
 
   String _getInitials() {
@@ -136,20 +144,23 @@ class _ProfilScreenState extends State<ProfilScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: AppColors.surfaceHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           'Vider le cache local ?',
-          style: GoogleFonts.outfit(color: AppColors.textPri, fontWeight: FontWeight.bold),
+          style: GoogleFonts.outfit(
+              color: AppColors.textPri, fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Cela supprimera les rapports sauvegardés localement. Vous devrez vous synchroniser à nouveau pour récupérer les données.',
-          style: GoogleFonts.inter(color: AppColors.textSec, fontSize: 13, height: 1.5),
+          'Cela supprimera les rapports sauvegardés localement. Vous devrez vous synchroniser à nouveau.',
+          style: GoogleFonts.inter(
+              color: AppColors.textSec, fontSize: 13, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Annuler', style: GoogleFonts.inter(color: AppColors.textSec)),
+            child: Text('Annuler',
+                style: GoogleFonts.inter(color: AppColors.textSec)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -159,13 +170,22 @@ class _ProfilScreenState extends State<ProfilScreen> {
               if (ctx.mounted) Navigator.of(ctx).pop();
               _loadStatsAndSync();
               sm.showSnackBar(SnackBar(
-                content: Text('Cache local vidé avec succès'),
+                content: Text('Cache local vidé',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 backgroundColor: AppColors.accent,
                 behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
-            child: Text('Vider', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Vider',
+                style: GoogleFonts.inter(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -175,253 +195,332 @@ class _ProfilScreenState extends State<ProfilScreen> {
   @override
   Widget build(BuildContext context) {
     final initials = _getInitials();
-    final name = '${widget.employee['first_name'] ?? ''} ${widget.employee['last_name'] ?? ''}';
+    final name =
+        '${widget.employee['first_name'] ?? ''} ${widget.employee['last_name'] ?? ''}';
     final matricule = widget.employee['matricule'] ?? '—';
     final dept = widget.employee['departement'] ?? 'Sans Département';
 
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : RefreshIndicator(
-              color: AppColors.accent,
-              backgroundColor: AppColors.card,
-              onRefresh: _loadStatsAndSync,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 20),
-                    // ── Header Profil (Bubble Avatar + Name) ────────────────
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.accent, AppColors.accentSoft],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.accent.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          )
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          initials,
-                          style: GoogleFonts.outfit(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      name,
-                      style: GoogleFonts.outfit(
-                        color: AppColors.textPri,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Matricule : $matricule',
-                      style: GoogleFonts.inter(
-                        color: AppColors.textSec,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.accent.withValues(alpha: 0.2), width: 1),
-                      ),
-                      child: Text(
-                        dept.toUpperCase(),
-                        style: GoogleFonts.outfit(
-                          color: AppColors.accentSoft,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
+          ? Center(
+              child: CircularProgressIndicator(
+                  color: AppColors.accentSoft, strokeWidth: 2.5))
+          : FadeTransition(
+              opacity: _fadeAnim,
+              child: RefreshIndicator(
+                color: AppColors.accentSoft,
+                backgroundColor: AppColors.surfaceHigh,
+                onRefresh: _loadStatsAndSync,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // ── Hero banner ──────────────────────────────────────
+                      _buildHeroBanner(initials, name, matricule, dept),
 
-                    // ── Stat Row ──────────────────────────────────────────
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            label: 'Assiduité',
-                            value: '${_presenceRate.toInt()}%',
-                            color: _presenceRate >= 80 ? AppColors.green : AppColors.orange,
-                            icon: Icons.offline_pin_rounded,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildStatCard(
-                            label: 'Retards',
-                            value: '$_lates',
-                            color: AppColors.orange,
-                            icon: Icons.schedule_rounded,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildStatCard(
-                            label: 'Absences',
-                            value: '$_absences',
-                            color: AppColors.red,
-                            icon: Icons.cancel_rounded,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
+                      const SizedBox(height: 24),
 
-                    // ── Settings List ─────────────────────────────────────
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 4, bottom: 12),
-                        child: Text(
-                          'PARAMÈTRES SYSTÈME',
-                          style: GoogleFonts.outfit(
-                            color: AppColors.textSec,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.card,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildSettingTile(
-                            icon: Icons.calendar_month_rounded,
-                            title: 'Mes Congés & Permissions',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LeavesScreen(employeeId: widget.employee['id']),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildDivider(),
-                          _buildSettingTile(
-                            icon: Icons.face_rounded,
-                            title: 'Enregistrement Facial',
-                            trailing: (_isFaceRegistered ?? (widget.employee['consent_facial_at'] != null)) ? 'Enregistré' : 'Non configuré',
-                            trailingColor: (_isFaceRegistered ?? (widget.employee['consent_facial_at'] != null)) ? AppColors.green : AppColors.orange,
-                            onTap: () async {
-                              final res = await Navigator.pushNamed(
-                                context,
-                                '/face_register',
-                                arguments: widget.employee,
-                              );
-                              await _checkFaceStatus();
-                              if (widget.onReload != null) {
-                                widget.onReload!();
-                              }
-                            },
-                          ),
-                          _buildDivider(),
-                          _buildSettingTile(
-                            icon: Icons.sync_rounded,
-                            title: 'Dernière synchronisation',
-                            trailing: _syncTime,
-                            onTap: _loadStatsAndSync,
-                          ),
-                          _buildDivider(),
-                          _buildSettingTile(
-                            icon: Icons.cloud_done_rounded,
-                            title: 'Sauvegarde locale automatique',
-                            trailing: 'Actif',
-                          ),
-                          _buildDivider(),
-                          _buildSettingTile(
-                            icon: Icons.cleaning_services_rounded,
-                            title: 'Vider le cache local',
-                            trailingColor: AppColors.red,
-                            onTap: _clearCache,
-                          ),
-                          _buildDivider(),
-                          _buildThemeToggleTile(),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-
-                    // ── Logout Button ─────────────────────────────────────
-                    GestureDetector(
-                      onTap: widget.onLogout,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppColors.red, Color(0xFFD63031)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.red.withValues(alpha: 0.25),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            )
+                      // ── Stat cards ───────────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                label: 'Assiduité',
+                                value:
+                                    '${_presenceRate.toInt()}%',
+                                color: _presenceRate >= 80
+                                    ? AppColors.green
+                                    : AppColors.orange,
+                                icon: Icons.offline_pin_rounded,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                label: 'Retards',
+                                value: '$_lates',
+                                color: AppColors.orange,
+                                icon: Icons.schedule_rounded,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                label: 'Absences',
+                                value: '$_absences',
+                                color: AppColors.red,
+                                icon: Icons.cancel_rounded,
+                              ),
+                            ),
                           ],
                         ),
-                        child: Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // ── Section label ────────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.only(left: 24, bottom: 12),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'PARAMÈTRES & CONFIGURATION',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textSec,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // ── Settings Card ─────────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceHigh,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Column(
                             children: [
-                              const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
-                              const SizedBox(width: 10),
-                              Text(
-                                'DÉCONNEXION',
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.8,
-                                ),
+                              _buildSettingTile(
+                                icon: Icons.calendar_month_rounded,
+                                iconColor: AppColors.accentSoft,
+                                title: 'Mes Congés & Permissions',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LeavesScreen(
+                                          employeeId: widget.employee['id']),
+                                    ),
+                                  );
+                                },
+                                hasArrow: true,
                               ),
+                              _buildDivider(),
+                              _buildSettingTile(
+                                icon: Icons.face_rounded,
+                                iconColor: (_isFaceRegistered ??
+                                        (widget.employee['consent_facial_at'] !=
+                                            null))
+                                    ? AppColors.green
+                                    : AppColors.orange,
+                                title: 'Enregistrement Facial',
+                                trailing: (_isFaceRegistered ??
+                                        (widget.employee['consent_facial_at'] !=
+                                            null))
+                                    ? 'Enregistré ✓'
+                                    : 'Non configuré',
+                                trailingColor: (_isFaceRegistered ??
+                                        (widget.employee['consent_facial_at'] !=
+                                            null))
+                                    ? AppColors.green
+                                    : AppColors.orange,
+                                onTap: () async {
+                                  await Navigator.pushNamed(
+                                    context,
+                                    '/face_register',
+                                    arguments: widget.employee,
+                                  );
+                                  await _checkFaceStatus();
+                                  if (widget.onReload != null) {
+                                    widget.onReload!();
+                                  }
+                                },
+                              ),
+                              _buildDivider(),
+                              _buildSettingTile(
+                                icon: Icons.sync_rounded,
+                                iconColor: AppColors.accentSoft,
+                                title: 'Dernière synchronisation',
+                                trailing: _syncTime,
+                                onTap: _loadStatsAndSync,
+                              ),
+                              _buildDivider(),
+                              _buildSettingTile(
+                                icon: Icons.cloud_done_rounded,
+                                iconColor: AppColors.green,
+                                title: 'Sauvegarde locale automatique',
+                                trailing: 'Actif',
+                                trailingColor: AppColors.green,
+                              ),
+                              _buildDivider(),
+                              _buildSettingTile(
+                                icon: Icons.cleaning_services_rounded,
+                                iconColor: AppColors.red,
+                                title: 'Vider le cache local',
+                                onTap: _clearCache,
+                                hasArrow: true,
+                              ),
+                              _buildDivider(),
+                              _buildThemeToggleTile(),
                             ],
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 120),
-                  ],
+
+                      const SizedBox(height: 28),
+
+                      // ── Logout Button ─────────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: GestureDetector(
+                          onTap: widget.onLogout,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [AppColors.red, const Color(0xFFD32F2F)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.redGlow,
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 6),
+                                )
+                              ],
+                            ),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.logout_rounded,
+                                      color: Colors.white, size: 20),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'DÉCONNEXION',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 120),
+                    ],
+                  ),
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildHeroBanner(
+      String initials, String name, String matricule, String dept) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: AppColors.heroGradient,
+        border: Border(
+          bottom: BorderSide(color: AppColors.accent.withOpacity(0.15)),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 32),
+      child: Column(
+        children: [
+          // Avatar avec ring animé
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Ring extérieur
+              Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.accent.withOpacity(0.35),
+                    width: 2,
+                  ),
+                ),
+              ),
+              // Avatar
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  gradient: AppColors.accentGradient,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accentGlow,
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    )
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    initials,
+                    style: GoogleFonts.outfit(
+                      fontSize: 34,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            name,
+            style: GoogleFonts.outfit(
+              color: AppColors.textPri,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Matricule : $matricule',
+            style: GoogleFonts.robotoMono(
+              color: AppColors.textSec,
+              fontSize: 12,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: AppColors.accent.withOpacity(0.25), width: 1),
+            ),
+            child: Text(
+              dept.toUpperCase(),
+              style: GoogleFonts.outfit(
+                color: AppColors.accentSoft,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -434,19 +533,33 @@ class _ProfilScreenState extends State<ProfilScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.surfaceHigh,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: color.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(height: 12),
           Text(
             value,
             style: GoogleFonts.outfit(
-              color: Colors.white,
+              color: color,
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
@@ -456,7 +569,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
             label,
             style: GoogleFonts.inter(
               color: AppColors.textSec,
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -473,10 +586,21 @@ class _ProfilScreenState extends State<ProfilScreen> {
           onTap: ThemeManager.toggleTheme,
           borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
-                Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: AppColors.accentSoft, size: 20),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentSoft.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                    color: AppColors.accentSoft,
+                    size: 18,
+                  ),
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
@@ -492,31 +616,41 @@ class _ProfilScreenState extends State<ProfilScreen> {
                   value: isDark,
                   onChanged: (val) => ThemeManager.toggleTheme(),
                   activeColor: AppColors.accent,
+                  activeTrackColor: AppColors.accent.withOpacity(0.3),
                 ),
               ],
             ),
           ),
         );
-      }
+      },
     );
   }
 
   Widget _buildSettingTile({
     required IconData icon,
+    required Color iconColor,
     required String title,
     String? trailing,
     Color? trailingColor,
     VoidCallback? onTap,
+    bool hasArrow = false,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
-            Icon(icon, color: AppColors.accentSoft, size: 20),
-            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 18),
+            ),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
@@ -535,9 +669,10 @@ class _ProfilScreenState extends State<ProfilScreen> {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
-              ),
-            if (onTap != null && trailing == null)
-              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white30, size: 14),
+              )
+            else if (hasArrow)
+              Icon(Icons.arrow_forward_ios_rounded,
+                  color: AppColors.textSec.withOpacity(0.4), size: 14),
           ],
         ),
       ),
@@ -548,12 +683,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
     return Divider(
       height: 1,
       thickness: 1,
-      color: Colors.white.withValues(alpha: 0.05),
+      color: AppColors.border,
       indent: 20,
       endIndent: 20,
     );
   }
 }
-
-
-

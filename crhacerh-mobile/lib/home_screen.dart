@@ -9,10 +9,6 @@ import 'screens/rapportscreen.dart';
 import 'screens/profilscreen.dart';
 import 'services/auth_service.dart';
 import 'services/local_storage_service.dart';
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Design tokens
-// ═══════════════════════════════════════════════════════════════════════════════
 import 'theme_manager.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -89,24 +85,29 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     ];
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: IndexedStack(index: _selectedIndex, children: pages),
-      ),
-      bottomNavigationBar: _PremiumNavBar(
-        selectedIndex: _selectedIndex,
-        onTap: (i) {
-          _loadLocalEmployee();
-          setState(() => _selectedIndex = i);
-        },
-      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeManager.isDarkNotifier,
+      builder: (context, isDark, _) {
+        return Scaffold(
+          backgroundColor: AppColors.bg,
+          body: SafeArea(
+            child: IndexedStack(index: _selectedIndex, children: pages),
+          ),
+          bottomNavigationBar: _PremiumNavBar(
+            selectedIndex: _selectedIndex,
+            onTap: (i) {
+              _loadLocalEmployee();
+              setState(() => _selectedIndex = i);
+            },
+          ),
+        );
+      },
     );
   }
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Premium bottom nav bar (Floating Glassmorphism)
+// Premium bottom nav bar — Floating Glassmorphism redesigné
 // ───────────────────────────────────────────────────────────────────────────────
 class _PremiumNavBar extends StatelessWidget {
   final int selectedIndex;
@@ -115,11 +116,11 @@ class _PremiumNavBar extends StatelessWidget {
   const _PremiumNavBar({required this.selectedIndex, required this.onTap});
 
   static const _items = [
-    (Icons.home_rounded,         Icons.home_outlined,        'Accueil'),
-    (Icons.chat_bubble_rounded,  Icons.chat_bubble_outline,  'Messages'),
-    (Icons.qr_code_scanner,      Icons.qr_code_scanner,      'Scanner'),
-    (Icons.folder_rounded,       Icons.folder_outlined,      'Rapports'),
-    (Icons.person_rounded,       Icons.person_outline,       'Profil'),
+    (Icons.home_rounded,        Icons.home_outlined,        'Accueil'),
+    (Icons.chat_bubble_rounded, Icons.chat_bubble_outline,  'Messages'),
+    (Icons.qr_code_scanner,     Icons.qr_code_scanner,      'Scanner'),
+    (Icons.folder_rounded,      Icons.folder_outlined,       'Rapports'),
+    (Icons.person_rounded,      Icons.person_outline,       'Profil'),
   ];
 
   @override
@@ -127,22 +128,27 @@ class _PremiumNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         child: Container(
-          height: 68,
+          height: 72,
           decoration: BoxDecoration(
-            color: const Color(0xFF121212).withValues(alpha: 0.90),
-            borderRadius: BorderRadius.circular(24),
+            color: AppColors.surfaceHigh.withOpacity(0.96),
+            borderRadius: BorderRadius.circular(26),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
+              color: Colors.white.withOpacity(0.08),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              )
+                color: Colors.black.withOpacity(0.45),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: AppColors.accent.withOpacity(0.06),
+                blurRadius: 40,
+                offset: const Offset(0, -4),
+              ),
             ],
           ),
           child: Row(
@@ -151,14 +157,14 @@ class _PremiumNavBar extends StatelessWidget {
               final isSelected = i == selectedIndex;
               final item = _items[i];
 
-              // Scanner Center button
+              // Bouton Scanner central — spécial
               if (i == 2) {
                 return GestureDetector(
                   onTap: () => onTap(i),
                   child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 1.0, end: isSelected ? 1.10 : 1.0),
+                    tween: Tween(begin: 1.0, end: isSelected ? 1.08 : 1.0),
                     duration: const Duration(milliseconds: 200),
-                    builder: (context, scale, child) {
+                    builder: (context, scale, _) {
                       return Transform.scale(
                         scale: scale,
                         child: Container(
@@ -166,25 +172,23 @@ class _PremiumNavBar extends StatelessWidget {
                           height: 52,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: isSelected
-                                  ? [AppColors.accent, AppColors.accentSoft]
-                                  : [const Color(0xFF1E1E1E), const Color(0xFF282828)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            gradient: isSelected
+                                ? AppColors.accentGradient
+                                : const LinearGradient(
+                                    colors: [Color(0xFF161A35), Color(0xFF1E2045)],
+                                  ),
                             border: Border.all(
                               color: isSelected
-                                  ? Colors.white.withValues(alpha: 0.2)
-                                  : Colors.white.withValues(alpha: 0.08),
-                              width: 1.2,
+                                  ? Colors.white.withOpacity(0.25)
+                                  : Colors.white.withOpacity(0.07),
+                              width: 1.5,
                             ),
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: AppColors.accent.withValues(alpha: 0.4),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 4),
+                                      color: AppColors.accentGlow,
+                                      blurRadius: 18,
+                                      spreadRadius: 0,
                                     )
                                   ]
                                 : [],
@@ -208,32 +212,39 @@ class _PremiumNavBar extends StatelessWidget {
                   child: TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
                     duration: const Duration(milliseconds: 200),
-                    builder: (context, t, child) {
-                      final color = Color.lerp(AppColors.textSec, AppColors.accentSoft, t);
-                      final iconScale = 1.0 + (t * 0.08);
+                    builder: (context, t, _) {
+                      final iconColor = Color.lerp(
+                          AppColors.textSec, AppColors.accentSoft, t)!;
                       return Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Transform.scale(
-                            scale: iconScale,
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: EdgeInsets.all(isSelected ? 8 : 0),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.accent.withOpacity(0.14)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             child: Icon(
                               isSelected ? item.$1 : item.$2,
                               size: 22,
-                              color: color,
+                              color: iconColor,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Opacity(
-                            opacity: t,
-                            child: Container(
-                              width: 4,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: AppColors.accentSoft,
-                                shape: BoxShape.circle,
-                              ),
+                          const SizedBox(height: 2),
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 200),
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                              color: iconColor,
                             ),
+                            child: Text(item.$3),
                           ),
                         ],
                       );
@@ -250,7 +261,7 @@ class _PremiumNavBar extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// HomeTab — onglet principal avec design sombre premium
+// HomeTab — onglet principal redesigné
 // ═══════════════════════════════════════════════════════════════════════════════
 class HomeTab extends StatefulWidget {
   final int employeeId;
@@ -293,12 +304,11 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     super.initState();
     _heroCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 800));
-    _heroFade =
-        CurvedAnimation(parent: _heroCtrl, curve: Curves.easeOut);
+    _heroFade = CurvedAnimation(parent: _heroCtrl, curve: Curves.easeOut);
     _cardsCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 600));
     _cardsSlide = Tween<Offset>(
-            begin: const Offset(0, 0.1), end: Offset.zero)
+            begin: const Offset(0, 0.08), end: Offset.zero)
         .animate(
             CurvedAnimation(parent: _cardsCtrl, curve: Curves.easeOutCubic));
     _loadData();
@@ -313,11 +323,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   }
 
   Future<void> _loadData() async {
-    if (mounted) {
-      setState(() => _isLoading = true);
-    } else {
-      _isLoading = true;
-    }
+    if (mounted) setState(() => _isLoading = true);
     _heroCtrl.forward();
     final result = await _authService.fetchDashboardData(widget.employeeId);
     if (mounted) {
@@ -346,10 +352,12 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
             _isLoading = false;
           });
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Mode hors-ligne — données locales'),
-              backgroundColor: Colors.orange,
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Mode hors-ligne — données locales',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+              backgroundColor: AppColors.orange,
               behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ));
           }
         } else {
@@ -361,8 +369,8 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   }
 
   Color _getClockColor() {
-    final pointed = _history
-        .any((p) => p['status'] == 'Present' || p['status'] == 'Retard');
+    final pointed =
+        _history.any((p) => p['status'] == 'Present' || p['status'] == 'Retard');
     if (pointed) return AppColors.textPri;
     final now = DateTime.now();
     if (now.hour > 8 || (now.hour == 8 && now.minute > 15)) {
@@ -373,9 +381,9 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
 
   String _greet() {
     final h = DateTime.now().hour;
-    if (h < 12) return 'Bonjour';
-    if (h < 18) return 'Bon après-midi';
-    return 'Bonsoir';
+    if (h < 12) return 'Bonjour 👋';
+    if (h < 18) return 'Bon après-midi 👋';
+    return 'Bonsoir 👋';
   }
 
   static String _twoDigits(int v) => v.toString().padLeft(2, '0');
@@ -387,19 +395,18 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final dateLabel =
-        '${_twoDigits(now.day)} ${_months[now.month - 1]} ${now.year}';
+    final dateLabel = '${_twoDigits(now.day)} ${_months[now.month - 1]} ${now.year}';
     final timeLabel = '${_twoDigits(now.hour)}:${_twoDigits(now.minute)}';
     final clockColor = _getClockColor();
 
     return RefreshIndicator(
-      color: AppColors.accent,
-      backgroundColor: AppColors.card,
+      color: AppColors.accentSoft,
+      backgroundColor: AppColors.surfaceHigh,
       onRefresh: _loadData,
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // ── Hero header ────────────────────────────────────────────────────
+          // ── Hero header ──────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: FadeTransition(
               opacity: _heroFade,
@@ -417,6 +424,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
             ),
           ),
 
+          // ── Banner face enrollment ────────────────────────────────────────
           SliverToBoxAdapter(
             child: SlideTransition(
               position: _cardsSlide,
@@ -430,7 +438,10 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
           if (_isLoading)
             SliverFillRemaining(
               child: Center(
-                child: CircularProgressIndicator(color: AppColors.accent),
+                child: CircularProgressIndicator(
+                  color: AppColors.accentSoft,
+                  strokeWidth: 2.5,
+                ),
               ),
             )
           else ...[
@@ -445,7 +456,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
               ),
             ),
 
-            // ── Historique pointages ────────────────────────────────────────
+            // ── Historique ──────────────────────────────────────────────────
             SliverToBoxAdapter(
               child: SlideTransition(
                 position: _cardsSlide,
@@ -467,30 +478,24 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     if (widget.employee['consent_facial_at'] != null) {
       return const SizedBox.shrink();
     }
-
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.orange.withValues(alpha: 0.25), AppColors.orange.withValues(alpha: 0.1)],
+          colors: [
+            AppColors.orange.withOpacity(0.18),
+            AppColors.orange.withOpacity(0.06),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.orange.withValues(alpha: 0.4), width: 1.2),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.orange.withOpacity(0.35), width: 1.2),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.orange.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.face_rounded, color: AppColors.orange, size: 24),
-          ),
+          _PulsingIcon(color: AppColors.orange, icon: Icons.face_rounded),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -499,47 +504,53 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
                 Text(
                   'Enregistrement facial requis',
                   style: GoogleFonts.outfit(
-                    color: Colors.white,
+                    color: AppColors.textPri,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
-                  'Enregistrez votre visage pour pouvoir pointer en cas d\'oubli ou perte de votre téléphone.',
+                  'Enregistrez votre visage pour pointer en cas d\'oubli de téléphone.',
                   style: GoogleFonts.inter(
                     color: AppColors.textSec,
                     fontSize: 11,
-                    height: 1.3,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          ElevatedButton(
-            onPressed: () async {
-              final res = await Navigator.pushNamed(
+          GestureDetector(
+            onTap: () async {
+              await Navigator.pushNamed(
                 context,
                 '/face_register',
                 arguments: widget.employee,
               );
-              if (widget.onReload != null) {
-                widget.onReload!();
-              }
+              if (widget.onReload != null) widget.onReload!();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.orange,
-              foregroundColor: Colors.white,
+            child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 0,
-            ),
-            child: Text(
-              'Enregistrer',
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+              decoration: BoxDecoration(
+                color: AppColors.orange,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.orangeGlow,
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: Text(
+                'Enregistrer',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -550,7 +561,63 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// _HeroHeader
+// Widget icône pulsante (pour le banner face)
+// ───────────────────────────────────────────────────────────────────────────────
+class _PulsingIcon extends StatefulWidget {
+  final Color color;
+  final IconData icon;
+  const _PulsingIcon({required this.color, required this.icon});
+
+  @override
+  State<_PulsingIcon> createState() => _PulsingIconState();
+}
+
+class _PulsingIconState extends State<_PulsingIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1200))
+      ..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.95, end: 1.05).animate(
+        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: widget.color.withOpacity(0.18),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withOpacity(0.25),
+              blurRadius: 12,
+              spreadRadius: 0,
+            )
+          ],
+        ),
+        child: Icon(widget.icon, color: widget.color, size: 22),
+      ),
+    );
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// _HeroHeader redesigné
 // ───────────────────────────────────────────────────────────────────────────────
 class _HeroHeader extends StatelessWidget {
   final String greet, name, date, time;
@@ -576,24 +643,24 @@ class _HeroHeader extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E1B4B), Color(0xFF2D1B69)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppColors.heroGradient,
         borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: AppColors.accent.withOpacity(0.18),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.25),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
+            color: AppColors.accent.withOpacity(0.18),
+            blurRadius: 40,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row: greet + logout
+          // ── Row: greet + logout ──────────────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -602,21 +669,21 @@ class _HeroHeader extends StatelessWidget {
                 children: [
                   Text(
                     greet,
-                    style: const TextStyle(
-                      color: Color(0xFFB0A8FF),
-                      fontSize: 14,
+                    style: GoogleFonts.inter(
+                      color: AppColors.accentSoft,
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
+                      letterSpacing: 0.3,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: GoogleFonts.outfit(
                       color: Colors.white,
-                      fontSize: 22,
+                      fontSize: 21,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.3,
                     ),
                   ),
                 ],
@@ -624,23 +691,25 @@ class _HeroHeader extends StatelessWidget {
               GestureDetector(
                 onTap: onLogout,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withOpacity(0.07),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.15)),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.logout_rounded,
-                          size: 16, color: Colors.white70),
-                      SizedBox(width: 6),
-                      Text('Quitter',
-                          style: TextStyle(
-                              color: Colors.white70, fontSize: 13)),
+                      Icon(Icons.logout_rounded, size: 15, color: Colors.white60),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Quitter',
+                        style: GoogleFonts.inter(
+                          color: Colors.white60,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -650,7 +719,7 @@ class _HeroHeader extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Big clock + date
+          // ── Horloge + donut ───────────────────────────────────────────────
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -660,39 +729,37 @@ class _HeroHeader extends StatelessWidget {
                   children: [
                     Text(
                       time,
-                      style: TextStyle(
+                      style: GoogleFonts.outfit(
                         color: clockColor,
-                        fontSize: 56,
+                        fontSize: 58,
                         fontWeight: FontWeight.w900,
-                        height: 1,
-                        letterSpacing: -2,
+                        height: 0.95,
+                        letterSpacing: -3,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       date,
-                      style: const TextStyle(
-                        color: Color(0xFF9090BB),
-                        fontSize: 13,
+                      style: GoogleFonts.inter(
+                        color: Colors.white38,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ],
                 ),
               ),
-              // Mini donut
               SizedBox(
-                width: 80,
-                height: 80,
+                width: 82,
+                height: 82,
                 child: CustomPaint(
                   painter: _MiniDonut(
-                      presence: presence,
-                      retard: retard,
-                      absence: absence),
+                      presence: presence, retard: retard, absence: absence),
                   child: Center(
                     child: Text(
                       '${presence.toInt()}%',
-                      style: const TextStyle(
+                      style: GoogleFonts.outfit(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -706,7 +773,7 @@ class _HeroHeader extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Status indicator
+          // ── Status indicator ──────────────────────────────────────────────
           _StatusIndicator(presence: presence),
         ],
       ),
@@ -721,38 +788,33 @@ class _StatusIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isGood = presence >= 80;
+    final color = isGood ? AppColors.green : AppColors.orange;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: (isGood ? AppColors.green : AppColors.orange).withValues(alpha: 0.15),
+        color: color.withOpacity(0.13),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: (isGood ? AppColors.green : AppColors.orange).withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: color.withOpacity(0.28)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(
-              color: isGood ? AppColors.green : AppColors.orange,
+              color: color,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(
-                  color: (isGood ? AppColors.green : AppColors.orange)
-                      .withValues(alpha: 0.6),
-                  blurRadius: 6,
-                )
+                BoxShadow(color: color.withOpacity(0.6), blurRadius: 6)
               ],
             ),
           ),
           const SizedBox(width: 8),
           Text(
             isGood ? 'Assiduité excellente' : 'Assiduité à améliorer',
-            style: TextStyle(
-              color: isGood ? AppColors.green : AppColors.orange,
+            style: GoogleFonts.inter(
+              color: color,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -764,7 +826,7 @@ class _StatusIndicator extends StatelessWidget {
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// _StatPillsRow — 3 cartes horizontales (Présences / Retards / Absences)
+// _StatPillsRow — 3 cartes horizontales redessinées
 // ───────────────────────────────────────────────────────────────────────────────
 class _StatPillsRow extends StatelessWidget {
   final Map<String, dynamic> stats;
@@ -806,39 +868,54 @@ class _StatPill extends StatelessWidget {
   final String value, label;
   final Color color;
   final IconData icon;
-  const _StatPill(
-      {required this.value,
-      required this.label,
-      required this.color,
-      required this.icon});
+  const _StatPill({
+    required this.value,
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
         decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+          color: AppColors.surfaceHigh,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.22)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(height: 10),
             Text(
               value,
-              style: TextStyle(
+              style: GoogleFonts.outfit(
                 color: color,
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
               label,
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 color: AppColors.textSec,
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
@@ -852,7 +929,7 @@ class _StatPill extends StatelessWidget {
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// _AttendanceSection — historique avec badge de statut coloré
+// _AttendanceSection — timeline redessinée
 // ───────────────────────────────────────────────────────────────────────────────
 class _AttendanceSection extends StatelessWidget {
   final List<dynamic> history;
@@ -863,9 +940,9 @@ class _AttendanceSection extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.surfaceHigh,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,22 +954,22 @@ class _AttendanceSection extends StatelessWidget {
               children: [
                 Text(
                   'Historique des pointages',
-                  style: TextStyle(
+                  style: GoogleFonts.outfit(
                     color: AppColors.textPri,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.15),
+                    color: AppColors.accent.withOpacity(0.14),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.accent.withOpacity(0.2)),
                   ),
                   child: Text(
                     '${history.length} entrées',
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       color: AppColors.accentSoft,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -905,10 +982,13 @@ class _AttendanceSection extends StatelessWidget {
           const SizedBox(height: 14),
           if (history.isEmpty)
             Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
               child: Text(
                 'Aucun pointage récent.',
-                style: TextStyle(color: AppColors.textSec, fontSize: 14),
+                style: GoogleFonts.inter(
+                  color: AppColors.textSec,
+                  fontSize: 14,
+                ),
               ),
             )
           else
@@ -952,6 +1032,19 @@ class _AttendanceRow extends StatelessWidget {
     }
   }
 
+  IconData get _statusIcon {
+    switch (status.toUpperCase()) {
+      case 'PRESENT':
+        return Icons.check_circle_rounded;
+      case 'RETARD':
+        return Icons.schedule_rounded;
+      case 'ABSENT':
+        return Icons.cancel_rounded;
+      default:
+        return Icons.circle_outlined;
+    }
+  }
+
   String get _statusLabel {
     switch (status.toUpperCase()) {
       case 'PRESENT':
@@ -968,29 +1061,24 @@ class _AttendanceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       decoration: BoxDecoration(
         border: isLast
             ? null
             : Border(
-                bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.05), width: 1)),
+                bottom: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Row(
         children: [
-          // Status dot
+          // Icône statut
           Container(
-            width: 8,
-            height: 8,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: _statusColor,
+              color: _statusColor.withOpacity(0.12),
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                    color: _statusColor.withValues(alpha: 0.5),
-                    blurRadius: 6)
-              ],
             ),
+            child: Icon(_statusIcon, color: _statusColor, size: 17),
           ),
           const SizedBox(width: 14),
           // Date
@@ -998,34 +1086,35 @@ class _AttendanceRow extends StatelessWidget {
             flex: 3,
             child: Text(
               date,
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 color: AppColors.textPri,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          // Time
+          // Heure
           Text(
             time,
-            style: TextStyle(
+            style: GoogleFonts.robotoMono(
               color: AppColors.textSec,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
-          const SizedBox(width: 14),
-          // Badge statut
+          const SizedBox(width: 12),
+          // Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: _statusColor.withValues(alpha: 0.12),
+              color: _statusColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _statusColor.withOpacity(0.25)),
             ),
             child: Text(
               _statusLabel,
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 color: _statusColor,
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1042,23 +1131,20 @@ class _AttendanceRow extends StatelessWidget {
 class _MiniDonut extends CustomPainter {
   final double presence, retard, absence;
   const _MiniDonut(
-      {required this.presence,
-      required this.retard,
-      required this.absence});
+      {required this.presence, required this.retard, required this.absence});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width * 0.40;
-    final strokeW = size.width * 0.16;
+    final strokeW = size.width * 0.14;
     final rect = Rect.fromCircle(center: center, radius: radius);
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeW
       ..strokeCap = StrokeCap.round;
 
-    // Background ring
-    paint.color = Colors.white.withValues(alpha: 0.08);
+    paint.color = Colors.white.withOpacity(0.06);
     canvas.drawCircle(center, radius, paint);
 
     double start = -math.pi / 2;
@@ -1082,9 +1168,8 @@ class _MiniDonut extends CustomPainter {
       old.absence != absence;
 }
 
-
 // ───────────────────────────────────────────────────────────────────────────────
-// Legacy custom icons (kept unchanged for nav bar compatibility)
+// Legacy custom icons (kept unchanged for compatibility)
 // ───────────────────────────────────────────────────────────────────────────────
 class CustomChatBubbleIcon extends StatelessWidget {
   final Color color;
@@ -1147,8 +1232,7 @@ class _ChatBubblePainter extends CustomPainter {
 class BiometricScannerIcon extends StatelessWidget {
   final Color color;
   final double size;
-  const BiometricScannerIcon(
-      {super.key, required this.color, this.size = 24.0});
+  const BiometricScannerIcon({super.key, required this.color, this.size = 24.0});
 
   @override
   Widget build(BuildContext context) {
@@ -1172,7 +1256,6 @@ class _BiometricScannerPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     final w = size.width;
     final h = size.height;
-    // Corners
     final r = w * 0.12;
     final paths = [
       [Offset(r, 0), Offset(0, r), const Offset(0, 0)],
@@ -1187,15 +1270,12 @@ class _BiometricScannerPainter extends CustomPainter {
         ..lineTo(pts[1].dx, pts[1].dy);
       canvas.drawPath(pth, p);
     }
-    // Scan lines
     for (int i = 0; i < 3; i++) {
       final y = h * (0.35 + i * 0.15);
       canvas.drawLine(Offset(w * 0.2, y), Offset(w * 0.8, y), p);
     }
-
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter old) => false;
 }
-

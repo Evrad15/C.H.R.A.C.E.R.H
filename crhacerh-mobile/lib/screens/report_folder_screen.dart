@@ -1,13 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../services/weekly_report_service.dart';
+import '../theme_manager.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ReportFolderScreen — liste les rapports JSON d'un mois donné
+// ReportFolderScreen — liste les rapports d'un mois donné
 // ─────────────────────────────────────────────────────────────────────────────
 class ReportFolderScreen extends StatefulWidget {
   final Directory folder;
@@ -50,50 +52,76 @@ class _ReportFolderScreenState extends State<ReportFolderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Row(
-          children: [
-            const Icon(Icons.folder_open_rounded,
-                size: 22, color: Colors.white70),
-            const SizedBox(width: 10),
-            Text(
-              _monthTitle,
-              style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.w600),
+      backgroundColor: AppColors.bg,
+      body: Column(
+        children: [
+          // Header premium
+          Container(
+            decoration: BoxDecoration(
+              gradient: AppColors.heroGradient,
+              border: Border(
+                  bottom: BorderSide(
+                      color: AppColors.accent.withOpacity(0.15))),
             ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
-            onPressed: _loadReports,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 18),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.textPri, size: 20),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    Icon(Icons.folder_open_rounded,
+                        size: 20, color: AppColors.accentSoft),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _monthTitle,
+                        style: GoogleFonts.outfit(
+                          color: AppColors.textPri,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.refresh_rounded,
+                          color: AppColors.textSec),
+                      onPressed: _loadReports,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Contenu
+          Expanded(
+            child: _loading
+                ? Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.accentSoft, strokeWidth: 2.5))
+                : _reports.isEmpty
+                    ? _buildEmpty()
+                    : RefreshIndicator(
+                        color: AppColors.accentSoft,
+                        backgroundColor: AppColors.surfaceHigh,
+                        onRefresh: _loadReports,
+                        child: ListView.separated(
+                          padding:
+                              const EdgeInsets.fromLTRB(16, 20, 16, 120),
+                          itemCount: _reports.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 14),
+                          itemBuilder: (ctx, i) =>
+                              _ReportCard(report: _reports[i]),
+                        ),
+                      ),
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _reports.isEmpty
-              ? _buildEmpty()
-              : RefreshIndicator(
-                  onRefresh: _loadReports,
-                  child: ListView.separated(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 20, 16, 120),
-                    itemCount: _reports.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (ctx, i) =>
-                        _ReportCard(report: _reports[i]),
-                  ),
-                ),
     );
   }
 
@@ -102,11 +130,24 @@ class _ReportFolderScreenState extends State<ReportFolderScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.description_outlined, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          const Text(
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceHigh,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Icon(Icons.description_outlined,
+                size: 38, color: AppColors.textSec.withOpacity(0.4)),
+          ),
+          const SizedBox(height: 20),
+          Text(
             'Aucun rapport dans ce mois',
-            style: TextStyle(fontSize: 16, color: Color(0xFF888888)),
+            style: GoogleFonts.outfit(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPri),
           ),
         ],
       ),
@@ -165,11 +206,12 @@ class _ReportCardState extends State<_ReportCard>
       onTap: _toggle,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          color: AppColors.surfaceHigh,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withOpacity(0.15),
               blurRadius: 14,
               offset: const Offset(0, 5),
             ),
@@ -187,21 +229,22 @@ class _ReportCardState extends State<_ReportCard>
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFA5D6A7), width: 1.5),
+                      color: AppColors.green.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: AppColors.green.withOpacity(0.3), width: 1.5),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Icon(Icons.table_view_rounded,
-                            color: Color(0xFF2E7D32), size: 20),
+                            color: AppColors.green, size: 20),
                         Text(
                           'XLSX',
-                          style: TextStyle(
+                          style: GoogleFonts.inter(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF2E7D32),
+                            color: AppColors.green,
                           ),
                         ),
                       ],
@@ -215,18 +258,18 @@ class _ReportCardState extends State<_ReportCard>
                       children: [
                         Text(
                           r.title,
-                          style: const TextStyle(
+                          style: GoogleFonts.outfit(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
+                            color: AppColors.textPri,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           r.periode,
-                          style: const TextStyle(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
-                            color: Color(0xFF888888),
+                            color: AppColors.textSec,
                           ),
                         ),
                       ],
@@ -240,12 +283,14 @@ class _ReportCardState extends State<_ReportCard>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: _tauxColor.withValues(alpha: 0.12),
+                          color: _tauxColor.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: _tauxColor.withOpacity(0.25)),
                         ),
                         child: Text(
                           '${r.tauxAssiduite}%',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: _tauxColor,
@@ -256,8 +301,8 @@ class _ReportCardState extends State<_ReportCard>
                       AnimatedRotation(
                         turns: _expanded ? 0.5 : 0,
                         duration: const Duration(milliseconds: 280),
-                        child: const Icon(Icons.keyboard_arrow_down_rounded,
-                            color: Color(0xFFAAAAAA)),
+                        child: Icon(Icons.keyboard_arrow_down_rounded,
+                            color: AppColors.textSec.withOpacity(0.5)),
                       ),
                     ],
                   ),
@@ -273,19 +318,19 @@ class _ReportCardState extends State<_ReportCard>
                   _StatusChip(
                     icon: Icons.check_circle_rounded,
                     label: '${r.presences} Présent${r.presences > 1 ? 's' : ''}',
-                    color: const Color(0xFF27AE60),
+                    color: AppColors.green,
                   ),
                   const SizedBox(width: 8),
                   _StatusChip(
                     icon: Icons.schedule_rounded,
                     label: '${r.retards} Retard${r.retards > 1 ? 's' : ''}',
-                    color: const Color(0xFFF39C12),
+                    color: AppColors.orange,
                   ),
                   const SizedBox(width: 8),
                   _StatusChip(
                     icon: Icons.cancel_rounded,
                     label: '${r.absences} Absent${r.absences > 1 ? 's' : ''}',
-                    color: const Color(0xFFE74C3C),
+                    color: AppColors.red,
                   ),
                 ],
               ),
@@ -310,13 +355,13 @@ class _ReportCardState extends State<_ReportCard>
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
+        color: AppColors.bg.withOpacity(0.5),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(18),
-          bottomRight: Radius.circular(18),
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
         ),
         border: Border(
-          top: BorderSide(color: Colors.grey[200]!, width: 1),
+          top: BorderSide(color: AppColors.border, width: 1),
         ),
       ),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -326,12 +371,12 @@ class _ReportCardState extends State<_ReportCard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Détail journalier',
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF555555),
+                  color: AppColors.textSec,
                 ),
               ),
               _buildExcelActions(r),
@@ -339,8 +384,9 @@ class _ReportCardState extends State<_ReportCard>
           ),
           const SizedBox(height: 10),
           if (detail.isEmpty)
-            const Text('Aucun détail disponible.',
-                style: TextStyle(fontSize: 12, color: Color(0xFFAAAAAA)))
+            Text('Aucun détail disponible.',
+                style: GoogleFonts.inter(
+                    fontSize: 12, color: AppColors.textSec))
           else
             ...detail.map((entry) {
               final e = entry as Map<String, dynamic>;
@@ -350,15 +396,15 @@ class _ReportCardState extends State<_ReportCard>
               IconData statusIcon;
               switch (status) {
                 case 'PRESENT':
-                  statusColor = const Color(0xFF27AE60);
+                  statusColor = AppColors.green;
                   statusIcon = Icons.check_circle_outline_rounded;
                   break;
                 case 'RETARD':
-                  statusColor = const Color(0xFFF39C12);
+                  statusColor = AppColors.orange;
                   statusIcon = Icons.schedule_rounded;
                   break;
                 default:
-                  statusColor = const Color(0xFFE74C3C);
+                  statusColor = AppColors.red;
                   statusIcon = Icons.cancel_outlined;
               }
               return Padding(
@@ -370,21 +416,21 @@ class _ReportCardState extends State<_ReportCard>
                     Expanded(
                       child: Text(
                         '${e['date']}',
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF444444)),
+                        style: GoogleFonts.inter(
+                            fontSize: 12, color: AppColors.textPri),
                       ),
                     ),
                     Text(
                       '${e['time'] ?? '—'}',
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF888888)),
+                      style: GoogleFonts.robotoMono(
+                          fontSize: 11, color: AppColors.textSec),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       e['status'] ?? '—',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                         color: statusColor,
                       ),
                     ),
@@ -411,24 +457,24 @@ class _ReportCardState extends State<_ReportCard>
             } catch (e) {
               messenger.showSnackBar(SnackBar(
                 content: Text('Impossible d\'ouvrir le fichier : $e'),
-                backgroundColor: Colors.red[700],
+                backgroundColor: AppColors.red,
               ));
             }
           },
           borderRadius: BorderRadius.circular(8),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.table_view_rounded, size: 16, color: Color(0xFF27AE60)),
-                SizedBox(width: 4),
+                Icon(Icons.table_view_rounded, size: 16, color: AppColors.green),
+                const SizedBox(width: 4),
                 Text(
                   'Ouvrir',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF27AE60),
+                    color: AppColors.green,
                   ),
                 ),
               ],
@@ -436,7 +482,6 @@ class _ReportCardState extends State<_ReportCard>
           ),
         ),
         const SizedBox(width: 8),
-        // Partager Excel
         InkWell(
           onTap: () async {
             final messenger = ScaffoldMessenger.of(context);
@@ -450,24 +495,24 @@ class _ReportCardState extends State<_ReportCard>
             } catch (e) {
               messenger.showSnackBar(SnackBar(
                 content: Text('Impossible de partager le fichier : $e'),
-                backgroundColor: Colors.red[700],
+                backgroundColor: AppColors.red,
               ));
             }
           },
           borderRadius: BorderRadius.circular(8),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.share_rounded, size: 16, color: Color(0xFF2F80ED)),
-                SizedBox(width: 4),
+                Icon(Icons.share_rounded, size: 16, color: AppColors.accentSoft),
+                const SizedBox(width: 4),
                 Text(
                   'Partager',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2F80ED),
+                    color: AppColors.accentSoft,
                   ),
                 ),
               ],
@@ -495,17 +540,18 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
+          Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: color,

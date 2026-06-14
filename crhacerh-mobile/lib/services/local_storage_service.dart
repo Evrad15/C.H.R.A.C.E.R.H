@@ -96,6 +96,24 @@ class LocalStorageService {
     return data['data'] as Map<String, dynamic>?;
   }
 
+  // ── Messages Locaux ───────────────────────────────────────────────────────
+
+  /// Sauvegarde les messages d'un employé
+  Future<void> saveMessages(int employeeId, List<dynamic> messages) async {
+    final existing = await _readJson('messages_$employeeId');
+    await _writeJson('messages_$employeeId', {
+      ...existing,
+      'messages': messages,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Lit les messages depuis le JSON local
+  Future<List<dynamic>?> loadMessages(int employeeId) async {
+    final data = await _readJson('messages_$employeeId');
+    return data['messages'] as List<dynamic>?;
+  }
+
   /// Ajoute un pointage local en attente de sync
   Future<void> addPendingPointage(Map<String, dynamic> pointage) async {
     final data = await _readJson('pending_pointages');

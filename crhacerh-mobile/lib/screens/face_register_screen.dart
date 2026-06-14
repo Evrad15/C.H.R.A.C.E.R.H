@@ -24,6 +24,7 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
+  String _debugStatus = "Démarrage...";
   bool _isPermissionDenied = false;
   bool _isCapturing = false;
   XFile? _capturedImage;
@@ -49,6 +50,19 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
 
   Future<void> _initCamera() async {
     try {
+      if (mounted) setState(() => _debugStatus = "Demande permission...");
+      final status = await Permission.camera.request();
+      if (status.isDenied || status.isPermanentlyDenied) {
+        if (mounted) {
+          setState(() {
+            _isPermissionDenied = true;
+            _debugStatus = "Permission refusée.";
+          });
+        }
+        return;
+      }
+
+      if (mounted) setState(() => _debugStatus = "Recherche caméras...");
       _cameras = await availableCameras();
       if (_cameras != null && _cameras!.isNotEmpty) {
         final frontCamera = _cameras!.firstWhere(
@@ -62,6 +76,7 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
           enableAudio: false,
         );
 
+        if (mounted) setState(() => _debugStatus = "Initialisation...");
         await _cameraController!.initialize();
         if (mounted) {
           setState(() {
@@ -69,9 +84,12 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
             _isPermissionDenied = false;
           });
         }
+      } else {
+        if (mounted) setState(() => _debugStatus = "Aucune caméra trouvée.");
       }
     } catch (e) {
       print("Erreur initialisation caméra: $e");
+      if (mounted) setState(() => _debugStatus = "Erreur: $e");
       if (e is CameraException && e.code == 'cameraPermissionDenied') {
         if (mounted) {
           setState(() {
@@ -182,9 +200,9 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Votre visage a été enregistré avec succès !'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('Votre visage a été enregistré avec succès !'),
+              backgroundColor: AppColors.green,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -206,9 +224,9 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
       print("Erreur upload : $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Impossible de contacter le serveur.'),
-            backgroundColor: Colors.orange,
+          SnackBar(
+            content: const Text('Impossible de contacter le serveur.'),
+            backgroundColor: AppColors.orange,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -229,8 +247,9 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        systemOverlayStyle: AppColors.overlayStyle,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70),
+          icon: Icon(Icons.arrow_back_ios_rounded, color: AppColors.textPri),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -284,13 +303,13 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: _capturedImage != null ? Colors.green : AppColors.accent,
+                          color: _capturedImage != null ? AppColors.green : AppColors.accent,
                           width: 4,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: (_capturedImage != null ? Colors.green : AppColors.accent)
-                                .withValues(alpha: 0.25),
+                            color: (_capturedImage != null ? AppColors.green : AppColors.accent)
+                                .withOpacity(0.25),
                             blurRadius: 30,
                             offset: const Offset(0, 10),
                           )
@@ -309,8 +328,22 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
                                 : Container(
                                     color: Colors.black12,
                                     child: Center(
-                                      child: CircularProgressIndicator(
-                                        color: AppColors.accent,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          CircularProgressIndicator(
+                                            color: AppColors.accent,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            _debugStatus,
+                                            style: TextStyle(
+                                              color: AppColors.textSec,
+                                              fontSize: 12,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   )),
@@ -336,7 +369,7 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
                       border: Border.all(color: Colors.white, width: 4),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accent.withValues(alpha: 0.4),
+                          color: AppColors.accent.withOpacity(0.4),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         )
@@ -375,7 +408,7 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
                             label: const Text('RECOMMENCER'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.red,
-                              side: BorderSide(color: AppColors.red.withValues(alpha: 0.5)),
+                              side: BorderSide(color: AppColors.red.withOpacity(0.5)),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -399,7 +432,7 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
                                 : const Icon(Icons.cloud_upload_rounded, size: 18),
                             label: const Text('ENREGISTRER'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
+                              backgroundColor: AppColors.green,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -433,7 +466,7 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.red.withValues(alpha: 0.15),
+                color: AppColors.red.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(

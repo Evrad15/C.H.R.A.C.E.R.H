@@ -253,14 +253,14 @@ class _ScannQRScreenState extends State<ScannQRScreen>
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _torchOn ? AppColors.accent : Colors.black.withValues(alpha: 0.5),
+                        color: _torchOn ? AppColors.accent : Colors.black.withOpacity(0.5),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: _torchOn ? AppColors.accentSoft : Colors.white24,
                           width: 1.5,
                         ),
                         boxShadow: _torchOn
-                            ? [BoxShadow(color: AppColors.accent.withValues(alpha: 0.5), blurRadius: 10)]
+                            ? [BoxShadow(color: AppColors.accent.withOpacity(0.5), blurRadius: 10)]
                             : [],
                       ),
                       child: Icon(
@@ -317,9 +317,9 @@ class _ScannQRScreenState extends State<ScannQRScreen>
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
+                          color: Colors.black.withOpacity(0.6),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
+                          border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -434,7 +434,7 @@ class _OverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black.withValues(alpha: 0.75);
+    final paint = Paint()..color = Colors.black.withOpacity(0.75);
     final fullRect = Rect.fromLTWH(0, 0, size.width, size.height);
     final path = Path()
       ..addRect(fullRect)
@@ -457,7 +457,7 @@ class _FrameCornersPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final glowPaint = Paint()
-      ..color = AppColors.accent.withValues(alpha: 0.3)
+      ..color = AppColors.accent.withOpacity(0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8.0
       ..strokeCap = StrokeCap.round;
@@ -499,7 +499,7 @@ class _ScanLinePainter extends CustomPainter {
       ..shader = LinearGradient(
         colors: [
           Colors.transparent,
-          AppColors.accent.withValues(alpha: 0.8),
+          AppColors.accent.withOpacity(0.8),
           Colors.transparent
         ],
       ).createShader(Rect.fromLTWH(0, y - 1.5, size.width, 3))
@@ -538,12 +538,12 @@ class _PointageDialog extends StatelessWidget {
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF161616),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1.5),
+          border: Border.all(color: AppColors.border, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.8),
+              color: const Color(0xFF060818).withValues(alpha: 0.87),
               blurRadius: 30,
               offset: const Offset(0, 10),
             )
@@ -558,9 +558,9 @@ class _PointageDialog extends StatelessWidget {
               width: 76,
               height: 76,
               decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.1),
+                color: AppColors.accent.withOpacity(0.1),
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.accent.withValues(alpha: 0.25), width: 1.5),
+                border: Border.all(color: AppColors.accent.withOpacity(0.25), width: 1.5),
               ),
               child: Icon(Icons.qr_code_2_rounded, size: 40, color: AppColors.accentSoft),
             ),
@@ -568,7 +568,7 @@ class _PointageDialog extends StatelessWidget {
             Text(
               'QR CODE DÉTECTÉ',
               style: GoogleFonts.outfit(
-                color: Colors.white,
+                color: AppColors.textPri,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.0,
@@ -593,7 +593,7 @@ class _PointageDialog extends StatelessWidget {
                     label: 'ENTRÉE',
                     icon: Icons.login_rounded,
                     baseColor: AppColors.green,
-                    glowColor: AppColors.greenGlow,
+                    glowColor: AppColors.green.withOpacity(0.3),
                     onTap: () => onConfirm('ENTREE'),
                   ),
                 ),
@@ -603,7 +603,7 @@ class _PointageDialog extends StatelessWidget {
                     label: 'SORTIE',
                     icon: Icons.logout_rounded,
                     baseColor: AppColors.red,
-                    glowColor: AppColors.redGlow,
+                    glowColor: AppColors.red.withOpacity(0.3),
                     onTap: () => onConfirm('SORTIE'),
                   ),
                 ),
@@ -647,7 +647,7 @@ class _ChoiceActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.4),
+          color: const Color(0xFF060818).withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: baseColor.withValues(alpha: 0.3), width: 1.5),
           boxShadow: [
@@ -692,7 +692,7 @@ class _SuccessDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEntree = type == 'ENTREE';
     final accentColor = isEntree ? AppColors.green : AppColors.red;
-    final accentGlow  = isEntree ? AppColors.greenGlow : AppColors.redGlow;
+    final accentGlow  = isEntree ? AppColors.green.withOpacity(0.3) : AppColors.red.withOpacity(0.3);
     final icon = isEntree ? Icons.login_rounded : Icons.logout_rounded;
     final headerText = isEntree ? 'ENTRÉE ENREGISTRÉE' : 'SORTIE ENREGISTRÉE';
 
@@ -700,12 +700,12 @@ class _SuccessDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF161616),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: accentColor.withValues(alpha: 0.25), width: 1.5),
           boxShadow: [
             BoxShadow(color: accentGlow, blurRadius: 20),
-            BoxShadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 40)
+            BoxShadow(color: const Color(0xFF060818).withValues(alpha: 0.6), blurRadius: 40)
           ],
         ),
         padding: const EdgeInsets.all(32),
@@ -754,15 +754,15 @@ class _SuccessDialog extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 12,
                   height: 12,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white30),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textSec),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Reprise du scanner…',
-                  style: GoogleFonts.inter(color: Colors.white30, fontSize: 11),
+                  style: GoogleFonts.inter(color: AppColors.textSec, fontSize: 11),
                 ),
               ],
             )
@@ -794,7 +794,7 @@ class _LastScanCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
+        color: const Color(0xFF060818).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1.2),
       ),
@@ -861,7 +861,7 @@ class _PermissionDeniedView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.red.withValues(alpha: 0.1),
+                color: AppColors.accent.withOpacity(0.4),
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.red.withValues(alpha: 0.2), width: 1.5),
               ),

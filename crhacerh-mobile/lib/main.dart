@@ -39,6 +39,9 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             primarySwatch: Colors.blue,
             brightness: isDark ? Brightness.dark : Brightness.light,
+            appBarTheme: AppBarTheme(
+              systemOverlayStyle: AppColors.overlayStyle,
+            ),
           ),
           home: savedEmployee != null 
               ? HomeScreen(employee: savedEmployee!) 

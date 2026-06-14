@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
 import '../services/chat_service.dart';
+import '../services/local_storage_service.dart';
 import 'leave_form_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -70,11 +71,29 @@ class _MessageScreenState extends State<MessageScreen>
       } else {
         _isLoading = true;
       }
+      
+      // Charge d'abord les messages depuis le stockage local (cache)
+      final localMsgs = await LocalStorageService().loadMessages(widget.employeeId);
+      if (localMsgs != null && localMsgs.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _messages = localMsgs;
+            _isLoading = false;
+          });
+          _scrollToBottom();
+          if (!_fadeCtrl.isCompleted) _fadeCtrl.forward();
+        }
+      }
     }
+
     final result = await _chatService.fetchMessages(widget.employeeId);
     if (mounted) {
       if (result['success']) {
         final newMsgs = result['messages'] ?? [];
+        
+        // Sauvegarde les messages récupérés en local
+        await LocalStorageService().saveMessages(widget.employeeId, newMsgs);
+        
         final hasNew = newMsgs.length != _messages.length;
         setState(() {
           _messages = newMsgs;
@@ -86,7 +105,7 @@ class _MessageScreenState extends State<MessageScreen>
         }
       } else {
         setState(() => _isLoading = false);
-        if (initial && mounted) {
+        if (initial && _messages.isEmpty && mounted) {
           _showSnack(result['message'] ?? 'Erreur de connexion', isError: true);
         }
       }
