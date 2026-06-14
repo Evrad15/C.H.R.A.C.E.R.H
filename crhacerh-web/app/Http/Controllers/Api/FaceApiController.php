@@ -169,19 +169,12 @@ class FaceApiController extends Controller
                 }
             }
 
-            // Fallback en cas d'absence de clé Gemini ou échec d'authentification
+            // Si Gemini n'a pas pu identifier la personne avec un haut niveau de confiance
             if (!$usedGemini || !$matchedEmployeeId || $confidence < 0.75) {
-                // Pour la démo locale, on prend le premier employé ayant *réellement* sa photo sur le disque
-                $fallbackEmployee = $employees->first();
-                if ($fallbackEmployee) {
-                    $matchedEmployeeId = $fallbackEmployee->id;
-                    $confidence = 0.95;
-                } else {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Reconnaissance échouée (aucun visage enregistré sur disque).'
-                    ], 400);
-                }
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Reconnaissance échouée. Votre visage ne correspond à aucun profil enregistré ou la confiance est trop faible.'
+                ], 401);
             }
 
             $employee = Employe::with('department')->find($matchedEmployeeId);
