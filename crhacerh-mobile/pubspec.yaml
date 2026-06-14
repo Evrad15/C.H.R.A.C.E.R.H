@@ -32,9 +32,10 @@ dependencies:
   # Biometrics (Face Recognition)
   local_auth: ^2.1.0
   
-  # Camera (Optional)
+  # Camera & Image
   camera: ^0.10.5
   image: ^4.0.0
+  image_picker: ^1.1.2
   
   # QR Scanner
   mobile_scanner: ^6.0.0

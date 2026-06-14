@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,10 +21,6 @@ class FaceRegisterScreen extends StatefulWidget {
 
 class _FaceRegisterScreenState extends State<FaceRegisterScreen>
     with SingleTickerProviderStateMixin {
-  CameraController? _cameraController;
-  List<CameraDescription>? _cameras;
-  bool _isCameraInitialized = false;
-  String _debugStatus = "Démarrage...";
   bool _isPermissionDenied = false;
   bool _isCapturing = false;
   XFile? _capturedImage;
@@ -33,10 +29,8 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  @override
   void initState() {
     super.initState();
-    _initCamera();
 
     _pulseController = AnimationController(
       vsync: this,
@@ -48,94 +42,32 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
     );
   }
 
-  Future<void> _initCamera() async {
-    try {
-      if (mounted) setState(() => _debugStatus = "Demande permission...");
-      final status = await Permission.camera.request();
-      if (status.isDenied || status.isPermanentlyDenied) {
-        if (mounted) {
-          setState(() {
-            _isPermissionDenied = true;
-            _debugStatus = "Permission refusée.";
-          });
-        }
-        return;
-      }
-
-      if (mounted) setState(() => _debugStatus = "Recherche caméras...");
-      _cameras = await availableCameras();
-      if (_cameras != null && _cameras!.isNotEmpty) {
-        final frontCamera = _cameras!.firstWhere(
-          (camera) => camera.lensDirection == CameraLensDirection.front,
-          orElse: () => _cameras!.first,
-        );
-
-        _cameraController = CameraController(
-          frontCamera,
-          ResolutionPreset.medium,
-          enableAudio: false,
-        );
-
-        if (mounted) setState(() => _debugStatus = "Initialisation...");
-        await _cameraController!.initialize();
-        if (mounted) {
-          setState(() {
-            _isCameraInitialized = true;
-            _isPermissionDenied = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _debugStatus = "Aucune caméra trouvée.");
-      }
-    } catch (e) {
-      print("Erreur initialisation caméra: $e");
-      if (mounted) setState(() => _debugStatus = "Erreur: $e");
-      if (e is CameraException && e.code == 'cameraPermissionDenied') {
-        if (mounted) {
-          setState(() {
-            _isPermissionDenied = true;
-          });
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Impossible d'accéder à la caméra : $e"),
-              backgroundColor: AppColors.red,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  @override
   void dispose() {
-    _cameraController?.dispose();
     _pulseController.dispose();
     super.dispose();
   }
 
   Future<void> _capturePhoto() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
-
     setState(() {
       _isCapturing = true;
     });
 
     try {
-      final XFile image = await _cameraController!.takePicture();
-      setState(() {
-        _capturedImage = image;
-        _isCapturing = false;
-      });
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+      );
+      
+      if (image != null) {
+        if (mounted) {
+          setState(() {
+            _capturedImage = image;
+          });
+        }
+      }
     } catch (e) {
       print("Erreur capture : $e");
-      setState(() {
-        _isCapturing = false;
-      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -143,6 +75,12 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
             backgroundColor: AppColors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCapturing = false;
+        });
       }
     }
   }
@@ -263,13 +201,11 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
         centerTitle: true,
       ),
       body: SafeArea(
-        child: _isPermissionDenied
-            ? _buildPermissionDeniedView()
-            : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
                     const SizedBox(height: 10),
               Text(
                 'Enregistrement de votre visage',
@@ -320,33 +256,16 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
                             ? (kIsWeb
                                 ? Image.network(_capturedImage!.path, fit: BoxFit.cover)
                                 : Image.file(File(_capturedImage!.path), fit: BoxFit.cover))
-                            : (_isCameraInitialized
-                                ? AspectRatio(
-                                    aspectRatio: 1,
-                                    child: CameraPreview(_cameraController!),
-                                  )
-                                : Container(
-                                    color: Colors.black12,
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          CircularProgressIndicator(
-                                            color: AppColors.accent,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            _debugStatus,
-                                            style: TextStyle(
-                                              color: AppColors.textSec,
-                                              fontSize: 12,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )),
+                            : Container(
+                                color: AppColors.accent.withOpacity(0.1),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.face_retouching_natural_rounded,
+                                    size: 80,
+                                    color: AppColors.accent,
+                                  ),
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -359,7 +278,7 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
               if (_capturedImage == null)
                 // Bouton Prendre la photo
                 GestureDetector(
-                  onTap: _isCapturing || !_isCameraInitialized ? null : _capturePhoto,
+                  onTap: _isCapturing ? null : _capturePhoto,
                   child: Container(
                     width: 70,
                     height: 70,
@@ -450,71 +369,6 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen>
               const SizedBox(height: 20),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPermissionDeniedView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.red.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.videocam_off_rounded,
-                color: AppColors.red,
-                size: 60,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Accès Caméra Requis',
-              style: GoogleFonts.outfit(
-                color: AppColors.textPri,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Pour enregistrer votre visage, l\'application doit pouvoir accéder à votre caméra. Veuillez autoriser cet accès dans les paramètres du système.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                color: AppColors.textSec,
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final success = await openAppSettings();
-                if (success) {
-                  _initCamera();
-                }
-              },
-              icon: const Icon(Icons.settings_rounded, size: 18),
-              label: const Text('OUVRIR LES PARAMÈTRES'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-              ),
-            ),
-          ],
         ),
       ),
     );
