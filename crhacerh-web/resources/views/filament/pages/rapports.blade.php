@@ -95,7 +95,7 @@
             <div style="font-size:2rem;margin-bottom:.75rem;">📭</div>
             <div style="font-size:.85rem;font-weight:700;color:#111827;">Aucun rapport ce mois</div>
             <div style="font-size:.72rem;color:#6b7280;margin-top:.3rem;">
-                Utilisez Horizon IA pour générer des rapports hebdomadaires.
+                Générez des rapports automatiques via le bouton en en-tête.
             </div>
         </div>
     @else
@@ -272,7 +272,7 @@
                     <div style="font-size:2rem;margin-bottom:.5rem;">📁</div>
                     <div style="font-size:.85rem;font-weight:700;color:#111827;">Aucun dossier</div>
                     <div style="font-size:.72rem;color:#6b7280;margin-top:.25rem;">
-                        Générez votre premier rapport via Horizon IA.
+                        Générez votre premier rapport via le bouton en en-tête.
                     </div>
                 </div>
             @endif

@@ -27,7 +27,34 @@ class ListRapports extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Actions\Action::make('generate_weekly')
+                ->label('Générer le rapport hebdomadaire')
+                ->icon('heroicon-o-arrow-path')
+                ->color('primary')
+                ->action(function () {
+                    $service = new \App\Services\ReportService();
+                    $url = $service->generateAndExport('week', 'excel');
+                    Notification::make()
+                        ->title('Rapport hebdomadaire généré !')
+                        ->body('Classé dans son dossier mensuel.')
+                        ->success()
+                        ->send();
+                }),
+            Actions\Action::make('generate_monthly')
+                ->label('Générer le rapport mensuel')
+                ->icon('heroicon-o-folder-arrow-down')
+                ->color('gray')
+                ->action(function () {
+                    $service = new \App\Services\ReportService();
+                    $url = $service->generateAndExport('month', 'excel');
+                    Notification::make()
+                        ->title('Rapport mensuel généré !')
+                        ->body('Classé dans son dossier mensuel.')
+                        ->success()
+                        ->send();
+                }),
+        ];
     }
 
     public function getViewData(): array
@@ -60,16 +87,23 @@ class ListRapports extends ListRecords
             ];
         }
 
-        // Get all files
-        $allFiles = collect($disk->files($folder))->map(function ($path) use ($disk, $monthsFr) {
+        // Get all files recursively (including month subfolders)
+        $allFiles = collect($disk->allFiles($folder))->map(function ($path) use ($disk, $monthsFr) {
             $modified = $disk->lastModified($path);
             $name = basename($path);
             $carbonDate = Carbon::createFromTimestamp($modified);
             
             $month = $carbonDate->month;
             $year = $carbonDate->year;
-            $folderKey = "{$year}-" . str_pad($month, 2, '0', STR_PAD_LEFT);
-            $folderName = $monthsFr[$month] . ' ' . $year;
+            $parentDir = basename(dirname($path));
+
+            if ($parentDir !== 'reports' && !empty($parentDir)) {
+                $folderName = $parentDir;
+                $folderKey  = $parentDir;
+            } else {
+                $folderKey = "{$year}-" . str_pad($month, 2, '0', STR_PAD_LEFT);
+                $folderName = $monthsFr[$month] . ' ' . $year;
+            }
 
             // Determine extension/format
             $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
@@ -79,11 +113,13 @@ class ListRapports extends ListRecords
                 default => 'Fichier',
             };
 
+            $relPath = str_replace('reports/', '', $path);
+
             return [
                 'path'        => $path,
                 'name'        => $name,
-                'url_open'    => route('report.open', ['filename' => $name]),
-                'url_download'=> route('report.download', ['filename' => $name]),
+                'url_open'    => route('report.open', ['filename' => $relPath]),
+                'url_download'=> route('report.download', ['filename' => $relPath]),
                 'size'        => $disk->size($path),
                 'modified'    => $carbonDate,
                 'folder_key'  => $folderKey,
@@ -103,16 +139,14 @@ class ListRapports extends ListRecords
         })->sortByDesc('key')->values()->all();
 
         // Ensure current month is always in the folders list
-        $currentMonthKey = now()->format('Y-m');
-        $currentMonthName = $monthsFr[now()->month] . ' ' . now()->year;
-        $hasCurrent = collect($foldersList)->contains('key', $currentMonthKey);
+        $currentMonthKey = $monthsFr[now()->month] . ' ' . now()->year;
+        $hasCurrent = collect($foldersList)->contains('key', $currentMonthKey) || collect($foldersList)->contains('key', now()->format('Y-m'));
         if (!$hasCurrent) {
             array_unshift($foldersList, [
                 'key' => $currentMonthKey,
-                'name' => $currentMonthName,
+                'name' => $currentMonthKey,
                 'count' => 0,
             ]);
-            // Sort again desc
             usort($foldersList, fn($a, $b) => strcmp($b['key'], $a['key']));
         }
 

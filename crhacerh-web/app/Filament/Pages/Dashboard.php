@@ -16,7 +16,6 @@ class Dashboard extends Page
 
     protected static ?int $navigationSort = 0;
 
-    protected static ?string $title = 'Tableau de bord';
     protected static string $view = 'filament.pages.dashboard';
 
     // Propriétés pour les 4 cartes du haut
@@ -36,12 +35,6 @@ class Dashboard extends Page
 
     // Données pour le graphique linéaire
     public array $chartData = [];
-
-    // Rapport d'anomalies de la semaine
-    public array $anomaliesReport = [];
-
-    // Prédiction de l'absentéisme
-    public array $absenteeismRisks = [];
 
     public function mount(): void
     {
@@ -85,14 +78,6 @@ class Dashboard extends Page
         if ($this->totalEmployes > 0) {
             $this->tauxPresenceGlobal = round((($this->aLHeureSemaine + $this->retardsSemaine) / $this->totalEmployes) * 100, 1);
         }
-
-        // 4. Section "Alerte Anomalies" via Horizon AI (hebdomadaire)
-        $horizonAi = new \App\Services\HorizonAiService();
-        $this->anomaliesReport = $horizonAi->detectAnomalies('week');
-
-        // 5. Prédictions des risques d'absentéisme via Horizon AI
-        $predictions = $horizonAi->predictAbsenteeismRisk();
-        $this->absenteeismRisks = array_filter($predictions, fn($p) => $p['score'] > 20);
 
         // Chargement des Tops 5 et données graphiques
         $this->chargerTopsEtGraphique($debutSemaine, $finSemaine);

@@ -119,20 +119,44 @@
         </div>
     </div>
 
-    {{-- GRAPHIQUE --}}
-    <div class="r-card" style="padding:1.5rem;">
-        <h3 class="r-section-title">
-            <span style="background:#6366f1;"></span> Évolution des Présences (Semaine en cours)
-        </h3>
-        
-        <div style="display:flex; gap:1.5rem; margin-bottom:1rem; font-size:.75rem; font-weight:600;">
-            <div style="display:flex; align-items:center; gap:.4rem;"><div style="width:10px;height:10px;border-radius:3px;background:#22c55e;"></div> Présents</div>
-            <div style="display:flex; align-items:center; gap:.4rem;"><div style="width:10px;height:10px;border-radius:3px;background:#f59e0b;"></div> Retards</div>
-            <div style="display:flex; align-items:center; gap:.4rem;"><div style="width:10px;height:10px;border-radius:3px;background:#ef4444;"></div> Absents</div>
+    {{-- GRAPHIQUE + TAUX DE PRESENCE --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.25rem; align-items:stretch;">
+        {{-- Graphique --}}
+        <div class="r-card" style="padding:1.5rem; flex:2; min-width:340px;">
+            <h3 class="r-section-title">
+                <span style="background:#6366f1;"></span> Évolution des Présences (Semaine en cours)
+            </h3>
+            
+            <div style="display:flex; gap:1.5rem; margin-bottom:1rem; font-size:.75rem; font-weight:600;">
+                <div style="display:flex; align-items:center; gap:.4rem;"><div style="width:10px;height:10px;border-radius:3px;background:#22c55e;"></div> Présents</div>
+                <div style="display:flex; align-items:center; gap:.4rem;"><div style="width:10px;height:10px;border-radius:3px;background:#f59e0b;"></div> Retards</div>
+                <div style="display:flex; align-items:center; gap:.4rem;"><div style="width:10px;height:10px;border-radius:3px;background:#ef4444;"></div> Absents</div>
+            </div>
+
+            <div style="height:260px; position:relative; width:100%;">
+                <canvas id="presenceWeekChart"></canvas>
+            </div>
         </div>
 
-        <div style="height:260px; position:relative; width:100%;">
-            <canvas id="presenceWeekChart"></canvas>
+        {{-- Taux de Présence --}}
+        <div class="r-card" style="padding:1.5rem; flex:1; min-width:240px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <h3 class="r-section-title" style="margin-bottom:0;"><span style="background:#14b8a6;"></span> Taux de Présence Global</h3>
+            
+            <div style="position:relative; width:160px; height:160px; display:flex; align-items:center; justify-content:center; margin:2rem 0;">
+                <svg style="width:100%; height:100%; transform:rotate(-90deg);" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" stroke-width="2.5"></circle>
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#14b8a6" stroke-width="2.5"
+                        stroke-dasharray="{{ $this->tauxPresenceGlobal }}, 100" stroke-linecap="round"
+                        style="transition:stroke-dasharray 1s ease-out;"></circle>
+                </svg>
+                <div style="position:absolute; text-align:center;">
+                    <div style="font-size:2.2rem; font-weight:900; color:#111827;">{{ $this->tauxPresenceGlobal }}<span style="font-size:1.3rem;">%</span></div>
+                </div>
+            </div>
+            
+            <div style="font-size:.75rem; font-weight:600; color:#6b7280; background:#f8fafc; padding:.5rem 1.2rem; border-radius:10px;">
+                Objectif RH : <span style="font-weight:800; color:#14b8a6;">95%</span>
+            </div>
         </div>
     </div>
 
@@ -187,121 +211,6 @@
             else initChart();
         })();
     </script>
-
-    {{-- ROW 3: Anomalies, Risques, Taux --}}
-    <div style="display:flex; flex-wrap:wrap; gap:1.25rem; align-items:stretch;">
-        
-        {{-- ANOMALIES --}}
-        <div class="r-card" style="flex:1; min-width:280px; display:flex; flex-direction:column; padding:1.5rem;">
-            <h3 class="r-section-title"><span style="background:#ef4444; animation:rFadeIn 1s infinite alternate;"></span> Anomalies de la Semaine</h3>
-            
-            <div style="flex:1; overflow-y:auto; max-height:300px; padding-right:.5rem;">
-                @php $hasAnomalies = false; @endphp
-
-                @if(!empty($this->anomaliesReport['contradictions']))
-                    @php $hasAnomalies = true; @endphp
-                    @foreach($this->anomaliesReport['contradictions'] as $item)
-                        <div class="r-list-item" style="background:#fef2f2;">
-                            <div>
-                                <div style="font-size:.75rem; font-weight:800; color:#b91c1c;">Contradiction statut</div>
-                                <div style="font-size:.85rem; font-weight:700; color:#111827; margin:.2rem 0;">{{ $item['nom'] }}</div>
-                                <div style="font-size:.65rem; color:#6b7280;">Le {{ $item['date'] }} — {{ implode(', ', $item['status']) }}</div>
-                            </div>
-                            <div class="r-badge" style="background:#fee2e2; color:#991b1b;">Critique</div>
-                        </div>
-                    @endforeach
-                @endif
-
-                @if(!empty($this->anomaliesReport['duplicates']))
-                    @php $hasAnomalies = true; @endphp
-                    @foreach($this->anomaliesReport['duplicates'] as $item)
-                        <div class="r-list-item" style="background:#fffbeb;">
-                            <div>
-                                <div style="font-size:.75rem; font-weight:800; color:#b45309;">Double pointage</div>
-                                <div style="font-size:.85rem; font-weight:700; color:#111827; margin:.2rem 0;">{{ $item['nom'] }}</div>
-                                <div style="font-size:.65rem; color:#6b7280;">Le {{ $item['date'] }} — {{ $item['compte'] }} pointages</div>
-                            </div>
-                            <div class="r-badge" style="background:#fef3c7; color:#92400e;">Suspect</div>
-                        </div>
-                    @endforeach
-                @endif
-
-                @if(!empty($this->anomaliesReport['late_streaks']))
-                    @php $hasAnomalies = true; @endphp
-                    @foreach($this->anomaliesReport['late_streaks'] as $item)
-                        <div class="r-list-item" style="background:#eff6ff;">
-                            <div>
-                                <div style="font-size:.75rem; font-weight:800; color:#1d4ed8;">Retards répétitifs</div>
-                                <div style="font-size:.85rem; font-weight:700; color:#111827; margin:.2rem 0;">{{ $item['nom'] }}</div>
-                                <div style="font-size:.65rem; color:#6b7280;">{{ $item['retards'] }} retards cette semaine</div>
-                            </div>
-                            <div class="r-badge" style="background:#dbeafe; color:#1e40af;">Alerte</div>
-                        </div>
-                    @endforeach
-                @endif
-
-                @if(!$hasAnomalies)
-                    <div style="padding:3rem 1rem; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
-                        <div style="font-size:2.5rem; margin-bottom:.5rem;">✨</div>
-                        <div style="font-weight:700; font-size:.85rem; color:#111827;">Aucune anomalie !</div>
-                        <div style="font-size:.7rem; color:#6b7280; margin-top:.2rem;">Tout est parfait cette semaine.</div>
-                    </div>
-                @endif
-            </div>
-        </div>
-
-        {{-- RISQUES --}}
-        <div class="r-card" style="flex:1.2; min-width:300px; display:flex; flex-direction:column; padding:1.5rem;">
-            <h3 class="r-section-title"><span style="background:#8b5cf6;"></span> Risques d'Absences (30j)</h3>
-            
-            <div style="flex:1; overflow-y:auto; max-height:300px; padding-right:.5rem;">
-                @forelse($this->absenteeismRisks as $risk)
-                    @php
-                        $bg = 'bg-gray-50'; $bdgBg = '#f3f4f6'; $bdgCol = '#374151';
-                        if($risk['score'] >= 60) { $bg = 'bg-red-50'; $bdgBg = '#fee2e2'; $bdgCol = '#991b1b'; }
-                        elseif($risk['score'] >= 30) { $bg = 'bg-orange-50'; $bdgBg = '#ffedd5'; $bdgCol = '#c2410c'; }
-                    @endphp
-                    <div class="r-list-item {{ $bg }}">
-                        <div>
-                            <div style="font-size:.85rem; font-weight:800; color:#111827;">{{ $risk['nom'] }}</div>
-                            <div style="font-size:.7rem; font-weight:600; color:#6b7280; margin-top:.15rem;">{{ $risk['departement'] }}</div>
-                            <div style="font-size:.65rem; color:#9ca3af; margin-top:.25rem; font-style:italic;">{{ $risk['raisons'] }}</div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div class="r-badge" style="background:{{ $bdgBg }}; color:{{ $bdgCol }};">{{ $risk['score'] }}%</div>
-                            <div style="font-size:.6rem; font-weight:700; text-transform:uppercase; color:#9ca3af; margin-top:.3rem;">{{ $risk['niveau'] }}</div>
-                        </div>
-                    </div>
-                @empty
-                    <div style="padding:3rem 1rem; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
-                        <div style="font-size:2.5rem; margin-bottom:.5rem;">✅</div>
-                        <div style="font-weight:700; font-size:.85rem; color:#111827;">Aucun risque majeur détecté</div>
-                    </div>
-                @endforelse
-            </div>
-        </div>
-
-        {{-- TAUX --}}
-        <div class="r-card" style="flex:0.8; min-width:240px; display:flex; flex-direction:column; align-items:center; padding:1.5rem; justify-content:center;">
-            <h3 class="r-section-title" style="margin-bottom:0;"><span style="background:#14b8a6;"></span> Taux Présence</h3>
-            
-            <div style="position:relative; width:140px; height:140px; display:flex; align-items:center; justify-content:center; margin:2rem 0;">
-                <svg style="width:100%; height:100%; transform:rotate(-90deg);" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" stroke-width="2.5"></circle>
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#14b8a6" stroke-width="2.5"
-                        stroke-dasharray="{{ $this->tauxPresenceGlobal }}, 100" stroke-linecap="round"
-                        style="transition:stroke-dasharray 1s ease-out;"></circle>
-                </svg>
-                <div style="position:absolute; text-align:center;">
-                    <div style="font-size:2rem; font-weight:900; color:#111827;">{{ $this->tauxPresenceGlobal }}<span style="font-size:1.2rem;">%</span></div>
-                </div>
-            </div>
-            
-            <div style="font-size:.75rem; font-weight:600; color:#6b7280; background:#f8fafc; padding:.4rem 1rem; border-radius:10px;">
-                Objectif : <span style="font-weight:800; color:#14b8a6;">95%</span>
-            </div>
-        </div>
-    </div>
 
     {{-- CLASSEMENTS --}}
     <h3 class="r-section-title" style="margin-top:1rem; margin-bottom:0;"><span style="background:#3b82f6;"></span> Classement Général des Employés</h3>

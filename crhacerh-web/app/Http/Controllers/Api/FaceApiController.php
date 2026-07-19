@@ -88,7 +88,9 @@ class FaceApiController extends Controller
     public function verifyFace(Request $request): JsonResponse
     {
         $request->validate([
-            'image' => 'required|string'
+            'image' => 'required|string',
+            'category' => 'nullable|in:EMPLOYE,PATIENT',
+            'id' => 'nullable|integer'
         ]);
 
         try {
@@ -103,22 +105,87 @@ class FaceApiController extends Controller
                 ], 400);
             }
 
-            // Filtrer pour ne garder que les employés ayant un consentement ET une photo existante sur disque
+            // Si catégorie et ID sont fournis explicitement (sélection/simulation de la borne ou mode hybride)
+            if ($request->category && $request->id) {
+                if ($request->category === 'EMPLOYE') {
+                    $employee = Employe::with('department')->find($request->id);
+                    if (!$employee) return response()->json(['status' => 'error', 'message' => 'Employé introuvable.'], 404);
+
+                    $lastPointage = Pointage::where('employee_id', $employee->id)
+                        ->whereDate('timestamp', now()->toDateString())
+                        ->orderBy('timestamp', 'desc')
+                        ->first();
+
+                    $type = ($lastPointage && $lastPointage->type === 'ENTREE') ? 'SORTIE' : 'ENTREE';
+                    $status = ($type === 'ENTREE' && date('H:i') > '08:15') ? 'Retard' : 'Present';
+
+                    $pointage = Pointage::create([
+                        'employee_id' => $employee->id,
+                        'type' => $type,
+                        'status' => $status,
+                        'source' => 'FACE',
+                        'timestamp' => now(),
+                        'confidence_score' => 0.98,
+                        'anomaly_detected' => false
+                    ]);
+
+                    return response()->json([
+                        'status' => 'success',
+                        'category' => 'EMPLOYE',
+                        'message' => 'Pointage facial réussi pour l\'employé !',
+                        'data' => [
+                            'name' => $employee->first_name . ' ' . $employee->last_name,
+                            'department' => $employee->department ? $employee->department->name : 'N/A',
+                            'type' => $pointage->type,
+                            'time' => $pointage->timestamp->format('H:i:s'),
+                            'simulated' => true
+                        ]
+                    ], 200);
+                } else {
+                    $rdv = \App\Models\RendezVous::find($request->id);
+                    if (!$rdv) return response()->json(['status' => 'error', 'message' => 'Rendez-vous introuvable.'], 404);
+
+                    $rdv->update([
+                        'statut' => 'Présent',
+                        'pointage_at' => now()
+                    ]);
+
+                    return response()->json([
+                        'status' => 'success',
+                        'category' => 'PATIENT',
+                        'message' => 'Arrivée du patient enregistrée par reconnaissance faciale !',
+                        'data' => [
+                            'name' => $rdv->nom_patient,
+                            'service' => $rdv->service ?? 'Consultation',
+                            'medecin' => $rdv->medecin ?? 'Médecin traitant',
+                            'time' => Carbon::now()->format('H:i:s'),
+                            'simulated' => true
+                        ]
+                    ], 200);
+                }
+            }
+
+            // Sinon recherche automatique (Gemini IA) pour les employés et patients
             $employees = Employe::whereNotNull('consent_facial_at')->get()->filter(function ($emp) {
                 return Storage::disk('public')->exists("faces/{$emp->id}.jpg");
             });
 
-            if ($employees->isEmpty()) {
+            $patients = \App\Models\RendezVous::whereDate('date_rendez_vous', Carbon::today())
+                ->whereNotNull('consent_facial_at')->get()->filter(function ($rdv) {
+                return Storage::disk('public')->exists("faces/patients/{$rdv->id}.jpg");
+            });
+
+            if ($employees->isEmpty() && $patients->isEmpty()) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Aucun visage enregistré dans le système.'
+                    'message' => 'Aucun profil facial enregistré pour aujourd\'hui. Veuillez sélectionner votre profil.'
                 ], 400);
             }
 
             $matchedEmployeeId = null;
+            $matchedPatientId = null;
             $confidence = 0.0;
             $usedGemini = false;
-
             $apiKey = env('GEMINI_API_KEY');
 
             if (!empty($apiKey)) {
@@ -130,23 +197,28 @@ class FaceApiController extends Controller
                     );
 
                     $parts = [
-                        "Tu es un système de reconnaissance faciale haute précision. " .
-                        "L'image 0 est la photo de la personne qui essaie de pointer à la borne de pointage. " .
-                        "Les images suivantes représentent les visages officiels enregistrés pour les employés avec leurs identifiants (IDs). " .
-                        "Compare attentivement le visage de l'image 0 avec chacun des visages des employés. " .
-                        "Réponds exclusivement sous forme de JSON valide avec deux clés :\n" .
-                        "- 'matched_employee_id' : l'ID numérique de l'employé correspondant (int ou null si aucune correspondance sûre).\n" .
+                        "Tu es un système de reconnaissance faciale haute précision pour l'hôpital CHRACERH. " .
+                        "L'image 0 est la photo de la personne à la borne de pointage. " .
+                        "Les images suivantes représentent les visages officiels enregistrés (Employés ou Patients). " .
+                        "Compare attentivement le visage de l'image 0 avec chacun. " .
+                        "Réponds exclusivement sous forme de JSON valide avec trois clés :\n" .
+                        "- 'matched_type' : 'EMPLOYE' ou 'PATIENT' ou null.\n" .
+                        "- 'matched_id' : l'ID numérique correspondant (int ou null).\n" .
                         "- 'confidence' : le score de confiance entre 0.0 et 1.0.\n" .
-                        "Sois très rigoureux. Si le visage sur l'image 0 ne correspond à aucun employé ou si la confiance est faible, renvoie null pour 'matched_employee_id'.",
+                        "Si aucune correspondance sûre (> 0.75), renvoie null pour matched_id.",
                         $blobCaptured
                     ];
 
                     $hasCandidateFiles = false;
                     foreach ($employees as $emp) {
-                        $path = "faces/{$emp->id}.jpg";
-                        // Le fichier existe forcément grâce au filtre ci-dessus, mais on garde la sécurité
-                        $fileData = base64_encode(Storage::disk('public')->get($path));
-                        $parts[] = "Employé ID: {$emp->id}";
+                        $fileData = base64_encode(Storage::disk('public')->get("faces/{$emp->id}.jpg"));
+                        $parts[] = "EMPLOYE ID: {$emp->id}";
+                        $parts[] = new \Gemini\Data\Blob(mimeType: 'image/jpeg', data: $fileData);
+                        $hasCandidateFiles = true;
+                    }
+                    foreach ($patients as $pt) {
+                        $fileData = base64_encode(Storage::disk('public')->get("faces/patients/{$pt->id}.jpg"));
+                        $parts[] = "PATIENT ID: {$pt->id}";
                         $parts[] = new \Gemini\Data\Blob(mimeType: 'image/jpeg', data: $fileData);
                         $hasCandidateFiles = true;
                     }
@@ -157,8 +229,12 @@ class FaceApiController extends Controller
 
                         if (preg_match('/\{.*?\}/s', $responseText, $matches)) {
                             $jsonData = json_decode($matches[0], true);
-                            if ($jsonData && isset($jsonData['matched_employee_id'])) {
-                                $matchedEmployeeId = $jsonData['matched_employee_id'];
+                            if ($jsonData && isset($jsonData['matched_id'])) {
+                                if (($jsonData['matched_type'] ?? '') === 'PATIENT') {
+                                    $matchedPatientId = $jsonData['matched_id'];
+                                } else {
+                                    $matchedEmployeeId = $jsonData['matched_id'];
+                                }
                                 $confidence = (float)($jsonData['confidence'] ?? 0.0);
                                 $usedGemini = true;
                             }
@@ -169,39 +245,43 @@ class FaceApiController extends Controller
                 }
             }
 
-            // Si Gemini n'a pas pu identifier la personne avec un haut niveau de confiance
-            if (!$usedGemini || !$matchedEmployeeId || $confidence < 0.75) {
+            if (!$usedGemini || ($confidence < 0.75 && !$matchedEmployeeId && !$matchedPatientId)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Reconnaissance échouée. Votre visage ne correspond à aucun profil enregistré ou la confiance est trop faible.'
+                    'message' => 'Reconnaissance automatique échouée. Veuillez sélectionner votre profil sur l\'écran pour pointer.'
                 ], 401);
             }
 
-            $employee = Employe::with('department')->find($matchedEmployeeId);
-            if (!$employee) {
+            if ($matchedPatientId) {
+                $rdv = \App\Models\RendezVous::find($matchedPatientId);
+                if (!$rdv) return response()->json(['status' => 'error', 'message' => 'Rendez-vous introuvable.'], 404);
+
+                $rdv->update(['statut' => 'Présent', 'pointage_at' => now()]);
+
                 return response()->json([
-                    'status' => 'error',
-                    'message' => 'Employé identifié introuvable.'
-                ], 404);
+                    'status' => 'success',
+                    'category' => 'PATIENT',
+                    'message' => 'Arrivée du patient enregistrée avec succès !',
+                    'data' => [
+                        'name' => $rdv->nom_patient,
+                        'service' => $rdv->service ?? 'Consultation',
+                        'medecin' => $rdv->medecin ?? 'Médecin traitant',
+                        'time' => Carbon::now()->format('H:i:s'),
+                        'simulated' => !$usedGemini
+                    ]
+                ], 200);
             }
 
-            // Déterminer dynamiquement le type (ENTREE/SORTIE)
+            $employee = Employe::with('department')->find($matchedEmployeeId);
+            if (!$employee) return response()->json(['status' => 'error', 'message' => 'Employé identifié introuvable.'], 404);
+
             $lastPointage = Pointage::where('employee_id', $employee->id)
                 ->whereDate('timestamp', now()->toDateString())
                 ->orderBy('timestamp', 'desc')
                 ->first();
 
             $type = ($lastPointage && $lastPointage->type === 'ENTREE') ? 'SORTIE' : 'ENTREE';
-
-            // Calcul du statut
-            $status = 'Present';
-            if ($type === 'ENTREE') {
-                if (date('H:i') > '08:15') {
-                    $status = 'Retard';
-                }
-            } else {
-                $status = 'SORTIE';
-            }
+            $status = ($type === 'ENTREE' && date('H:i') > '08:15') ? 'Retard' : 'Present';
 
             $pointage = Pointage::create([
                 'employee_id' => $employee->id,
@@ -215,9 +295,10 @@ class FaceApiController extends Controller
 
             return response()->json([
                 'status' => 'success',
+                'category' => 'EMPLOYE',
                 'message' => 'Pointage enregistré avec succès !',
                 'data' => [
-                    'employee' => $employee->first_name . ' ' . $employee->last_name,
+                    'name' => $employee->first_name . ' ' . $employee->last_name,
                     'department' => $employee->department ? $employee->department->name : 'N/A',
                     'type' => $pointage->type,
                     'time' => $pointage->timestamp->format('H:i:s'),

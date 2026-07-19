@@ -32,12 +32,15 @@ class Employe extends Authenticatable implements FilamentUser, HasName
         'phone',
         'face_embeddings',
         'consent_facial_at',
+        'fingerprint_data',
+        'fingerprint_registered_at',
         'remember_token',
     ];
 
     // Sécurisation et mutation automatique des types de données
     protected $casts = [
         'consent_facial_at' => 'datetime',
+        'fingerprint_registered_at' => 'datetime',
         'password' => 'hashed', // Hashe automatiquement le mot de passe à l'inscription/création
     ];
 

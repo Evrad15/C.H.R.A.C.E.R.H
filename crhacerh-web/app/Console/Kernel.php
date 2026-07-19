@@ -9,14 +9,11 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule): void
     {
-        // Analyse quotidienne à 06h00
-        $schedule->command('horizon:analyze --period=daily')->dailyAt('06:00');
+        // Rapport hebdomadaire XLSX — tous les vendredis à 18h00 (classé dans le dossier du mois)
+        $schedule->command('reports:generate --period=weekly')->weeklyOn(5, '18:00');
 
-        // Rapport hebdomadaire XLSX — tous les vendredis à 18h00
-        $schedule->command('horizon:report --period=weekly')->weeklyOn(5, '18:00');
-
-        // Rapport mensuel XLSX — dernier jour du mois à 23h30
-        $schedule->command('horizon:report --period=monthly')->lastDayOfMonth('23:30');
+        // Rapport mensuel XLSX — dernier jour du mois à 23h30 (classé dans le dossier du mois)
+        $schedule->command('reports:generate --period=monthly')->lastDayOfMonth('23:30');
     }
 
     protected function commands(): void

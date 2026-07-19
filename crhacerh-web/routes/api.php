@@ -10,8 +10,12 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// Route publique pour le tableau de la borne QR
+// Routes publiques pour la borne interactive
 Route::get('/kiosk/recent-pointages', [KioskController::class, 'getRecentPointages']);
+Route::get('/kiosk/daily-rdv', [KioskController::class, 'getDailyRdv']);
+Route::get('/kiosk/biometric-candidates', [KioskController::class, 'getBiometricCandidates']);
+Route::post('/kiosk/biometric-verify', [KioskController::class, 'biometricVerify']);
+Route::post('/kiosk/register-fingerprint', [KioskController::class, 'registerFingerprint']);
 
 // Route pour soumettre un scan depuis le mobile
 Route::post('/pointages/scan', [PointageController::class, 'scan']);
