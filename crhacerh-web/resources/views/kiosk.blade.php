@@ -7,9 +7,7 @@
     <title>Borne de Pointage | C.H.R.A.C.E.R.H</title>
     <meta name="description" content="Borne interactive de pointage et accueil des patients CHRACERH">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fonts/outfit.css">
 
     <style>
         :root {
@@ -523,6 +521,8 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
         }
 
         .finger-anim-box {
@@ -684,13 +684,11 @@
                             <th>Médecin</th>
                             <th>Heure RDV</th>
                             <th>Arrivée</th>
-                            <th>Statut</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-rdvs">
                         <tr>
-                            <td colspan="7" class="empty-table">Chargement des rendez-vous...</td>
+                            <td colspan="5" class="empty-table">Chargement des rendez-vous...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -735,7 +733,7 @@
                         </svg></div>
                     <div class="action-text">
                         <h4>Empreinte Digitale</h4>
-                        <p>Scan tactile ou sélection du profil</p>
+                        <p>Scan tactile</p>
                     </div>
                 </div>
 
@@ -764,18 +762,8 @@
             </div>
 
             <button onclick="captureAndVerifyFace()" style="background:#2563eb; color:#fff; border:none; padding:0.85rem 1.75rem; border-radius:12px; font-weight:800; font-size:0.95rem; cursor:pointer; width:100%; box-shadow:0 8px 16px rgba(37,99,235,0.25);">
-                📸 Analyser le visage maintenant
+                 Analyser le visage maintenant
             </button>
-
-            <!-- Sélection directe pour la borne -->
-            <div style="width:100%; margin-top:1.25rem; text-align:left;">
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.35rem; font-weight:700; text-transform:uppercase;">
-                    Ou sélection rapide (Simulation tactile Borne) :
-                </div>
-                <div class="candidates-list" id="face-candidates-list">
-                    <div style="padding:1rem; text-align:center; color:var(--text-muted);">Chargement...</div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -789,19 +777,16 @@
             </p>
 
             <div class="finger-anim-box" id="finger-sensor-box" onclick="triggerSimulatedSensor()">
-                👆
+                <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" class="bi bi-fingerprint" viewBox="0 0 16 16">
+                    <path d="M8.06 6.5a.5.5 0 0 1 .5.5v.776a11.5 11.5 0 0 1-.552 3.519l-1.331 4.14a.5.5 0 0 1-.952-.305l1.33-4.141a10.5 10.5 0 0 0 .504-3.213V7a.5.5 0 0 1 .5-.5Z" />
+                    <path d="M6.06 7a2 2 0 1 1 4 0 .5.5 0 1 1-1 0 1 1 0 1 0-2 0v.332q0 .613-.066 1.221A.5.5 0 0 1 6 8.447q.06-.555.06-1.115zm3.509 1a.5.5 0 0 1 .487.513 11.5 11.5 0 0 1-.587 3.339l-1.266 3.8a.5.5 0 0 1-.949-.317l1.267-3.8a10.5 10.5 0 0 0 .535-3.048A.5.5 0 0 1 9.569 8m-3.356 2.115a.5.5 0 0 1 .33.626L5.24 14.939a.5.5 0 1 1-.955-.296l1.303-4.199a.5.5 0 0 1 .625-.329" />
+                    <path d="M4.759 5.833A3.501 3.501 0 0 1 11.559 7a.5.5 0 0 1-1 0 2.5 2.5 0 0 0-4.857-.833.5.5 0 1 1-.943-.334m.3 1.67a.5.5 0 0 1 .449.546 10.7 10.7 0 0 1-.4 2.031l-1.222 4.072a.5.5 0 1 1-.958-.287L4.15 9.793a9.7 9.7 0 0 0 .363-1.842.5.5 0 0 1 .546-.449Zm6 .647a.5.5 0 0 1 .5.5c0 1.28-.213 2.552-.632 3.762l-1.09 3.145a.5.5 0 0 1-.944-.327l1.089-3.145c.382-1.105.578-2.266.578-3.435a.5.5 0 0 1 .5-.5Z" />
+                    <path d="M3.902 4.222a5 5 0 0 1 5.202-2.113.5.5 0 0 1-.208.979 4 4 0 0 0-4.163 1.69.5.5 0 0 1-.831-.556m6.72-.955a.5.5 0 0 1 .705-.052A4.99 4.99 0 0 1 13.059 7v1.5a.5.5 0 1 1-1 0V7a3.99 3.99 0 0 0-1.386-3.028.5.5 0 0 1-.051-.705M3.68 5.842a.5.5 0 0 1 .422.568q-.044.289-.044.59c0 .71-.1 1.417-.298 2.1l-1.14 3.923a.5.5 0 1 1-.96-.279L2.8 8.821A6.5 6.5 0 0 0 3.058 7q0-.375.054-.736a.5.5 0 0 1 .568-.422m8.882 3.66a.5.5 0 0 1 .456.54c-.084 1-.298 1.986-.64 2.934l-.744 2.068a.5.5 0 0 1-.941-.338l.745-2.07a10.5 10.5 0 0 0 .584-2.678.5.5 0 0 1 .54-.456" />
+                    <path d="M4.81 1.37A6.5 6.5 0 0 1 14.56 7a.5.5 0 1 1-1 0 5.5 5.5 0 0 0-8.25-4.765.5.5 0 0 1-.5-.865m-.89 1.257a.5.5 0 0 1 .04.706A5.48 5.48 0 0 0 2.56 7a.5.5 0 0 1-1 0c0-1.664.626-3.184 1.655-4.333a.5.5 0 0 1 .706-.04ZM1.915 8.02a.5.5 0 0 1 .346.616l-.779 2.767a.5.5 0 1 1-.962-.27l.778-2.767a.5.5 0 0 1 .617-.346m12.15.481a.5.5 0 0 1 .49.51c-.03 1.499-.161 3.025-.727 4.533l-.07.187a.5.5 0 0 1-.936-.351l.07-.187c.506-1.35.634-2.74.663-4.202a.5.5 0 0 1 .51-.49" />
+                </svg>
             </div>
             <div id="finger-status-text" style="font-size:0.88rem; font-weight:700; color:#059669; margin-bottom:1.25rem;">
                 Prêt à scanner... Cliquez sur le capteur ou sélectionnez dans la liste ci-dessous
-            </div>
-
-            <div style="width:100%; text-align:left;">
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.35rem; font-weight:700; text-transform:uppercase;">
-                    Sélectionner l'Employé ou le Patient :
-                </div>
-                <div class="candidates-list" id="finger-candidates-list">
-                    <div style="padding:1rem; text-align:center; color:var(--text-muted);">Chargement...</div>
-                </div>
             </div>
         </div>
     </div>
@@ -822,7 +807,103 @@
         }
     </style>
 
+    <!-- TOAST DE VALIDATION / NOTIFICATION CENTRALE -->
+    <div id="kiosk-toast-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.45); backdrop-filter:blur(8px); z-index:9999; display:none; justify-content:center; align-items:center; opacity:0; transition:opacity 0.3s ease;">
+        <div id="kiosk-toast-box" style="background:#ffffff; border-radius:24px; padding:2.5rem 3.5rem; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.35); max-width:550px; transform:scale(0.8); transition:transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div id="kiosk-toast-icon" style="font-size:4.5rem; margin-bottom:1rem; line-height:1;">✅</div>
+            <h3 id="kiosk-toast-title" style="font-size:1.85rem; font-weight:900; color:#059669; margin-bottom:0.75rem;">Pointage Validé !</h3>
+            <p id="kiosk-toast-msg" style="font-size:1.15rem; font-weight:600; color:#4A4036; line-height:1.5;">Bienvenue au CHRACERH</p>
+        </div>
+    </div>
+
     <script>
+        // AUDIO SANS FICHIER EXTERNE (Web Audio API)
+        function playSuccessChime() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ctx.currentTime;
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, now); // C5
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.3);
+
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(783.99, now + 0.15); // G5
+                gain2.gain.setValueAtTime(0.35, now + 0.15);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.15);
+                osc2.stop(now + 0.6);
+            } catch (e) {
+                console.log('Audio error:', e);
+            }
+        }
+
+        function playErrorSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } catch (e) {
+                console.log('Audio error:', e);
+            }
+        }
+
+        let toastTimer = null;
+        function showKioskToast(title, msg, isSuccess = true) {
+            const overlay = document.getElementById('kiosk-toast-overlay');
+            const box = document.getElementById('kiosk-toast-box');
+            const icon = document.getElementById('kiosk-toast-icon');
+            const titleEl = document.getElementById('kiosk-toast-title');
+            const msgEl = document.getElementById('kiosk-toast-msg');
+
+            if (isSuccess) {
+                icon.textContent = '✅';
+                titleEl.textContent = title || 'Validation Réussie';
+                titleEl.style.color = '#059669';
+                playSuccessChime();
+            } else {
+                icon.textContent = '⚠️';
+                titleEl.textContent = title || 'Attention';
+                titleEl.style.color = '#dc2626';
+                playErrorSound();
+            }
+            msgEl.textContent = msg;
+
+            overlay.style.display = 'flex';
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                box.style.transform = 'scale(1)';
+            }, 20);
+
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                overlay.style.opacity = '0';
+                box.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 300);
+            }, 3000);
+        }
+
         // HORLOGE
         function updateClock() {
             const now = new Date();
@@ -885,7 +966,8 @@
                 return;
             }
 
-            tbody.innerHTML = items.map(item => {
+            const compactItems = items.slice(0, 12);
+            tbody.innerHTML = compactItems.map(item => {
                 let badgeType = item.type === 'ENTREE' ? 'badge-entree' : 'badge-sortie';
                 let sourceIcon = item.source === 'FACE' ? '📸 Facial' : (item.source === 'EMPREINTE' ? '👆 Empreinte' : '🏷️ Borne');
                 let statusBadge = item.status === 'Retard' ?
@@ -908,21 +990,13 @@
         function renderRdvsTable(items) {
             const tbody = document.getElementById('tbody-rdvs');
             if (!items || items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="empty-table">Aucun rendez-vous patient programmé pour aujourd'hui.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="empty-table">Aucun rendez-vous patient programmé pour aujourd'hui.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = items.map(item => {
-                let isPresent = item.statut === 'Présent' || item.statut === 'Réalisé' || item.pointage_at !== null;
-                let statusBadge = isPresent ?
-                    `<span class="badge-status badge-rdv-present">✔ Présent / Arrivé</span>` :
-                    `<span class="badge-status badge-rdv-planifie">🕒 ${item.statut}</span>`;
-
+            const compactItems = items.slice(0, 12);
+            tbody.innerHTML = compactItems.map(item => {
                 let timeArrival = item.pointage_at ? `<span style="color:#059669; font-weight:800;">${item.pointage_at}</span>` : `<span style="color:var(--text-muted);">-</span>`;
-
-                let actionBtn = isPresent ?
-                    `<span style="font-size:0.78rem; color:#059669; font-weight:700;">✔ En attente</span>` :
-                    `<button onclick="quickCheckInPatient(${item.id})" style="background:#059669; color:#fff; border:none; padding:0.4rem 0.85rem; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.8rem; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">✔ Valider</button>`;
 
                 return `
                     <tr>
@@ -931,8 +1005,6 @@
                         <td style="color:var(--text-muted); font-weight:500;">${item.medecin}</td>
                         <td style="font-weight:800;">${item.heure}</td>
                         <td>${timeArrival}</td>
-                        <td>${statusBadge}</td>
-                        <td>${actionBtn}</td>
                     </tr>
                 `;
             }).join('');
@@ -952,7 +1024,7 @@
                 });
                 if (res.ok) {
                     const result = await res.json();
-                    alert(`✔ ${result.message}\nPatient : ${result.data.name}`);
+                    showKioskToast('Patient Arrivé !', result.data.name || result.message, true);
                     fetchAllData();
                 }
             } catch (e) {
@@ -972,17 +1044,6 @@
 
                 const faceList = document.getElementById('face-candidates-list');
                 let htmlFace = '';
-                data.employees.forEach(emp => {
-                    htmlFace += `
-                        <div class="candidate-item" onclick="verifyCandidateBio('EMPLOYE', ${emp.id}, 'FACE')">
-                            <div>
-                                <div style="font-weight:800; color:var(--text-main);">👤 ${emp.name}</div>
-                                <div style="font-size:0.75rem; color:var(--text-muted);">${emp.role_info}</div>
-                            </div>
-                            <span style="background:rgba(37,99,235,0.12); color:#2563eb; padding:0.22rem 0.55rem; border-radius:8px; font-size:0.75rem; font-weight:700;">Pointer ➔</span>
-                        </div>
-                    `;
-                });
                 data.patients.forEach(pt => {
                     htmlFace += `
                         <div class="candidate-item" onclick="verifyCandidateBio('PATIENT', ${pt.id}, 'FACE')">
@@ -994,21 +1055,10 @@
                         </div>
                     `;
                 });
-                faceList.innerHTML = htmlFace || '<div style="padding:1rem; text-align:center;">Aucun profil disponible</div>';
+                faceList.innerHTML = htmlFace || '<div style="padding:1rem; text-align:center;">Aucun patient avec RDV aujourd\'hui</div>';
 
                 const fingerList = document.getElementById('finger-candidates-list');
                 let htmlFinger = '';
-                data.employees.forEach(emp => {
-                    htmlFinger += `
-                        <div class="candidate-item" onclick="verifyCandidateBio('EMPLOYE', ${emp.id}, 'EMPREINTE')">
-                            <div>
-                                <div style="font-weight:800; color:var(--text-main);">👤 ${emp.name}</div>
-                                <div style="font-size:0.75rem; color:var(--text-muted);">${emp.role_info}</div>
-                            </div>
-                            <span style="background:rgba(16,185,129,0.15); color:#059669; padding:0.22rem 0.55rem; border-radius:8px; font-size:0.75rem; font-weight:700;">👆 Empreinte ➔</span>
-                        </div>
-                    `;
-                });
                 data.patients.forEach(pt => {
                     htmlFinger += `
                         <div class="candidate-item" onclick="verifyCandidateBio('PATIENT', ${pt.id}, 'EMPREINTE')">
@@ -1020,7 +1070,7 @@
                         </div>
                     `;
                 });
-                fingerList.innerHTML = htmlFinger || '<div style="padding:1rem; text-align:center;">Aucun profil disponible</div>';
+                fingerList.innerHTML = htmlFinger || '<div style="padding:1rem; text-align:center;">Aucun patient avec RDV aujourd\'hui</div>';
 
             } catch (e) {
                 console.error(e);
@@ -1052,27 +1102,49 @@
                     if (source === 'FACE') closeFaceModal();
                     else closeFingerModal();
 
-                    alert(`✔ ${result.message}\nNom : ${result.data.name || ''}\nHeure : ${result.data.time || ''}`);
+                    showKioskToast('Pointage Enregistré !', `${result.data.name || ''} — ${result.data.time || result.message}`, true);
                     fetchAllData();
                 } else {
-                    alert('Erreur : ' + (result.message || 'Impossible de valider le pointage.'));
+                    showKioskToast('Erreur', result.message || 'Impossible de valider le pointage.', false);
                 }
             } catch (e) {
-                alert('Erreur réseau.');
+                showKioskToast('Erreur de Connexion', 'Impossible de joindre le serveur.', false);
             }
         }
 
         // MODALS FACIAL & EMPREINTE
         let videoStream = null;
+        let modalTimeout = null;
+
+        function resetModalTimeout() {
+            if (modalTimeout) clearTimeout(modalTimeout);
+            modalTimeout = setTimeout(() => {
+                const faceMod = document.getElementById('modal-face');
+                const fingerMod = document.getElementById('modal-finger');
+                if (faceMod.classList.contains('active') || fingerMod.classList.contains('active')) {
+                    closeFaceModal();
+                    closeFingerModal();
+                    showKioskToast('Borne Disponible', 'Fermeture automatique pour inactivité (30s)', false);
+                }
+            }, 30000);
+        }
 
         function openFaceModal() {
             document.getElementById('modal-face').classList.add('active');
+            const faceBoxEl = document.querySelector('#modal-face .modal-box');
+            if (faceBoxEl) {
+                faceBoxEl.onmousemove = resetModalTimeout;
+                faceBoxEl.ontouchstart = resetModalTimeout;
+                faceBoxEl.onclick = resetModalTimeout;
+            }
+            resetModalTimeout();
             loadBiometricCandidates();
             initCamera();
         }
 
         function closeFaceModal() {
             document.getElementById('modal-face').classList.remove('active');
+            if (modalTimeout) clearTimeout(modalTimeout);
             if (videoStream) {
                 videoStream.getTracks().forEach(track => track.stop());
                 videoStream = null;
@@ -1093,9 +1165,10 @@
         }
 
         async function captureAndVerifyFace() {
+            resetModalTimeout();
             const video = document.getElementById('webcam-stream');
             if (!video.srcObject) {
-                alert("Caméra inactive. Veuillez cliquer sur votre nom dans la liste de sélection ci-dessous.");
+                showKioskToast('Caméra Inactive', 'Veuillez sélectionner un profil dans la liste ci-dessous.', false);
                 return;
             }
 
@@ -1104,7 +1177,7 @@
             canvas.height = video.videoHeight || 480;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg');
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
 
             try {
                 const res = await fetch('/api/kiosk/face-verify', {
@@ -1119,23 +1192,31 @@
                 const result = await res.json();
                 if (res.ok && result.status === 'success') {
                     closeFaceModal();
-                    alert(`✔ ${result.message}\nNom : ${result.data.name || result.data.employee}`);
+                    showKioskToast('Reconnaissance Réussie !', `${result.data.name || result.data.employee} — ${result.data.time || result.message}`, true);
                     fetchAllData();
                 } else {
-                    alert(result.message || "Visage non reconnu. Sélectionnez votre profil ci-dessous.");
+                    showKioskToast('Visage Non Reconnu', result.message || 'Sélectionnez votre profil dans la liste ci-dessous.', false);
                 }
             } catch (e) {
-                alert("Erreur réseau.");
+                showKioskToast('Erreur de Connexion', 'Impossible de joindre le serveur.', false);
             }
         }
 
         function openFingerModal() {
             document.getElementById('modal-finger').classList.add('active');
+            const fingerBoxEl = document.querySelector('#modal-finger .modal-box');
+            if (fingerBoxEl) {
+                fingerBoxEl.onmousemove = resetModalTimeout;
+                fingerBoxEl.ontouchstart = resetModalTimeout;
+                fingerBoxEl.onclick = resetModalTimeout;
+            }
+            resetModalTimeout();
             loadBiometricCandidates();
         }
 
         function closeFingerModal() {
             document.getElementById('modal-finger').classList.remove('active');
+            if (modalTimeout) clearTimeout(modalTimeout);
             document.getElementById('finger-sensor-box').classList.remove('scanning');
         }
 

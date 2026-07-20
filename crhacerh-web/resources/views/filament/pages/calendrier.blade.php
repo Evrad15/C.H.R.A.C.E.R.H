@@ -52,7 +52,7 @@
         @endif
     </div>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/fr.global.js"></script>
+    <link rel="stylesheet" href="/vendor/fullcalendar/index.global.min.css">
+    <script src="/vendor/fullcalendar/index.global.min.js"></script>
+    <script src="/vendor/fullcalendar/locales/fr.global.js"></script>
 </x-filament-panels::page>

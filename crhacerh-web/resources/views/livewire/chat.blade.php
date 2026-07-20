@@ -233,7 +233,8 @@
                             @endif
                             @php
                                 $participantName = $thread->subject ?: $thread->participantsString(Auth::id(), ['first_name', 'last_name']);
-                                $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($participantName) . '&background=6366f1&color=ffffff&size=128&rounded=true';
+                                $initials = strtoupper(substr(trim($participantName ?: 'U'), 0, 2));
+                                $avatarUrl = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><circle cx='64' cy='64' r='64' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-family='sans-serif' font-size='48' font-weight='bold'>{$initials}</text></svg>";
                             @endphp
                             <img src="{{ $avatarUrl }}" alt="{{ $participantName }}" class="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm transition-transform duration-300 group-hover:scale-105">
                         </div>
