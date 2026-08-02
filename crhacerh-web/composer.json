@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "cmgmyr/messenger": "^2.32",
+        "dompdf/dompdf": "*",
         "filament/filament": "^3.2",
         "google-gemini-php/client": "^2.7",
         "google/apiclient": "^2.19",

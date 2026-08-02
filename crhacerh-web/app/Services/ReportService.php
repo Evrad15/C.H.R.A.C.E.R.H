@@ -325,30 +325,48 @@ class ReportService
         $subFolder = "reports/{$month} {$year}";
         $path = $subFolder . '/' . $filename;
 
-        $html = '<h2>Rapport (' . e($report['from']) . ' → ' . e($report['to']) . ')</h2>';
-        $html .= '<ul>';
-        $html .= '<li>Total employés: ' . $report['total_employes'] . '</li>';
-        $html .= '<li>Enregistrements: ' . $report['enregistrements'] . '</li>';
-        $html .= '<li>Présents: ' . $report['present'] . '</li>';
-        $html .= '<li>Absents: ' . $report['absent'] . '</li>';
-        $html .= '<li>Retards: ' . $report['retard'] . '</li>';
-        $html .= '</ul>';
+        $html = '<!DOCTYPE html><html><head><meta charset="utf-8">';
+        $html .= '<style>';
+        $html .= 'body { font-family: DejaVu Sans, Helvetica, Arial, sans-serif; color: #1F384C; padding: 20px; font-size: 13px; }';
+        $html .= 'h1 { color: #3A5BF0; font-size: 20px; margin-bottom: 5px; }';
+        $html .= '.subtitle { color: #64748B; font-size: 12px; margin-bottom: 25px; }';
+        $html .= '.stats-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }';
+        $html .= '.stats-table th, .stats-table td { border: 1px solid #E2E8F0; padding: 10px; text-align: left; }';
+        $html .= '.stats-table th { background: #F8FAFC; color: #1F384C; font-weight: bold; }';
+        $html .= '.badge-present { color: #0E9F2D; font-weight: bold; }';
+        $html .= '.badge-absent { color: #E81123; font-weight: bold; }';
+        $html .= '.badge-retard { color: #D97300; font-weight: bold; }';
+        $html .= '</style></head><body>';
+        $html .= '<h1>C.H.R.A.C.E.R.H — Rapport de Présence</h1>';
+        $html .= '<div class="subtitle">Période du ' . e($report['from']) . ' au ' . e($report['to']) . '</div>';
+
+        $html .= '<table class="stats-table">';
+        $html .= '<tr><th>Métrique</th><th>Valeur</th></tr>';
+        $html .= '<tr><td>Total employés</td><td>' . $report['total_employes'] . '</td></tr>';
+        $html .= '<tr><td>Total enregistrements</td><td>' . $report['enregistrements'] . '</td></tr>';
+        $html .= '<tr><td>Présents</td><td class="badge-present">' . $report['present'] . '</td></tr>';
+        $html .= '<tr><td>Retards</td><td class="badge-retard">' . $report['retard'] . '</td></tr>';
+        $html .= '<tr><td>Absents</td><td class="badge-absent">' . $report['absent'] . '</td></tr>';
+        $html .= '</table>';
 
         if (!empty($report['top_retards'])) {
-            $html .= '<h3>Top retards</h3><ol>';
+            $html .= '<h3>Top 5 des retards</h3>';
+            $html .= '<table class="stats-table"><tr><th>Nom Complet</th><th>Nombre de Retards</th></tr>';
             foreach ($report['top_retards'] as $item) {
-                $html .= '<li>' . e($item['nom']) . ' — ' . e($item['retards']) . '</li>';
+                $html .= '<tr><td>' . e($item['nom']) . '</td><td>' . e($item['retards']) . '</td></tr>';
             }
-            $html .= '</ol>';
+            $html .= '</table>';
         }
 
         if (!empty($report['top_absences'])) {
-            $html .= '<h3>Top absences</h3><ol>';
+            $html .= '<h3>Top 5 des absences</h3>';
+            $html .= '<table class="stats-table"><tr><th>Nom Complet</th><th>Nombre d\'Absences</th></tr>';
             foreach ($report['top_absences'] as $item) {
-                $html .= '<li>' . e($item['nom']) . ' — ' . e($item['absences']) . '</li>';
+                $html .= '<tr><td>' . e($item['nom']) . '</td><td>' . e($item['absences']) . '</td></tr>';
             }
-            $html .= '</ol>';
+            $html .= '</table>';
         }
+        $html .= '</body></html>';
 
         if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('A4', 'portrait');
@@ -366,7 +384,9 @@ class ReportService
             return '/storage/' . $path;
         }
 
-        throw new \RuntimeException('Aucun convertisseur PDF trouvé.');
+        // Fallback sans Dompdf : sauvegarde en HTML lisible direct
+        Storage::disk('public')->put($path, $html);
+        return '/storage/' . $path;
     }
 
     /**
