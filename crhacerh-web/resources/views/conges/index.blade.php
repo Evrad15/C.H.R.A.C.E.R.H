@@ -8,11 +8,12 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 2.25rem;
+        margin-bottom: 2.75rem !important;
+        padding-top: 0.25rem;
     }
 
     .page-title {
-        font-size: 1.5rem;
+        font-size: 1.55rem;
         font-weight: 700;
         color: var(--text-dark);
         margin: 0;
@@ -21,24 +22,24 @@
     .btn-create-conge {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.55rem;
         background: var(--primary);
         color: #FFFFFF;
-        padding: 0.65rem 1.25rem;
-        border-radius: 10px;
+        padding: 0.75rem 1.35rem;
+        border-radius: 12px;
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: 0.92rem;
         text-decoration: none;
         border: none;
         cursor: pointer;
         margin-left: auto;
-        box-shadow: 0 4px 12px rgba(58, 91, 240, 0.25);
+        box-shadow: 0 4px 14px rgba(58, 91, 240, 0.28);
         transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
     }
     .btn-create-conge:hover {
         background: #2a48d8;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(58, 91, 240, 0.35);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(58, 91, 240, 0.38);
     }
 
     /* Top Stats Grid */
