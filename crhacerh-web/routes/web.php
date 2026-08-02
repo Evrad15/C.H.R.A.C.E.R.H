@@ -32,6 +32,8 @@ Route::patch('/conges/{id}/status', [CongeController::class, 'updateStatus'])->n
 Route::get('/rapports', [RapportController::class, 'index'])->name('rapports.index');
 Route::post('/rapports/generate', [RapportController::class, 'generate'])->name('rapports.generate');
 Route::post('/rapports/delete-file', [RapportController::class, 'deleteFile'])->name('rapports.deleteFile');
+Route::get('/reports/open/{filename}', [RapportController::class, 'openFile'])->where('filename', '.*')->name('rapports.open')->name('report.open');
+Route::get('/reports/download/{filename}', [RapportController::class, 'downloadFile'])->where('filename', '.*')->name('rapports.download')->name('report.download');
 
 // Page d'affichage de la borne (Interface Web)
 Route::get('/kiosk', [KioskController::class, 'showView']);
@@ -76,19 +78,4 @@ Route::get('/ressources-humaines/calendrier/callback', function (Request $reques
     return redirect('/ressources-humaines/calendrier');
 });
 
-// --- Routes de gestion des rapports (Contourne l'erreur 403 du symlink et permet les sous-dossiers mensuels) ---
-Route::get('/reports/open/{filename}', function ($filename) {
-    $path = 'reports/' . $filename;
-    if (Storage::disk('public')->exists($path)) {
-        return response()->file(Storage::disk('public')->path($path));
-    }
-    abort(404, 'Rapport introuvable');
-})->where('filename', '.*')->name('report.open');
-
-Route::get('/reports/download/{filename}', function ($filename) {
-    $path = 'reports/' . $filename;
-    if (Storage::disk('public')->exists($path)) {
-        return response()->download(Storage::disk('public')->path($path));
-    }
-    abort(404, 'Rapport introuvable');
-})->where('filename', '.*')->name('report.download');
+// --- Fin des routes web ---

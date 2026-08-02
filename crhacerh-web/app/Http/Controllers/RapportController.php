@@ -38,8 +38,6 @@ class RapportController extends Controller
         $totalFiles = 0;
         $currentMonthCount = 0;
 
-        $currentMonthStr = Carbon::now()->locale('fr')->isoFormat('MMMM YYYY');
-
         foreach ($allFiles as $file) {
             // Ignorer les fichiers cachés (.gitignore, .DS_Store, etc.)
             if (basename($file) === '.gitignore' || str_starts_with(basename($file), '.')) {
@@ -55,6 +53,8 @@ class RapportController extends Controller
             $dirname = dirname($file);
             $folderName = ($dirname === $baseDir) ? 'Racine' : str_replace($baseDir . '/', '', $dirname);
 
+            $relativeFilename = str_replace($baseDir . '/', '', $file);
+
             $fileItem = [
                 'path'          => $file,
                 'name'          => basename($file),
@@ -62,8 +62,8 @@ class RapportController extends Controller
                 'extension'     => $extension,
                 'size_formatted'=> $this->formatBytes($size),
                 'modified_at'   => Carbon::createFromTimestamp($lastModified)->locale('fr')->isoFormat('D MMMM YYYY à HH:mm'),
-                'download_url'  => route('report.download', ['filename' => str_replace($baseDir . '/', '', $file)]),
-                'open_url'      => route('report.open', ['filename' => str_replace($baseDir . '/', '', $file)]),
+                'download_url'  => route('rapports.download', ['filename' => $relativeFilename]),
+                'open_url'      => route('rapports.open', ['filename' => $relativeFilename]),
             ];
 
             $filesInfo[] = $fileItem;
@@ -127,21 +127,89 @@ class RapportController extends Controller
     }
 
     /**
+     * Ouvre un fichier rapport directement dans le navigateur.
+     */
+    public function openFile($filename)
+    {
+        $decoded = rawurldecode(urldecode($filename));
+        $disk = Storage::disk('public');
+        
+        $possiblePaths = [
+            $decoded,
+            'reports/' . ltrim($decoded, '/'),
+        ];
+
+        foreach ($possiblePaths as $path) {
+            if ($disk->exists($path)) {
+                $fullPath = $disk->path($path);
+                $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+
+                $mimeType = match ($ext) {
+                    'pdf'  => 'application/pdf',
+                    'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'xls'  => 'application/vnd.ms-excel',
+                    default => mime_content_type($fullPath) ?: 'application/octet-stream',
+                };
+
+                return response()->file($fullPath, [
+                    'Content-Type' => $mimeType,
+                    'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"',
+                ]);
+            }
+        }
+
+        abort(404, 'Rapport introuvable : ' . $filename);
+    }
+
+    /**
+     * Télécharge un fichier rapport.
+     */
+    public function downloadFile($filename)
+    {
+        $decoded = rawurldecode(urldecode($filename));
+        $disk = Storage::disk('public');
+
+        $possiblePaths = [
+            $decoded,
+            'reports/' . ltrim($decoded, '/'),
+        ];
+
+        foreach ($possiblePaths as $path) {
+            if ($disk->exists($path)) {
+                $fullPath = $disk->path($path);
+                return response()->download($fullPath, basename($fullPath));
+            }
+        }
+
+        abort(404, 'Rapport introuvable : ' . $filename);
+    }
+
+    /**
      * Supprime un fichier de rapport du stockage.
      */
     public function deleteFile(Request $request)
     {
         $request->validate(['path' => 'required|string']);
 
-        $path = $request->input('path');
+        $rawPath = $request->input('path');
+        $decoded = rawurldecode(urldecode($rawPath));
         $disk = Storage::disk('public');
 
-        if ($disk->exists($path)) {
-            $disk->delete($path);
-            return redirect()->back()->with('success', 'Fichier rapport supprimé.');
+        $possiblePaths = [
+            $rawPath,
+            $decoded,
+            'reports/' . ltrim($decoded, '/'),
+            ltrim(str_replace('reports/', '', $decoded), '/'),
+        ];
+
+        foreach ($possiblePaths as $path) {
+            if ($disk->exists($path)) {
+                $disk->delete($path);
+                return redirect()->route('rapports.index')->with('success', 'Fichier rapport supprimé avec succès.');
+            }
         }
 
-        return redirect()->back()->with('error', 'Fichier introuvable.');
+        return redirect()->back()->with('error', 'Fichier introuvable pour la suppression.');
     }
 
     private function formatBytes($bytes, $precision = 2)

@@ -514,14 +514,14 @@
                     </div>
                 </div>
 
-                <div class="file-actions">
-                    <a href="{{ $f['open_url'] }}" target="_blank" class="btn-file-action btn-open">
+                <div class="file-actions" onclick="event.stopPropagation();">
+                    <a href="{{ $f['open_url'] }}" target="_blank" class="btn-file-action btn-open" onclick="event.stopPropagation();">
                         <i class="bi bi-eye"></i> Ouvrir
                     </a>
-                    <a href="{{ $f['download_url'] }}" class="btn-file-action btn-dl">
+                    <a href="{{ $f['download_url'] }}" class="btn-file-action btn-dl" onclick="event.stopPropagation();">
                         <i class="bi bi-download"></i> Télécharger
                     </a>
-                    <form action="{{ route('rapports.deleteFile') }}" method="POST" onsubmit="return confirm('Supprimer ce fichier ?');" style="display:inline;">
+                    <form action="{{ route('rapports.deleteFile') }}" method="POST" onsubmit="return confirm('Supprimer définitivement ce fichier ?');" style="display:inline;" onclick="event.stopPropagation();">
                         @csrf
                         <input type="hidden" name="path" value="{{ $f['path'] }}">
                         <button type="submit" class="btn-file-action btn-del">
