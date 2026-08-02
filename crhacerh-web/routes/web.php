@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\RendezVousController;
 use App\Http\Controllers\CongeController;
+use App\Http\Controllers\RapportController;
 use App\Filament\Resources\RapportResource;
 
 // Route du Tableau de bord sur-mesure (Figma)
@@ -26,6 +27,11 @@ Route::patch('/rendez-vous/{id}/status', [RendezVousController::class, 'updateSt
 Route::get('/conges', [CongeController::class, 'index'])->name('conges.index');
 Route::post('/conges', [CongeController::class, 'store'])->name('conges.store');
 Route::patch('/conges/{id}/status', [CongeController::class, 'updateStatus'])->name('conges.updateStatus');
+
+// Route de la Gestion et Bibliothèque des Rapports sur-mesure (Figma)
+Route::get('/rapports', [RapportController::class, 'index'])->name('rapports.index');
+Route::post('/rapports/generate', [RapportController::class, 'generate'])->name('rapports.generate');
+Route::post('/rapports/delete-file', [RapportController::class, 'deleteFile'])->name('rapports.deleteFile');
 
 // Page d'affichage de la borne (Interface Web)
 Route::get('/kiosk', [KioskController::class, 'showView']);

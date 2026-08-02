@@ -291,8 +291,8 @@
                     <span>Congés et permissions</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="/ressources-humaines/rapports">
+            <li class="nav-item {{ request()->routeIs('rapports.*') ? 'active' : '' }}">
+                <a href="{{ route('rapports.index') }}">
                     <i class="bi bi-journal-text"></i>
                     <span>Rapports</span>
                 </a>

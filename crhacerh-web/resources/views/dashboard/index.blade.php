@@ -327,7 +327,7 @@
                 <span>{{ $trendPercent >= 0 ? '+' : '' }}{{ $trendPercent }}% vs semaine dernière</span>
             </div>
         </div>
-        <a href="/ressources-humaines/rapports" class="btn-rapport">Rapport</a>
+        <a href="{{ route('rapports.index') }}" class="btn-rapport">Rapport</a>
     </div>
 
     <div class="chart-subtitle">Données hebdomadaires d'assiduité</div>
