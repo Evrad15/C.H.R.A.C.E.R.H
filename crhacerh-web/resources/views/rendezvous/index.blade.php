@@ -5,10 +5,13 @@
 @section('custom_styles')
 <style>
     .page-header-flex {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2.75rem !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin-bottom: 2rem !important;
         padding-top: 0.25rem;
     }
 
@@ -17,29 +20,30 @@
         font-weight: 700;
         color: var(--text-dark);
         margin: 0;
+        white-space: nowrap;
     }
 
     .btn-create-rdv {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.55rem;
-        background: var(--primary);
-        color: #FFFFFF;
-        padding: 0.75rem 1.35rem;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 0.92rem;
-        text-decoration: none;
-        border: none;
-        cursor: pointer;
-        margin-left: auto;
-        box-shadow: 0 4px 14px rgba(58, 91, 240, 0.28);
-        transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.55rem !important;
+        background: var(--primary) !important;
+        color: #FFFFFF !important;
+        padding: 0.7rem 1.35rem !important;
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+        font-size: 0.92rem !important;
+        text-decoration: none !important;
+        border: none !important;
+        cursor: pointer !important;
+        white-space: nowrap !important;
+        box-shadow: 0 4px 14px rgba(58, 91, 240, 0.28) !important;
+        transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease !important;
     }
     .btn-create-rdv:hover {
-        background: #2a48d8;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(58, 91, 240, 0.38);
+        background: #2a48d8 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 18px rgba(58, 91, 240, 0.38) !important;
     }
 
     /* Top Stats Grid */
