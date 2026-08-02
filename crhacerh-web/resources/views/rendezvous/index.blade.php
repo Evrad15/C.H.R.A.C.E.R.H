@@ -11,7 +11,7 @@
         justify-content: space-between !important;
         align-items: center !important;
         width: 100% !important;
-        margin-bottom: 2rem !important;
+        margin-bottom: 2.25rem !important;
         padding-top: 0.25rem;
     }
 

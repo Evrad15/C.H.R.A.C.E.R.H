@@ -256,9 +256,8 @@
             padding: 1.5rem 2.5rem 2.5rem 2.5rem;
             flex: 1;
         }
-
-        @yield('custom_styles')
     </style>
+    @yield('custom_styles')
 </head>
 <body>
 
