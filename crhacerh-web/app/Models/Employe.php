@@ -5,18 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
-// 💡 On remplace le Model de base par la classe Authenticatable
 use Illuminate\Foundation\Auth\User as Authenticatable;
-// 💡 On importe le contrat requis pour que Filament accepte ce modèle
-use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Filament\Models\Contracts\HasName;
-use Filament\Panel;
 use Cmgmyr\Messenger\Traits\Messagable;
 
-class Employe extends Authenticatable implements FilamentUser, HasName
+class Employe extends Authenticatable
 {
-    use HasFactory, SoftDeletes, Notifiable, Messagable; // Ajout de SoftDeletes car ton schéma SQL a un deleted_at
+    use HasFactory, SoftDeletes, Notifiable, Messagable;
 
     // On force la table sur 'employés' avec son accent
     protected $table = 'employés';
@@ -41,18 +36,8 @@ class Employe extends Authenticatable implements FilamentUser, HasName
     protected $casts = [
         'consent_facial_at' => 'datetime',
         'fingerprint_registered_at' => 'datetime',
-        'password' => 'hashed', // Hashe automatiquement le mot de passe à l'inscription/création
+        'password' => 'hashed',
     ];
-
-    /**
-     * 🔐 RÈGLE D'ACCÈS AU PANEL FILAMENT
-     * Détermine qui a le droit de se connecter à l'interface d'administration.
-     */
-    public function canAccessPanel(Panel $panel): bool
-    {
-        // Seuls les utilisateurs ayant le rôle 'RH_Admin' ou 'Manager' peuvent se connecter
-        return in_array($this->role, ['RH_Admin', 'Manager', 'Employés']);
-    }
 
     // --- RELATIONS ---
 
@@ -67,38 +52,38 @@ class Employe extends Authenticatable implements FilamentUser, HasName
     {
         return $this->hasMany(MlPrediction::class, 'employee_id');
     }
-    
+
     // Un employé a plusieurs pointages
     public function pointages()
     {
-        // On spécifie 'employee_id' car c'est le nom de la clé étrangère dans ta table pointages
         return $this->hasMany(Pointage::class, 'employee_id');
     }
 
     /**
-     * 🛠️ LA RELATION MANQUANTE (CORRECTION)
-     * On crée artificiellement la relation absences pour Filament en forçant la bonne clé 'employee_id'
+     * Relation absences (pointages avec statut Absent)
      */
     public function absences(): HasMany
     {
         return $this->hasMany(Pointage::class, 'employee_id')
-                    ->where('status', 'Absent'); 
-                    // 💡 Note : Si dans ta BDD c'est écrit en minuscule 'absent', remplace 'Absent' par 'absent' ici.
+                    ->where('status', 'Absent');
     }
-    
+
     // Un employé a plusieurs congés/permissions
     public function conges(): HasMany
     {
         return $this->hasMany(Conge::class, 'employe_id');
     }
-    
+
     // Les messages envoyés par l'employé
     public function sentMessages()
     {
         return $this->hasMany(ChatMessage::class, 'sender_id');
     }
 
-    public function getFilamentName(): string
+    /**
+     * Récupère le nom complet de l'employé
+     */
+    public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";
     }
@@ -125,10 +110,5 @@ class Employe extends Authenticatable implements FilamentUser, HasName
     public function setRememberToken($value): void
     {
         $this->remember_token = $value;
-    }
-
-    public function getFullNameAttribute(): string
-    {
-        return "{$this->first_name} {$this->last_name}";
     }
 }

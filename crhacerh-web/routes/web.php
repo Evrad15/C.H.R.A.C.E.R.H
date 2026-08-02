@@ -9,7 +9,6 @@ use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\RendezVousController;
 use App\Http\Controllers\CongeController;
 use App\Http\Controllers\RapportController;
-use App\Filament\Resources\RapportResource;
 
 // Route du Tableau de bord sur-mesure (Figma)
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -42,7 +41,7 @@ Route::get('/kiosk', [KioskController::class, 'showView']);
 
 // Redirection globale de la route d'authentification par défaut
 Route::get('/login', function () {
-    return redirect()->route('filament.ressources-humaines.auth.login');
+    return redirect()->route('dashboard');
 })->name('login');
 
 // --- Routes d'intégration pour l'API Google Calendar ---

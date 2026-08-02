@@ -8,8 +8,7 @@
     "require": {
         "php": "^8.2",
         "cmgmyr/messenger": "^2.32",
-        "dompdf/dompdf": "*",
-        "filament/filament": "^3.2",
+        "dompdf/dompdf": "^3.1",
         "google-gemini-php/client": "^2.7",
         "google/apiclient": "^2.19",
         "guzzlehttp/guzzle": "^7.10",
@@ -58,8 +57,7 @@
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi",
-            "@php artisan filament:upgrade"
+            "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
