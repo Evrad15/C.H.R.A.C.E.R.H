@@ -235,9 +235,9 @@
                     <span>Employés</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="/ressources-humaines/rendez-vouses">
-                    <i class="bi bi-calendar-event"></i>
+            <li class="nav-item {{ request()->routeIs('rendezvous.*') ? 'active' : '' }}">
+                <a href="{{ route('rendezvous.index') }}">
+                    <i class="bi bi-calendar-event-fill"></i>
                     <span>Rendez-vous</span>
                 </a>
             </li>

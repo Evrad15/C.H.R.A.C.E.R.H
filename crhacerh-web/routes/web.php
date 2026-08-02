@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\KioskController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeController;
+use App\Http\Controllers\RendezVousController;
 use App\Filament\Resources\RapportResource;
 
 // Route du Tableau de bord sur-mesure (Figma)
@@ -14,6 +15,11 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 // Route de la Gestion des Employés sur-mesure (Figma)
 Route::get('/employes', [EmployeController::class, 'index'])->name('employes.index');
 Route::get('/employes/{id}', [EmployeController::class, 'show'])->name('employes.show');
+
+// Route de la Gestion des Rendez-vous sur-mesure (Figma)
+Route::get('/rendez-vous', [RendezVousController::class, 'index'])->name('rendezvous.index');
+Route::post('/rendez-vous', [RendezVousController::class, 'store'])->name('rendezvous.store');
+Route::patch('/rendez-vous/{id}/status', [RendezVousController::class, 'updateStatus'])->name('rendezvous.updateStatus');
 
 // Page d'affichage de la borne (Interface Web)
 Route::get('/kiosk', [KioskController::class, 'showView']);
