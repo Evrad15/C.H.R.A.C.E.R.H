@@ -21,7 +21,7 @@ class GenerateDailyPointages extends Command
     /**
      * La description de la commande console.
      */
-    protected $description = 'Génère de manière dynamique les pointages journaliers (Semaine: obligatoire / Week-end: optionnel sans statut absent)';
+    protected $description = 'Génère de manière dynamique les pointages journaliers avec prise en compte des congés approuvés (Congé au lieu de Absent)';
 
     public function handle()
     {
@@ -59,18 +59,44 @@ class GenerateDailyPointages extends Command
         $cntPresent = 0;
         $cntRetard = 0;
         $cntAbsent = 0;
+        $cntConge = 0;
+
+        // Pré-charger tous les congés approuvés valides pour cette date
+        $congesApprouvesIds = DB::table('conges')
+            ->where('statut', 'Approuvé')
+            ->whereDate('date_debut', '<=', $dateStr)
+            ->whereDate('date_fin', '>=', $dateStr)
+            ->pluck('employe_id')
+            ->toArray();
 
         if ($isWeekend) {
             // ==========================================
             // WEEK-END : PERIODE NON OBLIGATOIRE
             // ==========================================
-            // Seuls les employés qui décident de venir enregistrent ENTREE/SORTIE.
-            // Ceux qui ne viennent pas N'ONT AUCUN POINTAGE (Pas de statut "Absent", pas de pénalité).
-            
-            $pctVolontaires = rand(15, 35); // 15% à 35% d'employés qui viennent travailler le week-end
+            $pctVolontaires = rand(15, 35);
             $this->line("🗓️ Week-end (Non obligatoire) : ~{$pctVolontaires}% d'employés venus travailler. Aucun marquage d'absence.");
 
             foreach ($employes as $emp) {
+                // Si l'employé a un congé approuvé
+                if (in_array($emp->id, $congesApprouvesIds)) {
+                    $cntConge++;
+                    $timeConge = (clone $dateTarget)->setTime(8, 0, 0);
+
+                    DB::table('pointages')->insert([
+                        'employee_id'      => $emp->id,
+                        'type'             => 'ENTREE',
+                        'status'           => 'Congé',
+                        'source'           => 'SYSTEME',
+                        'timestamp'        => $timeConge,
+                        'confidence_score' => 1.00,
+                        'anomaly_detected' => false,
+                        'created_at'       => $timeConge,
+                        'updated_at'       => $timeConge,
+                    ]);
+                    $insertedCount++;
+                    continue;
+                }
+
                 if (rand(1, 100) <= $pctVolontaires) {
                     $cntPresent++;
                     $entreeHour = rand(7, 9);
@@ -111,7 +137,7 @@ class GenerateDailyPointages extends Command
                 }
             }
 
-            $this->info("✅ Résultat Week-end ({$dateStr}) : {$cntPresent} employés venus (ENTREE/SORTIE), 0 marquage d'absence.");
+            $this->info("✅ Résultat Week-end ({$dateStr}) : {$cntPresent} employés venus, {$cntConge} en Congé.");
 
         } else {
             // ==========================================
@@ -121,9 +147,30 @@ class GenerateDailyPointages extends Command
             $retardShare = rand(10, 25);
             $pctRetardThreshold = min(95, $pctPresentThreshold + $retardShare);
 
-            $this->line("📊 Profil Semaine ({$dateStr}) : Présents ≤ {$pctPresentThreshold}%, Retards ≤ {$pctRetardThreshold}%, Absents > {$pctRetardThreshold}%");
+            $this->line("📊 Profil Semaine ({$dateStr}) : Présents ≤ {$pctPresentThreshold}%, Retards ≤ {$pctRetardThreshold}%");
 
             foreach ($employes as $emp) {
+                // S'il est en congé approuvé, il est marqué "Congé" (PAS "Absent")
+                if (in_array($emp->id, $congesApprouvesIds)) {
+                    $cntConge++;
+                    $timeConge = (clone $dateTarget)->setTime(8, 0, 0);
+
+                    DB::table('pointages')->insert([
+                        'employee_id'      => $emp->id,
+                        'type'             => 'ENTREE',
+                        'status'           => 'Congé',
+                        'source'           => 'SYSTEME',
+                        'timestamp'        => $timeConge,
+                        'confidence_score' => 1.00,
+                        'anomaly_detected' => false,
+                        'created_at'       => $timeConge,
+                        'updated_at'       => $timeConge,
+                    ]);
+
+                    $insertedCount++;
+                    continue;
+                }
+
                 $rand = rand(1, 100);
 
                 if ($rand <= $pctPresentThreshold) {
@@ -205,7 +252,7 @@ class GenerateDailyPointages extends Command
                     $insertedCount += 2;
 
                 } else {
-                    // ABSENT (Semaine uniquement)
+                    // ABSENT (Semaine uniquement, sans congé)
                     $cntAbsent++;
                     $timeAbsent = (clone $dateTarget)->setTime(8, 0, 0);
 
@@ -225,7 +272,7 @@ class GenerateDailyPointages extends Command
                 }
             }
 
-            $this->info("✅ Résultat Semaine ({$dateStr}) : {$cntPresent} Présents, {$cntRetard} Retards, {$cntAbsent} Absents.");
+            $this->info("✅ Résultat Semaine ({$dateStr}) : {$cntPresent} Présents, {$cntRetard} Retards, {$cntConge} Congés, {$cntAbsent} Absents.");
         }
 
         return Command::SUCCESS;

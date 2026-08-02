@@ -9,7 +9,7 @@ use Carbon\Carbon;
 class CheckDailyAbsences extends Command
 {
     protected $signature = 'attendance:check-absences';
-    protected $description = 'Enregistre automatiquement les employés absents en fin de journée';
+    protected $description = 'Enregistre automatiquement les employés absents ou en congé en fin de journée';
 
     public function handle()
     {
@@ -30,23 +30,33 @@ class CheckDailyAbsences extends Command
                 ->whereDate('timestamp', $aujourdHui)
                 ->exists();
 
-            // 3. S'il n'a rien enregistré, on crée un pointage AUTOMATIQUE "ABSENT"
+            // 3. S'il n'a rien enregistré
             if (!$aPointe) {
+                // Vérifier s'il est en congé approuvé aujourd'hui
+                $enConge = DB::table('conges')
+                    ->where('employe_id', $e->id)
+                    ->where('statut', 'Approuvé')
+                    ->whereDate('date_debut', '<=', $aujourdHui)
+                    ->whereDate('date_fin', '>=', $aujourdHui)
+                    ->exists();
+
+                $statutFinal = $enConge ? 'Congé' : 'Absent';
+
                 DB::table('pointages')->insert([
-                    'employee_id' => $e->id,
-                    'type' => 'Absent',       // Devient le type pour l'absence
-                    'status' => 'Absent',     // Statut stocké
-                    'source' => 'SYSTEME',
-                    'timestamp' => Carbon::now(), // Aura la bonne heure UTC+1 désormais
+                    'employee_id'      => $e->id,
+                    'type'             => 'ENTREE',
+                    'status'           => $statutFinal,
+                    'source'           => 'SYSTEME',
+                    'timestamp'        => Carbon::now(),
                     'confidence_score' => 1.00,
                     'anomaly_detected' => false,
-                    'created_at' => Carbon::now(),
-                    'updated_at' => Carbon::now()
+                    'created_at'       => Carbon::now(),
+                    'updated_at'       => Carbon::now()
                 ]);
             }
         }
 
-        $this->info('Vérification des absences terminée !');
+        $this->info('Vérification des absences et congés terminée !');
         return Command::SUCCESS;
     }
 }
