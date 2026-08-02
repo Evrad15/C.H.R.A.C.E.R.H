@@ -261,7 +261,7 @@
         <header class="top-header">
             <form action="{{ route('employes.index') }}" method="GET" class="search-box">
                 <i class="bi bi-search"></i>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher un employé par Nom ou Prénom...">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher...">
                 @if(request('department_id'))
                     <input type="hidden" name="department_id" value="{{ request('department_id') }}">
                 @endif

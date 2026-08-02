@@ -9,6 +9,9 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule): void
     {
+        // Génération automatique quotidienne des pointages (chaque 24h à 08h00)
+        $schedule->command('pointages:generate-daily')->dailyAt('08:00');
+
         // Rapport hebdomadaire XLSX — tous les vendredis à 18h00 (classé dans le dossier du mois)
         $schedule->command('reports:generate --period=weekly')->weeklyOn(5, '18:00');
 
