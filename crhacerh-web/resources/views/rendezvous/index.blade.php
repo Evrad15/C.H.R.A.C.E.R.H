@@ -8,7 +8,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1.5rem;
+        margin-bottom: 2.25rem;
     }
 
     .page-title {
@@ -31,11 +31,14 @@
         text-decoration: none;
         border: none;
         cursor: pointer;
-        transition: background 0.2s ease, transform 0.15s ease;
+        margin-left: auto;
+        box-shadow: 0 4px 12px rgba(58, 91, 240, 0.25);
+        transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
     }
     .btn-create-rdv:hover {
         background: #2a48d8;
         transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(58, 91, 240, 0.35);
     }
 
     /* Top Stats Grid */

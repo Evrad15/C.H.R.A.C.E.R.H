@@ -7,6 +7,7 @@ use App\Http\Controllers\KioskController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\RendezVousController;
+use App\Http\Controllers\CongeController;
 use App\Filament\Resources\RapportResource;
 
 // Route du Tableau de bord sur-mesure (Figma)
@@ -20,6 +21,11 @@ Route::get('/employes/{id}', [EmployeController::class, 'show'])->name('employes
 Route::get('/rendez-vous', [RendezVousController::class, 'index'])->name('rendezvous.index');
 Route::post('/rendez-vous', [RendezVousController::class, 'store'])->name('rendezvous.store');
 Route::patch('/rendez-vous/{id}/status', [RendezVousController::class, 'updateStatus'])->name('rendezvous.updateStatus');
+
+// Route de la Gestion des Congés et Permissions sur-mesure (Figma)
+Route::get('/conges', [CongeController::class, 'index'])->name('conges.index');
+Route::post('/conges', [CongeController::class, 'store'])->name('conges.store');
+Route::patch('/conges/{id}/status', [CongeController::class, 'updateStatus'])->name('conges.updateStatus');
 
 // Page d'affichage de la borne (Interface Web)
 Route::get('/kiosk', [KioskController::class, 'showView']);

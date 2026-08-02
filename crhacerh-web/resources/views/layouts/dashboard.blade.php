@@ -174,6 +174,10 @@
             font-size: 0.9rem;
         }
 
+        .user-profile-container {
+            position: relative;
+        }
+
         .user-profile {
             display: flex;
             align-items: center;
@@ -204,6 +208,47 @@
             font-size: 0.92rem;
             font-weight: 600;
             color: var(--text-dark);
+        }
+
+        /* Admin Dropdown Menu */
+        .admin-dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            background: #FFFFFF;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border: 1px solid #E8EBF2;
+            width: 180px;
+            padding: 0.5rem 0;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+        }
+
+        .admin-dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .admin-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.65rem 1rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--accent-red);
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .admin-dropdown-item:hover {
+            background: #FFF2F2;
         }
 
         /* Content Container */
@@ -241,8 +286,8 @@
                     <span>Rendez-vous</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="/ressources-humaines/conges">
+            <li class="nav-item {{ request()->routeIs('conges.*') ? 'active' : '' }}">
+                <a href="{{ route('conges.index') }}">
                     <i class="bi bi-file-earmark-check-fill"></i>
                     <span>Congés et permissions</span>
                 </a>
@@ -266,12 +311,20 @@
                     <input type="hidden" name="department_id" value="{{ request('department_id') }}">
                 @endif
             </form>
-            <div class="user-profile">
-                <div class="avatar-icon">
-                    <i class="bi bi-person-fill"></i>
+            <div class="user-profile-container">
+                <div class="user-profile" id="adminProfileBtn">
+                    <div class="avatar-icon">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <span class="user-name">Admin</span>
+                    <i class="bi bi-chevron-down" style="font-size: 0.75rem; color: var(--text-muted);"></i>
                 </div>
-                <span class="user-name">Admin</span>
-                <i class="bi bi-chevron-down" style="font-size: 0.75rem; color: var(--text-muted);"></i>
+                <div class="admin-dropdown-menu" id="adminDropdownMenu">
+                    <div class="admin-dropdown-item" onclick="alert('Déconnexion simulée (page de connexion non encore implémentée).');">
+                        <i class="bi bi-box-arrow-right" style="font-size:1.05rem;"></i>
+                        <span>Déconnexion</span>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -281,6 +334,25 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const adminBtn = document.getElementById('adminProfileBtn');
+            const adminMenu = document.getElementById('adminDropdownMenu');
+
+            if (adminBtn && adminMenu) {
+                adminBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    adminMenu.classList.toggle('show');
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!adminMenu.contains(e.target) && !adminBtn.contains(e.target)) {
+                        adminMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
     @yield('scripts')
 </body>
 </html>
