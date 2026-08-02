@@ -513,7 +513,7 @@
             </div>
         </div>
 
-        <div class="folder-files-list" id="folder-{{ Str::slug($folder['name']) }}">
+        <div class="folder-files-list" id="folder-{{ Str::slug($folder['name']) }}" style="display: block;">
             @foreach($folder['files'] as $f)
             <div class="file-row">
                 <div class="file-info-flex">
@@ -621,7 +621,8 @@
     function toggleFolder(folderId) {
         const element = document.getElementById(folderId);
         if (element) {
-            if (element.style.display === 'none') {
+            const currentDisplay = window.getComputedStyle(element).display;
+            if (currentDisplay === 'none' || element.style.display === 'none') {
                 element.style.display = 'block';
             } else {
                 element.style.display = 'none';
