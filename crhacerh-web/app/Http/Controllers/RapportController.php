@@ -131,34 +131,26 @@ class RapportController extends Controller
      */
     public function openFile($filename)
     {
-        $decoded = rawurldecode(urldecode($filename));
-        $disk = Storage::disk('public');
-        
-        $possiblePaths = [
-            $decoded,
-            'reports/' . ltrim($decoded, '/'),
-        ];
+        $matchedPath = $this->findMatchingFile($filename);
 
-        foreach ($possiblePaths as $path) {
-            if ($disk->exists($path)) {
-                $fullPath = $disk->path($path);
-                $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        if ($matchedPath && Storage::disk('public')->exists($matchedPath)) {
+            $fullPath = Storage::disk('public')->path($matchedPath);
+            $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
 
-                $mimeType = match ($ext) {
-                    'pdf'  => 'application/pdf',
-                    'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    'xls'  => 'application/vnd.ms-excel',
-                    default => mime_content_type($fullPath) ?: 'application/octet-stream',
-                };
+            $mimeType = match ($ext) {
+                'pdf'  => 'application/pdf',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'xls'  => 'application/vnd.ms-excel',
+                default => mime_content_type($fullPath) ?: 'application/octet-stream',
+            };
 
-                return response()->file($fullPath, [
-                    'Content-Type' => $mimeType,
-                    'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"',
-                ]);
-            }
+            return response()->file($fullPath, [
+                'Content-Type'        => $mimeType,
+                'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"',
+            ]);
         }
 
-        abort(404, 'Rapport introuvable : ' . $filename);
+        abort(404, 'Rapport introuvable : ' . urldecode($filename));
     }
 
     /**
@@ -166,22 +158,14 @@ class RapportController extends Controller
      */
     public function downloadFile($filename)
     {
-        $decoded = rawurldecode(urldecode($filename));
-        $disk = Storage::disk('public');
+        $matchedPath = $this->findMatchingFile($filename);
 
-        $possiblePaths = [
-            $decoded,
-            'reports/' . ltrim($decoded, '/'),
-        ];
-
-        foreach ($possiblePaths as $path) {
-            if ($disk->exists($path)) {
-                $fullPath = $disk->path($path);
-                return response()->download($fullPath, basename($fullPath));
-            }
+        if ($matchedPath && Storage::disk('public')->exists($matchedPath)) {
+            $fullPath = Storage::disk('public')->path($matchedPath);
+            return response()->download($fullPath, basename($fullPath));
         }
 
-        abort(404, 'Rapport introuvable : ' . $filename);
+        abort(404, 'Rapport introuvable : ' . urldecode($filename));
     }
 
     /**
@@ -192,24 +176,46 @@ class RapportController extends Controller
         $request->validate(['path' => 'required|string']);
 
         $rawPath = $request->input('path');
-        $decoded = rawurldecode(urldecode($rawPath));
-        $disk = Storage::disk('public');
+        $matchedPath = $this->findMatchingFile($rawPath);
 
-        $possiblePaths = [
-            $rawPath,
-            $decoded,
-            'reports/' . ltrim($decoded, '/'),
-            ltrim(str_replace('reports/', '', $decoded), '/'),
-        ];
-
-        foreach ($possiblePaths as $path) {
-            if ($disk->exists($path)) {
-                $disk->delete($path);
-                return redirect()->route('rapports.index')->with('success', 'Fichier rapport supprimé avec succès.');
-            }
+        if ($matchedPath && Storage::disk('public')->exists($matchedPath)) {
+            Storage::disk('public')->delete($matchedPath);
+            return redirect()->route('rapports.index')->with('success', 'Fichier rapport supprimé avec succès.');
         }
 
         return redirect()->back()->with('error', 'Fichier introuvable pour la suppression.');
+    }
+
+    /**
+     * Recherche intelligente de fichier sur le disque sans sensibilité aux accents/encodages Windows.
+     */
+    private function findMatchingFile(string $filename): ?string
+    {
+        $disk = Storage::disk('public');
+        $allFiles = $disk->allFiles('reports');
+
+        $targetClean = rawurldecode(urldecode($filename));
+        $targetBasename = basename($targetClean);
+
+        // 1. Recherche par chemin exact ou relatif nettoyé
+        foreach ($allFiles as $f) {
+            $relative = str_replace('reports/', '', $f);
+            if ($relative === $targetClean || $f === $targetClean || $f === 'reports/' . ltrim($targetClean, '/')) {
+                return $f;
+            }
+            if (rawurldecode(urldecode($relative)) === $targetClean) {
+                return $f;
+            }
+        }
+
+        // 2. Recherche par nom de fichier (basename)
+        foreach ($allFiles as $f) {
+            if (basename($f) === $targetBasename) {
+                return $f;
+            }
+        }
+
+        return null;
     }
 
     private function formatBytes($bytes, $precision = 2)

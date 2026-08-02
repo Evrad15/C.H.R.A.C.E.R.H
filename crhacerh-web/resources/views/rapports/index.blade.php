@@ -362,6 +362,20 @@
     </button>
 </div>
 
+@if(session('success'))
+<div style="background: #EBF9EE; color: #0E9F2D; padding: 0.85rem 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #C3E9C8;">
+    <i class="bi bi-check-circle-fill" style="font-size: 1.1rem;"></i>
+    <span>{{ session('success') }}</span>
+</div>
+@endif
+
+@if(session('error'))
+<div style="background: #FDE8E8; color: #E81123; padding: 0.85rem 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #F8B4B4;">
+    <i class="bi bi-exclamation-triangle-fill" style="font-size: 1.1rem;"></i>
+    <span>{{ session('error') }}</span>
+</div>
+@endif
+
 <!-- Top Stats Cards -->
 <div class="rapport-stats-grid">
     <div class="rapport-stat-card">
@@ -514,14 +528,14 @@
                     </div>
                 </div>
 
-                <div class="file-actions" onclick="event.stopPropagation();">
-                    <a href="{{ $f['open_url'] }}" target="_blank" class="btn-file-action btn-open" onclick="event.stopPropagation();">
+                <div class="file-actions">
+                    <a href="{{ $f['open_url'] }}" target="_blank" class="btn-file-action btn-open">
                         <i class="bi bi-eye"></i> Ouvrir
                     </a>
-                    <a href="{{ $f['download_url'] }}" class="btn-file-action btn-dl" onclick="event.stopPropagation();">
+                    <a href="{{ $f['download_url'] }}" download class="btn-file-action btn-dl">
                         <i class="bi bi-download"></i> Télécharger
                     </a>
-                    <form action="{{ route('rapports.deleteFile') }}" method="POST" onsubmit="return confirm('Supprimer définitivement ce fichier ?');" style="display:inline;" onclick="event.stopPropagation();">
+                    <form action="{{ route('rapports.deleteFile') }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Voulez-vous vraiment supprimer définitivement ce rapport ?');">
                         @csrf
                         <input type="hidden" name="path" value="{{ $f['path'] }}">
                         <button type="submit" class="btn-file-action btn-del">
