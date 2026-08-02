@@ -13,7 +13,7 @@ class RendezVous extends Model
     protected $table = 'rendez_vous';
 
     protected $fillable = [
-        'nom_patient',
+        'patient_id',
         'telephone_patient',
         'email_patient',
         'service',
@@ -37,6 +37,11 @@ class RendezVous extends Model
         'fingerprint_registered_at' => 'datetime',
         'pointage_at' => 'datetime',
     ];
+
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class);
+    }
 
     public function getServicesList(): array
     {

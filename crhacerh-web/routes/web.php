@@ -4,7 +4,16 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\KioskController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmployeController;
 use App\Filament\Resources\RapportResource;
+
+// Route du Tableau de bord sur-mesure (Figma)
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+// Route de la Gestion des Employés sur-mesure (Figma)
+Route::get('/employes', [EmployeController::class, 'index'])->name('employes.index');
+Route::get('/employes/{id}', [EmployeController::class, 'show'])->name('employes.show');
 
 // Page d'affichage de la borne (Interface Web)
 Route::get('/kiosk', [KioskController::class, 'showView']);

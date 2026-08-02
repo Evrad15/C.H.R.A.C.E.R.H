@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('conges', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('employe_id')->constrained()->onDelete('cascade');
+            $table->foreignId('employe_id')->constrained('employés')->onDelete('cascade');
             $table->enum('type', ['Congé', 'Permission', 'Maladie'])->default('Permission');
             $table->datetime('date_debut');
             $table->datetime('date_fin');
