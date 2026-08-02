@@ -32,8 +32,10 @@ Route::patch('/conges/{id}/status', [CongeController::class, 'updateStatus'])->n
 Route::get('/rapports', [RapportController::class, 'index'])->name('rapports.index');
 Route::post('/rapports/generate', [RapportController::class, 'generate'])->name('rapports.generate');
 Route::post('/rapports/delete-file', [RapportController::class, 'deleteFile'])->name('rapports.deleteFile');
-Route::get('/reports/open/{filename}', [RapportController::class, 'openFile'])->where('filename', '.*')->name('rapports.open')->name('report.open');
-Route::get('/reports/download/{filename}', [RapportController::class, 'downloadFile'])->where('filename', '.*')->name('rapports.download')->name('report.download');
+Route::get('/reports/open/{filename}', [RapportController::class, 'openFile'])->where('filename', '.*')->name('rapports.open');
+Route::get('/reports/download/{filename}', [RapportController::class, 'downloadFile'])->where('filename', '.*')->name('rapports.download');
+Route::get('/reports/legacy-open/{filename}', [RapportController::class, 'openFile'])->where('filename', '.*')->name('report.open');
+Route::get('/reports/legacy-download/{filename}', [RapportController::class, 'downloadFile'])->where('filename', '.*')->name('report.download');
 
 // Page d'affichage de la borne (Interface Web)
 Route::get('/kiosk', [KioskController::class, 'showView']);
