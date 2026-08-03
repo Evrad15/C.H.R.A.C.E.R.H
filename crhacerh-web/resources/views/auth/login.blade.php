@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,15 +41,16 @@
         }
 
         .login-logo {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
-            width: 52px; height: 52px;
-            background: #5A6ACF;
-            border-radius: 14px;
-            margin-bottom: 1rem;
-            color: #fff;
-            font-size: 1.5rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .login-logo img {
+            height: 80px;
+            width: auto;
+            object-fit: contain;
         }
 
         .login-title {
@@ -233,10 +234,9 @@
 
         <!-- En-tête -->
         <div class="login-header">
-            <div class="login-logo" aria-hidden="true">
-                <i class="bi bi-hospital"></i>
+            <div class="login-logo" aria-label="Logo C.H.R.A.C.E.R.H">
+                <img src="{{ asset('images/logo_chracerh-removebg-preview.png') }}" alt="Logo C.H.R.A.C.E.R.H">
             </div>
-            <h1 class="login-title">C.H.R.A.C.E.R.H</h1>
             <p class="login-subtitle">Système de Gestion des Présences — Espace RH</p>
         </div>
 
@@ -337,8 +337,7 @@
 
         <!-- Pied de page -->
         <div class="login-footer">
-            <i class="bi bi-shield-lock-fill"></i>
-            Connexion sécurisée — CHRACERH &copy; {{ date('Y') }}
+             CHRACERH &copy; {{ date('Y') }}
         </div>
 
     </div>
