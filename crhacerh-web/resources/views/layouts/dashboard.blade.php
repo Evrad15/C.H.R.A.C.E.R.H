@@ -315,14 +315,17 @@
                     <div class="avatar-icon">
                         <i class="bi bi-person-fill"></i>
                     </div>
-                    <span class="user-name">Admin</span>
+                    <span class="user-name">{{ Auth::check() ? Auth::user()->first_name . ' ' . Auth::user()->last_name : 'Admin' }}</span>
                     <i class="bi bi-chevron-down" style="font-size: 0.75rem; color: var(--text-muted);"></i>
                 </div>
                 <div class="admin-dropdown-menu" id="adminDropdownMenu">
-                    <div class="admin-dropdown-item" onclick="alert('Déconnexion simulée (page de connexion non encore implémentée).');">
-                        <i class="bi bi-box-arrow-right" style="font-size:1.05rem;"></i>
-                        <span>Déconnexion</span>
-                    </div>
+                    <form method="POST" action="{{ route('auth.logout') }}" id="logoutForm">
+                        @csrf
+                        <div class="admin-dropdown-item" onclick="document.getElementById('logoutForm').submit()">
+                            <i class="bi bi-box-arrow-right" style="font-size:1.05rem;"></i>
+                            <span>Déconnexion</span>
+                        </div>
+                    </form>
                 </div>
             </div>
         </header>

@@ -9,6 +9,7 @@ use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\RendezVousController;
 use App\Http\Controllers\CongeController;
 use App\Http\Controllers\RapportController;
+use App\Http\Controllers\AuthController;
 
 // Route du Tableau de bord sur-mesure (Figma)
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -39,10 +40,10 @@ Route::get('/reports/legacy-download/{filename}', [RapportController::class, 'do
 // Page d'affichage de la borne (Interface Web)
 Route::get('/kiosk', [KioskController::class, 'showView']);
 
-// Redirection globale de la route d'authentification par défaut
-Route::get('/login', function () {
-    return redirect()->route('dashboard');
-})->name('login');
+// ── Authentification ──
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
+Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
+Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
 // --- Routes d'intégration pour l'API Google Calendar ---
 // 1. Route pour envoyer l'utilisateur chez Google
