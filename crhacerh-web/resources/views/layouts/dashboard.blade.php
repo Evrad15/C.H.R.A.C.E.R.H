@@ -319,7 +319,7 @@
                     <i class="bi bi-chevron-down" style="font-size: 0.75rem; color: var(--text-muted);"></i>
                 </div>
                 <div class="admin-dropdown-menu" id="adminDropdownMenu">
-                    <form method="POST" action="{{ route('auth.logout') }}" id="logoutForm">
+                    <form method="POST" action="{{ route('logout') }}" id="logoutForm">
                         @csrf
                         <div class="admin-dropdown-item" onclick="document.getElementById('logoutForm').submit()">
                             <i class="bi bi-box-arrow-right" style="font-size:1.05rem;"></i>

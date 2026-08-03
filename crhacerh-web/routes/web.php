@@ -2,82 +2,96 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\KioskController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\RendezVousController;
 use App\Http\Controllers\CongeController;
 use App\Http\Controllers\RapportController;
-use App\Http\Controllers\AuthController;
 
-// Route du Tableau de bord sur-mesure (Figma)
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+/*
+|--------------------------------------------------------------------------
+| Routes publiques
+|--------------------------------------------------------------------------
+*/
 
-// Route de la Gestion des Employés sur-mesure (Figma)
-Route::get('/employes', [EmployeController::class, 'index'])->name('employes.index');
-Route::get('/employes/{id}', [EmployeController::class, 'show'])->name('employes.show');
+// Racine → redirige vers login ou dashboard
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
+});
 
-// Route de la Gestion des Rendez-vous sur-mesure (Figma)
-Route::get('/rendez-vous', [RendezVousController::class, 'index'])->name('rendezvous.index');
-Route::post('/rendez-vous', [RendezVousController::class, 'store'])->name('rendezvous.store');
-Route::patch('/rendez-vous/{id}/status', [RendezVousController::class, 'updateStatus'])->name('rendezvous.updateStatus');
+// Borne kiosque (accès public — interface biométrique)
+Route::get('/kiosk', [KioskController::class, 'showView'])->name('kiosk');
 
-// Route de la Gestion des Congés et Permissions sur-mesure (Figma)
-Route::get('/conges', [CongeController::class, 'index'])->name('conges.index');
-Route::post('/conges', [CongeController::class, 'store'])->name('conges.store');
-Route::patch('/conges/{id}/status', [CongeController::class, 'updateStatus'])->name('conges.updateStatus');
+/*
+|--------------------------------------------------------------------------
+| Routes protégées (authentification requise)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->group(function () {
 
-// Route de la Gestion et Bibliothèque des Rapports sur-mesure (Figma)
-Route::get('/rapports', [RapportController::class, 'index'])->name('rapports.index');
-Route::post('/rapports/generate', [RapportController::class, 'generate'])->name('rapports.generate');
-Route::post('/rapports/delete-file', [RapportController::class, 'deleteFile'])->name('rapports.deleteFile');
-Route::get('/reports/open/{filename}', [RapportController::class, 'openFile'])->where('filename', '.*')->name('rapports.open');
-Route::get('/reports/download/{filename}', [RapportController::class, 'downloadFile'])->where('filename', '.*')->name('rapports.download');
-Route::get('/reports/legacy-open/{filename}', [RapportController::class, 'openFile'])->where('filename', '.*')->name('report.open');
-Route::get('/reports/legacy-download/{filename}', [RapportController::class, 'downloadFile'])->where('filename', '.*')->name('report.download');
+    // Tableau de bord
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-// Page d'affichage de la borne (Interface Web)
-Route::get('/kiosk', [KioskController::class, 'showView']);
+    // Gestion des Employés
+    Route::get('/employes',      [EmployeController::class, 'index'])->name('employes.index');
+    Route::get('/employes/{id}', [EmployeController::class, 'show'])->name('employes.show');
 
-// ── Authentification ──
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
-Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
-Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
+    // Gestion des Rendez-vous
+    Route::get('/rendez-vous',                    [RendezVousController::class, 'index'])->name('rendezvous.index');
+    Route::post('/rendez-vous',                   [RendezVousController::class, 'store'])->name('rendezvous.store');
+    Route::patch('/rendez-vous/{id}/status',      [RendezVousController::class, 'updateStatus'])->name('rendezvous.updateStatus');
 
-// --- Routes d'intégration pour l'API Google Calendar ---
-// 1. Route pour envoyer l'utilisateur chez Google
+    // Gestion des Congés et Permissions
+    Route::get('/conges',                [CongeController::class, 'index'])->name('conges.index');
+    Route::post('/conges',               [CongeController::class, 'store'])->name('conges.store');
+    Route::patch('/conges/{id}/status',  [CongeController::class, 'updateStatus'])->name('conges.updateStatus');
+
+    // Rapports
+    Route::get('/rapports',                          [RapportController::class, 'index'])->name('rapports.index');
+    Route::post('/rapports/generate',                [RapportController::class, 'generate'])->name('rapports.generate');
+    Route::post('/rapports/delete-file',             [RapportController::class, 'deleteFile'])->name('rapports.deleteFile');
+    Route::get('/reports/open/{filename}',           [RapportController::class, 'openFile'])->where('filename', '.*')->name('rapports.open');
+    Route::get('/reports/download/{filename}',       [RapportController::class, 'downloadFile'])->where('filename', '.*')->name('rapports.download');
+    Route::get('/reports/legacy-open/{filename}',    [RapportController::class, 'openFile'])->where('filename', '.*')->name('report.open');
+    Route::get('/reports/legacy-download/{filename}',[RapportController::class, 'downloadFile'])->where('filename', '.*')->name('report.download');
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Routes Google Calendar (OAuth callback — semi-public)
+|--------------------------------------------------------------------------
+*/
 Route::get('/google/auth', function () {
     $client = new Google\Client();
     $client->setClientId(env('GOOGLE_CLIENT_ID'));
     $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
     $client->addScope(Google\Service\Calendar::CALENDAR);
-
-    $redirectUri = env('GOOGLE_REDIRECT_URI') ?? 'http://localhost:8000/ressources-humaines/calendrier/callback';
-    $client->setRedirectUri($redirectUri);
-
     $client->addScope(Google\Service\Calendar::CALENDAR_READONLY);
+    $client->setRedirectUri(env('GOOGLE_REDIRECT_URI', 'http://localhost:8000/ressources-humaines/calendrier/callback'));
     $client->setAccessType('offline');
     $client->setPrompt('select_account consent');
-
     return redirect()->away($client->createAuthUrl());
-})->name('google.auth');
+})->name('google.auth')->middleware('auth');
 
-// 2. Route de retour appelée par Google
 Route::get('/ressources-humaines/calendrier/callback', function (Request $request) {
     $client = new Google\Client();
     $client->setClientId(env('GOOGLE_CLIENT_ID'));
     $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-
-    $redirectUri = env('GOOGLE_REDIRECT_URI') ?? 'http://localhost:8000/ressources-humaines/calendrier/callback';
-    $client->setRedirectUri($redirectUri);
-
+    $client->setRedirectUri(env('GOOGLE_REDIRECT_URI', 'http://localhost:8000/ressources-humaines/calendrier/callback'));
     if ($request->has('code')) {
         $token = $client->fetchAccessTokenWithAuthCode($request->get('code'));
         session(['google_calendar_token' => $token]);
     }
+    return redirect('/dashboard');
+})->middleware('auth');
 
-    return redirect('/ressources-humaines/calendrier');
-});
-
-// --- Fin des routes web ---
+/*
+|--------------------------------------------------------------------------
+| Routes Breeze (login, logout, password reset, etc.)
+|--------------------------------------------------------------------------
+*/
+require __DIR__.'/auth.php';
