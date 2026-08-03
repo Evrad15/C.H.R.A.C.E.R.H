@@ -267,7 +267,7 @@
                     required
                     aria-describedby="{{ $errors->has('email') ? 'email-error' : '' }}"
                     aria-invalid="{{ $errors->has('email') ? 'true' : 'false' }}"
-                    placeholder="votre.email@chracerh.cm"
+                    placeholder="votre email"
                 >
                 @error('email')
                     <p class="field-error" id="email-error" role="alert">
@@ -290,7 +290,7 @@
                         required
                         aria-describedby="{{ $errors->has('password') ? 'password-error' : '' }}"
                         aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}"
-                        placeholder="••••••••"
+                        placeholder="mot de passe"
                     >
                     <button
                         type="button"

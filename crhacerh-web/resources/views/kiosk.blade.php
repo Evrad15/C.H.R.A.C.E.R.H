@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Borne de Pointage | C.H.R.A.C.E.R.H</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_chracerh-removebg-preview.png') }}">
     <meta name="description" content="Borne interactive de pointage et accueil des patients CHRACERH">
 
     <link rel="stylesheet" href="/vendor/fonts/outfit.css">
@@ -124,17 +125,16 @@
         }
 
         .logo-box {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #D4B895 0%, #A88860 100%);
-            color: #fff;
+            height: 52px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 800;
-            font-size: 1.35rem;
-            box-shadow: 0 8px 16px rgba(212, 184, 149, 0.4);
+        }
+
+        .logo-box img {
+            height: 52px;
+            width: auto;
+            object-fit: contain;
         }
 
         .brand-info h1 {
@@ -616,7 +616,9 @@
             <!-- En-tête avec Logo et Horloge -->
             <div class="header-top">
                 <div class="brand-info">
-                    <div class="logo-box">CH</div>
+                    <div class="logo-box">
+                        <img src="{{ asset('images/logo_chracerh-removebg-preview.png') }}" alt="Logo C.H.R.A.C.E.R.H">
+                    </div>
                     <div>
                         <h1>BORNE INTERACTIVE DE POINTAGE</h1>
                         <p>C.H.R.A.C.E.R.H — Centre Hospitalier</p>
