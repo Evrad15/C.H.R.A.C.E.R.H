@@ -8,4 +8,10 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    css: {
+        // Ce projet utilise du Vanilla CSS — pas de PostCSS/Tailwind
+        postcss: {
+            plugins: [],
+        },
+    },
 });
