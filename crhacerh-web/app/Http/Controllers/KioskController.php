@@ -25,12 +25,13 @@ class KioskController extends Controller
             ->take(30)
             ->get()
             ->map(function ($pointage) {
+                $emp = $pointage->employee;
                 return [
                     'id' => $pointage->id,
-                    'first_name' => $pointage->employee->first_name ?? 'Employé',
-                    'last_name' => substr($pointage->employee->last_name ?? 'X', 0, 1) . '.',
-                    'full_name' => ($pointage->employee->first_name ?? '') . ' ' . ($pointage->employee->last_name ?? ''),
-                    'department' => $pointage->employee->department ? $pointage->employee->department->name : 'N/A',
+                    'first_name' => $emp ? $emp->first_name : 'Employé',
+                    'last_name' => $emp ? (substr($emp->last_name, 0, 1) . '.') : 'X.',
+                    'full_name' => $emp ? ($emp->first_name . ' ' . $emp->last_name) : 'Employé',
+                    'department' => ($emp && $emp->department) ? $emp->department->name : 'Général',
                     'type' => $pointage->type,
                     'time' => Carbon::parse($pointage->timestamp)->format('H:i:s'),
                     'source' => $pointage->source,
