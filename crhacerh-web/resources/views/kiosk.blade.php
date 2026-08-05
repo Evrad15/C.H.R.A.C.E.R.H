@@ -253,7 +253,7 @@
         }
 
         th {
-            background: rgba(255, 255, 255, 0.5);
+            background: #F5EEE6;
             color: var(--text-muted);
             font-weight: 800;
             font-size: 0.75rem;
@@ -263,8 +263,9 @@
             text-align: left;
             position: sticky;
             top: 0;
-            z-index: 10;
-            border-bottom: 1px solid rgba(212, 184, 149, 0.3);
+            z-index: 20;
+            border-bottom: 2px solid rgba(212, 184, 149, 0.4);
+            box-shadow: 0 4px 10px rgba(74, 64, 54, 0.06);
         }
 
         td {
