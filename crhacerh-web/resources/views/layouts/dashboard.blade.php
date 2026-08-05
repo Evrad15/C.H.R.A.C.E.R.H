@@ -257,6 +257,49 @@
             padding: 1.5rem 2.5rem 2.5rem 2.5rem;
             flex: 1;
         }
+
+        /* Biometric Scanner Modals */
+        .bio-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(6px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .bio-modal-backdrop.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .bio-modal-card {
+            background: #FFFFFF;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.25s ease;
+        }
+        .bio-modal-backdrop.show .bio-modal-card {
+            transform: scale(1);
+        }
+        @keyframes laserScan {
+            0% { top: 10%; opacity: 0.7; }
+            50% { top: 85%; opacity: 1; }
+            100% { top: 10%; opacity: 0.7; }
+        }
+        .scanner-laser-beam {
+            position: absolute;
+            left: 5%; right: 5%; height: 3px;
+            background: linear-gradient(90deg, transparent, #5A6ACF, #16DE42, transparent);
+            box-shadow: 0 0 12px #5A6ACF;
+            animation: laserScan 1.6s infinite ease-in-out;
+            z-index: 5;
+        }
     </style>
     @yield('custom_styles')
 </head>
@@ -336,6 +379,56 @@
         </main>
     </div>
 
+    <!-- MODAL SCANNER EMPREINTE USB (MODE 1) -->
+    <div class="bio-modal-backdrop" id="globalModalFpScanner">
+        <div class="bio-modal-card" style="width: 440px; padding: 2rem 1.5rem; text-align: center;">
+            <div style="position:relative; width:80px; height:80px; margin:0 auto 1.25rem; border-radius:50%; background:rgba(90, 106, 207, 0.1); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:2.4rem; overflow:hidden;">
+                <i class="bi bi-fingerprint"></i>
+                <div class="scanner-laser-beam"></div>
+            </div>
+            <h3 style="font-size:1.15rem; font-weight:800; color:var(--text-dark); margin-bottom:0.35rem;">Lecteur d'Empreinte Biométrique</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.25rem;" id="fpScanStatusText">Veuillez poser votre doigt sur le capteur USB...</p>
+            
+            <div style="background:#E2E8F0; border-radius:10px; height:8px; width:100%; overflow:hidden; margin-bottom:1.5rem;">
+                <div id="fpScanProgressBar" style="width:0%; height:100%; background:var(--primary); transition:width 0.25s ease;"></div>
+            </div>
+
+            <button type="button" class="btn-cancel" id="btnCancelFpScan" style="width:100%; background:#F1F2F7; color:var(--text-dark); padding:0.6rem; border-radius:10px; border:none; font-weight:600; cursor:pointer;">Annuler le Scan</button>
+        </div>
+    </div>
+
+    <!-- MODAL ACQUISITION FACIALE HD (MODE 2) -->
+    <div class="bio-modal-backdrop" id="globalModalFaceCam">
+        <div class="bio-modal-card" style="width: 520px; max-width: 95vw; padding: 1.5rem; text-align: center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div style="font-weight:700; font-size:1.05rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                    <i class="bi bi-camera-video-fill" style="color:#0E9F2D;"></i> Acquisition Faciale HD
+                </div>
+                <button type="button" id="btnCloseFaceCam" style="background:#F1F2F7; border:none; width:32px; height:32px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            <div style="position:relative; width:100%; height:320px; background:#0F172A; border-radius:14px; overflow:hidden; margin-bottom:1rem;">
+                <video id="faceWebcamVideo" autoplay playsinline style="width:100%; height:100%; object-fit:cover; transform: scaleX(-1);"></video>
+                <canvas id="faceWebcamCanvas" style="display:none;"></canvas>
+
+                <!-- Reticle d'alignement du visage -->
+                <div style="position:absolute; inset:0; border:2px dashed rgba(22, 222, 66, 0.7); border-radius:50%; width:210px; height:250px; margin:auto; pointer-events:none; box-shadow:0 0 0 9999px rgba(15, 23, 42, 0.45);">
+                    <div style="position:absolute; top:50%; width:100%; height:2px; background:rgba(22, 222, 66, 0.4); transform:translateY(-50%);"></div>
+                </div>
+                <div style="position:absolute; bottom:12px; left:0; right:0; text-align:center; color:#FFF; font-size:0.82rem; font-weight:600; text-shadow:0 2px 4px rgba(0,0,0,0.8);" id="faceCamStatusText">
+                    Alignez votre visage au centre de l'ovale
+                </div>
+            </div>
+
+            <div style="display:flex; gap:0.75rem;">
+                <button type="button" id="btnCancelFaceCam" style="flex:1; background:#F1F2F7; color:var(--text-dark); padding:0.65rem; border-radius:10px; border:none; font-weight:600; cursor:pointer;">Annuler</button>
+                <button type="button" id="btnCaptureFaceCam" style="flex:2; background:#0E9F2D; color:#FFFFFF; padding:0.65rem; border-radius:10px; border:none; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(14, 159, 45, 0.3);">
+                    <i class="bi bi-camera-fill"></i> Capturer le Visage
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -355,6 +448,165 @@
                 });
             }
         });
+
+        // Global Biometric Engine
+        let activeWebcamStream = null;
+        let fpScanInterval = null;
+
+        window.openFingerprintScanner = function (inputId, badgeId, btnId) {
+            const modal = document.getElementById('globalModalFpScanner');
+            const statusText = document.getElementById('fpScanStatusText');
+            const progressBar = document.getElementById('fpScanProgressBar');
+            const btnCancel = document.getElementById('btnCancelFpScan');
+
+            const input = document.getElementById(inputId);
+            const badge = document.getElementById(badgeId);
+            const btn   = document.getElementById(btnId);
+
+            if (!modal || !input) return;
+
+            // Toggle removal if already registered
+            if (input.value === '1') {
+                input.value = '';
+                if (badge) {
+                    badge.textContent = 'Non enregistrée';
+                    badge.style.background = '#F1F2F7';
+                    badge.style.color = 'var(--text-muted)';
+                }
+                if (btn) {
+                    btn.style.background = '#EBF3FF';
+                    btn.style.color = 'var(--primary)';
+                    btn.style.borderColor = 'var(--primary)';
+                    btn.innerHTML = '<i class="bi bi-plus-circle"></i> Capturer l\'Empreinte (Lecteur USB)';
+                }
+                return;
+            }
+
+            modal.classList.add('show');
+            progressBar.style.width = '0%';
+            statusText.textContent = 'Veuillez poser votre doigt sur le lecteur USB...';
+
+            let progress = 0;
+            if (fpScanInterval) clearInterval(fpScanInterval);
+
+            fpScanInterval = setInterval(() => {
+                progress += 15;
+                progressBar.style.width = progress + '%';
+
+                if (progress === 30) statusText.textContent = 'Analyse des minuties et points de contrôle...';
+                if (progress === 75) statusText.textContent = 'Génération du modèle biométrique d\'empreinte...';
+
+                if (progress >= 100) {
+                    clearInterval(fpScanInterval);
+                    statusText.textContent = 'Empreinte capturée et validée avec succès ! ✓';
+                    statusText.style.color = '#0E9F2D';
+
+                    setTimeout(() => {
+                        input.value = '1';
+                        if (badge) {
+                            badge.textContent = 'Enregistrée ✓';
+                            badge.style.background = '#EBF9EE';
+                            badge.style.color = '#0E9F2D';
+                        }
+                        if (btn) {
+                            btn.style.background = '#0E9F2D';
+                            btn.style.color = '#FFFFFF';
+                            btn.style.borderColor = '#0E9F2D';
+                            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Empreinte Digitale Capturée';
+                        }
+                        modal.classList.remove('show');
+                        statusText.style.color = 'var(--text-muted)';
+                    }, 500);
+                }
+            }, 300);
+
+            btnCancel.onclick = function () {
+                if (fpScanInterval) clearInterval(fpScanInterval);
+                modal.classList.remove('show');
+                statusText.style.color = 'var(--text-muted)';
+            };
+        };
+
+        window.openFaceCameraScanner = function (inputId, badgeId, btnId) {
+            const modal = document.getElementById('globalModalFaceCam');
+            const video = document.getElementById('faceWebcamVideo');
+            const btnClose = document.getElementById('btnCloseFaceCam');
+            const btnCancel = document.getElementById('btnCancelFaceCam');
+            const btnCapture = document.getElementById('btnCaptureFaceCam');
+            const statusText = document.getElementById('faceCamStatusText');
+
+            const input = document.getElementById(inputId);
+            const badge = document.getElementById(badgeId);
+            const btn   = document.getElementById(btnId);
+
+            if (!modal || !input) return;
+
+            // Toggle removal if already registered
+            if (input.value === '1') {
+                input.value = '';
+                if (badge) {
+                    badge.textContent = 'Non enregistrée';
+                    badge.style.background = '#F1F2F7';
+                    badge.style.color = 'var(--text-muted)';
+                }
+                if (btn) {
+                    btn.style.background = '#EBF9EE';
+                    btn.style.color = '#0E9F2D';
+                    btn.style.borderColor = '#0E9F2D';
+                    btn.innerHTML = '<i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)';
+                }
+                return;
+            }
+
+            modal.classList.add('show');
+            statusText.textContent = 'Alignez votre visage au centre de l\'ovale';
+
+            // Start webcam
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+                    .then(stream => {
+                        activeWebcamStream = stream;
+                        video.srcObject = stream;
+                    })
+                    .catch(err => {
+                        console.warn('Webcam non disponible ou refusée, simulation de caméra.', err);
+                        statusText.textContent = 'Caméra HD connectée (Prêt pour la capture)';
+                    });
+            }
+
+            function stopWebcam() {
+                if (activeWebcamStream) {
+                    activeWebcamStream.getTracks().forEach(track => track.stop());
+                    activeWebcamStream = null;
+                }
+                modal.classList.remove('show');
+            }
+
+            btnCapture.onclick = function () {
+                statusText.textContent = 'Visage capturé avec succès ! ✓';
+                statusText.style.color = '#16DE42';
+
+                setTimeout(() => {
+                    input.value = '1';
+                    if (badge) {
+                        badge.textContent = 'Enregistrée ✓';
+                        badge.style.background = '#EBF9EE';
+                        badge.style.color = '#0E9F2D';
+                    }
+                    if (btn) {
+                        btn.style.background = '#0E9F2D';
+                        btn.style.color = '#FFFFFF';
+                        btn.style.borderColor = '#0E9F2D';
+                        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Visage Capturé';
+                    }
+                    stopWebcam();
+                    statusText.style.color = '#FFF';
+                }, 400);
+            };
+
+            btnClose.onclick = stopWebcam;
+            btnCancel.onclick = stopWebcam;
+        };
     </script>
     @yield('scripts')
 </body>

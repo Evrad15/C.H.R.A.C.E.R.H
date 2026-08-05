@@ -931,54 +931,16 @@
 
     function initEditRdvBiometricToggles(rdv) {
         const btnFp = document.getElementById('btnToggleEditRdvFp');
-        const inputFp = document.getElementById('inputEditRdvFp');
-        const badgeFp = document.getElementById('badgeEditRdvFp');
-
         if (btnFp) {
             btnFp.addEventListener('click', function () {
-                if (inputFp.value === '1') {
-                    inputFp.value = '';
-                    badgeFp.textContent = 'Non enregistrée';
-                    badgeFp.style.background = '#F1F2F7';
-                    badgeFp.style.color = 'var(--text-muted)';
-                    btnFp.style.background = '#EBF3FF';
-                    btnFp.style.color = 'var(--primary)';
-                    btnFp.innerHTML = '<i class="bi bi-plus-circle"></i> Capturer l\'Empreinte (Lecteur USB)';
-                } else {
-                    inputFp.value = '1';
-                    badgeFp.textContent = 'Enregistrée ✓';
-                    badgeFp.style.background = '#EBF9EE';
-                    badgeFp.style.color = '#0E9F2D';
-                    btnFp.style.background = '#0E9F2D';
-                    btnFp.style.color = '#FFFFFF';
-                    btnFp.innerHTML = '<i class="bi bi-check-circle-fill"></i> Empreinte Digitale Capturée';
-                }
+                window.openFingerprintScanner('inputEditRdvFp', 'badgeEditRdvFp', 'btnToggleEditRdvFp');
             });
         }
 
         const btnFace = document.getElementById('btnToggleEditRdvFace');
-        const inputFace = document.getElementById('inputEditRdvFace');
-        const badgeFace = document.getElementById('badgeEditRdvFace');
-
         if (btnFace) {
             btnFace.addEventListener('click', function () {
-                if (inputFace.value === '1') {
-                    inputFace.value = '';
-                    badgeFace.textContent = 'Non enregistrée';
-                    badgeFace.style.background = '#F1F2F7';
-                    badgeFace.style.color = 'var(--text-muted)';
-                    btnFace.style.background = '#EBF9EE';
-                    btnFace.style.color = '#0E9F2D';
-                    btnFace.innerHTML = '<i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)';
-                } else {
-                    inputFace.value = '1';
-                    badgeFace.textContent = 'Enregistrée ✓';
-                    badgeFace.style.background = '#EBF9EE';
-                    badgeFace.style.color = '#0E9F2D';
-                    btnFace.style.background = '#0E9F2D';
-                    btnFace.style.color = '#FFFFFF';
-                    btnFace.innerHTML = '<i class="bi bi-check-circle-fill"></i> Visage Capturé';
-                }
+                window.openFaceCameraScanner('inputEditRdvFace', 'badgeEditRdvFace', 'btnToggleEditRdvFace');
             });
         }
     }
@@ -1167,55 +1129,16 @@
 
     // Toggle RDV Biometric buttons for creation drawer
     const btnRdvFp = document.getElementById('btnToggleRdvFp');
-    const inputRdvFp = document.getElementById('inputRdvFp');
-    const badgeRdvFp = document.getElementById('badgeRdvFp');
-
     if (btnRdvFp) {
         btnRdvFp.addEventListener('click', function () {
-            if (inputRdvFp.value === '1') {
-                inputRdvFp.value = '';
-                badgeRdvFp.textContent = 'Non enregistrée';
-                badgeRdvFp.style.background = '#F1F2F7';
-                badgeRdvFp.style.color = 'var(--text-muted)';
-                btnRdvFp.style.background = '#EBF3FF';
-                btnRdvFp.style.color = 'var(--primary)';
-                btnRdvFp.innerHTML = '<i class="bi bi-plus-circle"></i> Capturer l\'Empreinte (Lecteur USB)';
-            } else {
-                inputRdvFp.value = '1';
-                badgeRdvFp.textContent = 'Enregistrée ✓';
-                badgeRdvFp.style.background = '#EBF9EE';
-                badgeRdvFp.style.color = '#0E9F2D';
-                btnRdvFp.style.background = '#0E9F2D';
-                btnRdvFp.style.color = '#FFFFFF';
-                btnRdvFp.innerHTML = '<i class="bi bi-check-circle-fill"></i> Empreinte Digitale Capturée';
-            }
+            window.openFingerprintScanner('inputRdvFp', 'badgeRdvFp', 'btnToggleRdvFp');
         });
     }
 
     const btnRdvFace = document.getElementById('btnToggleRdvFace');
-    const inputRdvFace = document.getElementById('inputRdvFace');
-    const badgeRdvFace = document.getElementById('badgeRdvFace');
-
     if (btnRdvFace) {
         btnRdvFace.addEventListener('click', function () {
-            if (inputRdvFace.value === '1') {
-                inputRdvFace.value = '';
-                badgeRdvFace.textContent = 'Non enregistrée';
-                badgeRdvFace.style.background = '#F1F2F7';
-                badgeRdvFace.style.color = 'var(--text-muted)';
-                badgeRdvFace.style.color = 'var(--text-muted)';
-                btnRdvFace.style.background = '#EBF9EE';
-                btnRdvFace.style.color = '#0E9F2D';
-                btnRdvFace.innerHTML = '<i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)';
-            } else {
-                inputRdvFace.value = '1';
-                badgeRdvFace.textContent = 'Enregistrée ✓';
-                badgeRdvFace.style.background = '#EBF9EE';
-                badgeRdvFace.style.color = '#0E9F2D';
-                btnRdvFace.style.background = '#0E9F2D';
-                btnRdvFace.style.color = '#FFFFFF';
-                btnRdvFace.innerHTML = '<i class="bi bi-check-circle-fill"></i> Visage Capturé';
-            }
+            window.openFaceCameraScanner('inputRdvFace', 'badgeRdvFace', 'btnToggleRdvFace');
         });
     }
 </script>
