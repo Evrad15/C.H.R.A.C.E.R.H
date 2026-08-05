@@ -679,35 +679,36 @@
     </div>
     <form action="{{ route('rendezvous.store') }}" method="POST" class="drawer-body">
         @csrf
-        <div style="display:flex; flex-direction:column; gap:1rem;">
-            <div class="form-group">
-                <label class="form-label">Nom et Prénom du Patient *</label>
-                <input type="text" name="nom_patient" class="form-input" placeholder="ex: BILOUNGA Chantal" required>
+        <div style="display:flex; flex-direction:column; gap:1.1rem;">
+
+            <div>
+                <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Nom et Prénom du Patient *</label>
+                <input type="text" name="nom_patient" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" placeholder="ex: BILOUNGA Chantal" required>
             </div>
 
-            <div class="form-row" style="display:flex; gap:0.85rem;">
-                <div class="form-group" style="flex:1;">
-                    <label class="form-label">Téléphone</label>
-                    <input type="text" name="telephone_patient" class="form-input" placeholder="+237 699 00 11 22">
+            <div style="display:flex; gap:0.85rem;">
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Téléphone</label>
+                    <input type="text" name="telephone_patient" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" placeholder="+237 699 00 11 22">
                 </div>
-                <div class="form-group" style="flex:1;">
-                    <label class="form-label">Email</label>
-                    <input type="email" name="email_patient" class="form-input" placeholder="patient@gmail.com">
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Email</label>
+                    <input type="email" name="email_patient" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" placeholder="patient@gmail.com">
                 </div>
             </div>
 
-            <div class="form-row" style="display:flex; gap:0.85rem;">
-                <div class="form-group" style="flex:1;">
-                    <label class="form-label">Service Médical *</label>
-                    <select name="service" class="form-select" required>
+            <div style="display:flex; gap:0.85rem;">
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Service Médical *</label>
+                    <select name="service" class="form-select" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
                         @foreach($services as $s)
                         <option value="{{ $s }}">{{ $s }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group" style="flex:1;">
-                    <label class="form-label">Médecin Attribué</label>
-                    <select name="medecin" class="form-select">
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Médecin Attribué</label>
+                    <select name="medecin" class="form-select" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;">
                         @foreach($medecins as $m)
                         <option value="{{ $m }}">{{ $m }}</option>
                         @endforeach
@@ -715,63 +716,63 @@
                 </div>
             </div>
 
-            <div class="form-row" style="display:flex; gap:0.85rem;">
-                <div class="form-group" style="flex:1;">
-                    <label class="form-label">Date du Rendez-vous *</label>
-                    <input type="date" name="date_rendez_vous" class="form-input" value="{{ date('Y-m-d') }}" required>
+            <div style="display:flex; gap:0.85rem;">
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Date du Rendez-vous *</label>
+                    <input type="date" name="date_rendez_vous" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" value="{{ date('Y-m-d') }}" required>
                 </div>
-                <div class="form-group" style="flex:1;">
-                    <label class="form-label">Heure *</label>
-                    <input type="time" name="heure_rendez_vous" class="form-input" value="09:00" required>
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Heure *</label>
+                    <input type="time" name="heure_rendez_vous" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" value="09:00" required>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Motif de la Consultation *</label>
-                <input type="text" name="motif" class="form-input" placeholder="ex: Échographie de contrôle T2" required>
+            <div>
+                <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Motif de la Consultation *</label>
+                <input type="text" name="motif" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" placeholder="ex: Échographie de contrôle T2" required>
             </div>
 
             <!-- MODES D'ENREGISTREMENT BIOMÉTRIQUE PATIENT -->
-            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px; padding:1rem; margin-bottom:0.5rem;">
-                <div style="font-size:0.84rem; font-weight:700; color:var(--text-dark); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.5rem;">
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px; padding:1.1rem; margin-top:0.3rem;">
+                <div style="font-size:0.88rem; font-weight:700; color:var(--text-dark); margin-bottom:0.85rem; display:flex; align-items:center; gap:0.5rem;">
                     <i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i>
                     <span>Modes d'Enregistrement / Pointage Biométrique (Patient)</span>
                 </div>
 
-                <div style="display:flex; gap:0.75rem;">
-                    <!-- Mode 1: Empreinte Digitale Patient -->
-                    <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.75rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-                            <div style="font-weight:700; font-size:0.8rem; color:var(--text-dark); display:flex; align-items:center; gap:0.3rem;">
-                                <i class="bi bi-fingerprint" style="color:var(--primary);"></i> Mode 1 : Empreinte
-                            </div>
-                            <span id="badgeRdvFp" style="font-size:0.7rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:5px; background:#F1F2F7; color:var(--text-muted);">Inactif</span>
+                <!-- Mode 1: Empreinte Digitale Patient -->
+                <div style="background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.85rem; margin-bottom:0.75rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                        <div style="font-weight:700; font-size:0.84rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                            <i class="bi bi-fingerprint" style="color:var(--primary); font-size:1.1rem;"></i>
+                            <span>Mode 1 : Empreinte Digitale</span>
                         </div>
-                        <input type="hidden" name="register_fingerprint" id="inputRdvFp" value="">
-                        <button type="button" id="btnToggleRdvFp" style="width:100%; padding:0.45rem; border-radius:6px; border:1px solid var(--primary); background:#EBF3FF; color:var(--primary); font-weight:700; font-size:0.76rem; cursor:pointer;">
-                            <i class="bi bi-plus-circle"></i> Capturer Empreinte
-                        </button>
+                        <span id="badgeRdvFp" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);">Non enregistrée</span>
                     </div>
+                    <input type="hidden" name="register_fingerprint" id="inputRdvFp" value="">
+                    <button type="button" id="btnToggleRdvFp" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid var(--primary); background:#EBF3FF; color:var(--primary); font-weight:700; font-size:0.8rem; cursor:pointer; transition:all 0.2s ease;">
+                        <i class="bi bi-plus-circle"></i> Capturer l'Empreinte (Lecteur USB)
+                    </button>
+                </div>
 
-                    <!-- Mode 2: Reconnaissance Faciale Patient -->
-                    <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.75rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-                            <div style="font-weight:700; font-size:0.8rem; color:var(--text-dark); display:flex; align-items:center; gap:0.3rem;">
-                                <i class="bi bi-person-bounding-box" style="color:#0E9F2D;"></i> Mode 2 : Visage
-                            </div>
-                            <span id="badgeRdvFace" style="font-size:0.7rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:5px; background:#F1F2F7; color:var(--text-muted);">Inactif</span>
+                <!-- Mode 2: Reconnaissance Faciale Patient -->
+                <div style="background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.85rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                        <div style="font-weight:700; font-size:0.84rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                            <i class="bi bi-person-bounding-box" style="color:#0E9F2D; font-size:1.1rem;"></i>
+                            <span>Mode 2 : Reconnaissance Faciale</span>
                         </div>
-                        <input type="hidden" name="register_face" id="inputRdvFace" value="">
-                        <button type="button" id="btnToggleRdvFace" style="width:100%; padding:0.45rem; border-radius:6px; border:1px solid #0E9F2D; background:#EBF9EE; color:#0E9F2D; font-weight:700; font-size:0.76rem; cursor:pointer;">
-                            <i class="bi bi-camera-video"></i> Capturer Visage
-                        </button>
+                        <span id="badgeRdvFace" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);">Non enregistrée</span>
                     </div>
+                    <input type="hidden" name="register_face" id="inputRdvFace" value="">
+                    <button type="button" id="btnToggleRdvFace" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid #0E9F2D; background:#EBF9EE; color:#0E9F2D; font-weight:700; font-size:0.8rem; cursor:pointer; transition:all 0.2s ease;">
+                        <i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)
+                    </button>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Notes complémentaires</label>
-                <textarea name="notes" class="form-textarea" rows="2" placeholder="Remarques particulières..."></textarea>
+            <div>
+                <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Notes complémentaires</label>
+                <textarea name="notes" class="form-textarea" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" rows="2" placeholder="Remarques particulières..."></textarea>
             </div>
 
             <div style="margin-top:0.5rem; display:flex; gap:0.75rem; justify-content:flex-end;">
@@ -920,19 +921,20 @@
         btnRdvFp.addEventListener('click', function () {
             if (inputRdvFp.value === '1') {
                 inputRdvFp.value = '';
-                badgeRdvFp.textContent = 'Inactif';
+                badgeRdvFp.textContent = 'Non enregistrée';
                 badgeRdvFp.style.background = '#F1F2F7';
                 badgeRdvFp.style.color = 'var(--text-muted)';
                 btnRdvFp.style.background = '#EBF3FF';
-                btnRdvFp.innerHTML = '<i class="bi bi-plus-circle"></i> Capturer Empreinte';
+                btnRdvFp.style.color = 'var(--primary)';
+                btnRdvFp.innerHTML = '<i class="bi bi-plus-circle"></i> Capturer l\'Empreinte (Lecteur USB)';
             } else {
                 inputRdvFp.value = '1';
-                badgeRdvFp.textContent = 'Activé ✓';
+                badgeRdvFp.textContent = 'Enregistrée ✓';
                 badgeRdvFp.style.background = '#EBF9EE';
                 badgeRdvFp.style.color = '#0E9F2D';
                 btnRdvFp.style.background = '#0E9F2D';
                 btnRdvFp.style.color = '#FFFFFF';
-                btnRdvFp.innerHTML = '<i class="bi bi-check-circle-fill"></i> Empreinte Activée';
+                btnRdvFp.innerHTML = '<i class="bi bi-check-circle-fill"></i> Empreinte Digitale Capturée';
             }
         });
     }
@@ -945,19 +947,20 @@
         btnRdvFace.addEventListener('click', function () {
             if (inputRdvFace.value === '1') {
                 inputRdvFace.value = '';
-                badgeRdvFace.textContent = 'Inactif';
+                badgeRdvFace.textContent = 'Non enregistrée';
                 badgeRdvFace.style.background = '#F1F2F7';
                 badgeRdvFace.style.color = 'var(--text-muted)';
                 btnRdvFace.style.background = '#EBF9EE';
-                btnRdvFace.innerHTML = '<i class="bi bi-camera-video"></i> Capturer Visage';
+                btnRdvFace.style.color = '#0E9F2D';
+                btnRdvFace.innerHTML = '<i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)';
             } else {
                 inputRdvFace.value = '1';
-                badgeRdvFace.textContent = 'Activé ✓';
+                badgeRdvFace.textContent = 'Enregistrée ✓';
                 badgeRdvFace.style.background = '#EBF9EE';
                 badgeRdvFace.style.color = '#0E9F2D';
                 btnRdvFace.style.background = '#0E9F2D';
                 btnRdvFace.style.color = '#FFFFFF';
-                btnRdvFace.innerHTML = '<i class="bi bi-check-circle-fill"></i> Visage Activé';
+                btnRdvFace.innerHTML = '<i class="bi bi-check-circle-fill"></i> Visage Capturé';
             }
         });
     }
