@@ -700,7 +700,7 @@
 
                     <div id="empSearchContainer" class="emp-search-wrapper">
                         <div style="position:relative;">
-                            <input type="text" id="empSearchInput" class="form-input" placeholder="🔍 Saisissez un nom, prénom ou département..." autocomplete="off">
+                            <input type="text" id="empSearchInput" class="form-input" placeholder="Saisissez un nom, prénom ou département..." autocomplete="off">
                         </div>
                         <div id="empSearchResults" class="emp-search-results"></div>
                     </div>
