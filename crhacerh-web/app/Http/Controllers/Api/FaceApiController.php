@@ -222,9 +222,31 @@ class FaceApiController extends Controller
             $matchedPatientId = null;
             $confidence = 0.0;
             $usedGemini = false;
+
+            // 1. Déclenchement Prioritaire du Moteur Python (ageitgey/face_recognition)
+            try {
+                $tempPath = storage_path('app/public/_temp_verify.jpg');
+                file_put_contents($tempPath, $imageContent);
+                $facesDir = storage_path('app/public/faces');
+                $scriptPath = base_path('scripts/face_recognize.py');
+
+                $cmd = "python " . escapeshellarg($scriptPath) . " " . escapeshellarg($tempPath) . " " . escapeshellarg($facesDir);
+                $pyOutput = shell_exec($cmd);
+                if ($pyOutput) {
+                    $pyData = json_decode(trim($pyOutput), true);
+                    if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
+                        $matchedEmployeeId = $pyData['matched_id'];
+                        $confidence = (float)($pyData['similarity'] / 100.0);
+                        $usedGemini = true;
+                    }
+                }
+            } catch (\Throwable $pyEx) {
+                Log::warning('Python face_recognition script error: ' . $pyEx->getMessage());
+            }
+
             $apiKey = env('GEMINI_API_KEY');
 
-            if (!empty($apiKey)) {
+            if (!$matchedEmployeeId && !empty($apiKey)) {
                 try {
                     $client = \Gemini::client($apiKey);
                     $blobCaptured = new \Gemini\Data\Blob(
