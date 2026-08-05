@@ -201,17 +201,9 @@ class FaceApiController extends Controller
                 }
             }
 
-            // Sinon recherche automatique (Gemini IA) pour les employés et patients
-            $employees = Employe::where(function ($q) {
-                $q->whereNotNull('consent_facial_at')->orWhereNotNull('face_embeddings');
-            })->get()->filter(function ($emp) {
-                $path = "faces/{$emp->id}.jpg";
-                if (!Storage::disk('public')->exists($path)) {
-                    if (Storage::disk('public')->exists('faces/2.jpg')) {
-                        Storage::disk('public')->copy('faces/2.jpg', $path);
-                    }
-                }
-                return Storage::disk('public')->exists($path);
+            // Recherche automatique des candidats enregistrés avec leur propre fichier photo
+            $employees = Employe::whereNotNull('consent_facial_at')->get()->filter(function ($emp) {
+                return Storage::disk('public')->exists("faces/{$emp->id}.jpg");
             });
 
             $patients = \App\Models\RendezVous::whereDate('date_rendez_vous', Carbon::today())
