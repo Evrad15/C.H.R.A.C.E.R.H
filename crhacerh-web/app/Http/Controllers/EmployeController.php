@@ -171,6 +171,7 @@ class EmployeController extends Controller
             'last_name' => 'required|string|max:100',
             'first_name' => 'required|string|max:100',
             'email' => 'required|email|unique:employés,email',
+            'matricule' => 'nullable|string|max:50|unique:employés,matricule',
             'phone' => 'nullable|string|max:30',
             'department_id' => 'nullable|exists:departments,id',
             'role' => 'nullable|string|max:50',
@@ -178,19 +179,26 @@ class EmployeController extends Controller
             'register_face' => 'nullable',
         ]);
 
+        $matricule = trim($request->input('matricule'));
+        if (empty($matricule)) {
+            $nextNumber = (Employe::max('id') ?? 0) + 1;
+            $matricule = sprintf('chr-%s-%04d', date('Y'), $nextNumber);
+        }
+
         $emp = Employe::create([
             'last_name' => strtoupper(trim($request->input('last_name'))),
             'first_name' => trim($request->input('first_name')),
+            'matricule' => $matricule,
             'email' => strtolower(trim($request->input('email'))),
             'phone' => $request->input('phone'),
             'department_id' => $request->input('department_id'),
             'role' => $request->input('role', 'Employés'),
-            'password' => 'password123',
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
             'fingerprint_registered_at' => $request->filled('register_fingerprint') ? now() : null,
             'consent_facial_at' => $request->filled('register_face') ? now() : null,
         ]);
 
-        return redirect()->route('employes.index')->with('success', "Employé {$emp->full_name} créé avec succès !");
+        return redirect()->route('employes.index')->with('success', "Employé {$emp->full_name} ({$emp->matricule}) créé avec succès !");
     }
 
     /**
@@ -204,6 +212,7 @@ class EmployeController extends Controller
             'last_name' => 'required|string|max:100',
             'first_name' => 'required|string|max:100',
             'email' => 'required|email|unique:employés,email,' . $id,
+            'matricule' => 'nullable|string|max:50|unique:employés,matricule,' . $id,
             'phone' => 'nullable|string|max:30',
             'department_id' => 'nullable|exists:departments,id',
             'role' => 'nullable|string|max:50',
@@ -219,6 +228,10 @@ class EmployeController extends Controller
             'department_id' => $request->input('department_id'),
             'role' => $request->input('role', 'Employés'),
         ];
+
+        if ($request->filled('matricule')) {
+            $data['matricule'] = trim($request->input('matricule'));
+        }
 
         if ($request->has('register_fingerprint')) {
             $data['fingerprint_registered_at'] = $request->filled('register_fingerprint') ? now() : null;
