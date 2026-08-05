@@ -358,6 +358,90 @@
     .modal-body { padding: 1.5rem; }
 
     .form-group { margin-bottom: 1rem; }
+
+    /* Searchable Employee Component */
+    .emp-search-wrapper {
+        position: relative;
+    }
+    .emp-search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #FFFFFF;
+        border: 1px solid #E2E7E7;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+        max-height: 220px;
+        overflow-y: auto;
+        z-index: 1060;
+        margin-top: 4px;
+        display: none;
+    }
+    .emp-search-item {
+        padding: 0.65rem 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        border-bottom: 1px solid #F6F7FB;
+    }
+    .emp-search-item:last-child { border-bottom: none; }
+    .emp-search-item:hover {
+        background: #F1F5F9;
+    }
+    .emp-search-item .item-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.78rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .emp-search-item .item-name {
+        font-weight: 700;
+        font-size: 0.86rem;
+        color: var(--text-dark);
+    }
+    .emp-search-item .item-dept {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    .selected-emp-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #F8FAFC;
+        border: 1.5px solid var(--primary);
+        padding: 0.65rem 0.85rem;
+        border-radius: 12px;
+    }
+    .selected-emp-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .btn-change-emp {
+        background: #EBF3FF;
+        color: var(--primary);
+        border: none;
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-change-emp:hover {
+        background: var(--primary);
+        color: #fff;
+    }
     .form-label { display: block; font-size: 0.82rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.35rem; }
     .form-input, .form-select, .form-textarea {
         width: 100%;
@@ -611,13 +695,28 @@
             @csrf
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Employé *</label>
-                    <select name="employe_id" class="form-select" required>
-                        <option value="">Sélectionner un employé...</option>
-                        @foreach($employesList as $emp)
-                        <option value="{{ $emp->id }}">{{ strtoupper($emp->last_name) }} {{ $emp->first_name }} ({{ $emp->department->name ?? 'Général' }})</option>
-                        @endforeach
-                    </select>
+                    <label class="form-label">Employé concerné *</label>
+                    <input type="hidden" name="employe_id" id="selectedEmployeId" required>
+
+                    <div id="empSearchContainer" class="emp-search-wrapper">
+                        <div style="position:relative;">
+                            <input type="text" id="empSearchInput" class="form-input" placeholder="🔍 Saisissez un nom, prénom ou département..." autocomplete="off">
+                        </div>
+                        <div id="empSearchResults" class="emp-search-results"></div>
+                    </div>
+
+                    <div id="selectedEmpCard" class="selected-emp-card" style="display:none;">
+                        <div class="selected-emp-info">
+                            <div class="emp-avatar" id="selectedEmpAvatar">EM</div>
+                            <div>
+                                <div class="emp-name" id="selectedEmpName">NOM Prénom</div>
+                                <div class="emp-dept" id="selectedEmpDept">Département</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-change-emp" id="btnChangeEmp">
+                            <i class="bi bi-arrow-repeat"></i> Changer
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -764,6 +863,84 @@
                 </form>
             </div>
         `;
+    }
+
+    // Live Search Employee Selection Component
+    const employesData = @json($employesList);
+    const searchInput     = document.getElementById('empSearchInput');
+    const resultsBox      = document.getElementById('empSearchResults');
+    const hiddenId        = document.getElementById('selectedEmployeId');
+    const searchContainer = document.getElementById('empSearchContainer');
+    const selectedCard    = document.getElementById('selectedEmpCard');
+    const btnChange       = document.getElementById('btnChangeEmp');
+    const avatarBox       = document.getElementById('selectedEmpAvatar');
+    const nameBox         = document.getElementById('selectedEmpName');
+    const deptBox         = document.getElementById('selectedEmpDept');
+
+    function renderResults(query = '') {
+        const cleanQuery = query.toLowerCase().trim();
+        const filtered = employesData.filter(emp => {
+            const fullName = `${emp.last_name} ${emp.first_name}`.toLowerCase();
+            const deptName = emp.department ? emp.department.name.toLowerCase() : '';
+            return fullName.includes(cleanQuery) || deptName.includes(cleanQuery);
+        });
+
+        if (filtered.length === 0) {
+            resultsBox.innerHTML = '<div style="padding:0.85rem; text-align:center; color:var(--text-muted); font-size:0.82rem;">Aucun employé trouvé.</div>';
+        } else {
+            resultsBox.innerHTML = filtered.map(emp => {
+                const initials = ((emp.last_name ? emp.last_name[0] : 'E') + (emp.first_name ? emp.first_name[0] : 'M')).toUpperCase();
+                const dept = emp.department ? emp.department.name : 'Général';
+                return `
+                    <div class="emp-search-item" data-id="${emp.id}" data-name="${emp.last_name.toUpperCase()} ${emp.first_name}" data-dept="${dept}" data-initials="${initials}">
+                        <div class="item-avatar">${initials}</div>
+                        <div>
+                            <div class="item-name">${emp.last_name.toUpperCase()} ${emp.first_name}</div>
+                            <div class="item-dept">${dept}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        resultsBox.style.display = 'block';
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('focus', () => renderResults(searchInput.value));
+        searchInput.addEventListener('input', () => renderResults(searchInput.value));
+
+        document.addEventListener('click', (e) => {
+            if (searchContainer && !searchContainer.contains(e.target)) {
+                resultsBox.style.display = 'none';
+            }
+        });
+
+        resultsBox.addEventListener('click', (e) => {
+            const item = e.target.closest('.emp-search-item');
+            if (item) {
+                const id = item.getAttribute('data-id');
+                const name = item.getAttribute('data-name');
+                const dept = item.getAttribute('data-dept');
+                const initials = item.getAttribute('data-initials');
+
+                hiddenId.value = id;
+                nameBox.textContent = name;
+                deptBox.textContent = dept;
+                avatarBox.textContent = initials;
+
+                searchContainer.style.display = 'none';
+                selectedCard.style.display = 'flex';
+                resultsBox.style.display = 'none';
+            }
+        });
+
+        btnChange.addEventListener('click', () => {
+            hiddenId.value = '';
+            searchInput.value = '';
+            selectedCard.style.display = 'none';
+            searchContainer.style.display = 'block';
+            searchInput.focus();
+        });
     }
 </script>
 @endsection
