@@ -64,7 +64,7 @@ class FaceApiController extends Controller
 
             $employee->update([
                 'consent_facial_at' => now(),
-                'face_embeddings' => $binaryEmbeddings,
+                'face_embeddings' => base64_encode($binaryEmbeddings),
             ]);
 
             return response()->json([

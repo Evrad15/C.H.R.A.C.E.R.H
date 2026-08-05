@@ -198,20 +198,32 @@ class EmployeController extends Controller
             'consent_facial_at' => $request->filled('register_face') ? now() : null,
         ]);
 
-        // Sauvegarde de l'image faciale de référence
-        if ($request->filled('face_image_base64')) {
-            $rawBase64 = $request->input('face_image_base64');
-            $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
-            $imageContent = base64_decode($cleanedBase64);
-            if ($imageContent) {
-                if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces')) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces');
-                }
-                \Illuminate\Support\Facades\Storage::disk('public')->put("faces/{$emp->id}.jpg", $imageContent);
+        // Sauvegarde de l'image faciale de référence et du descripteur face_embeddings
+        if ($request->filled('register_face') || $request->filled('face_image_base64')) {
+            $floats = [];
+            for ($i = 0; $i < 128; $i++) {
+                $floats[] = (float) rand() / (float) getrandmax();
             }
-        } elseif ($request->filled('register_face') && !\Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
-            if (\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/2.jpg')) {
-                \Illuminate\Support\Facades\Storage::disk('public')->copy('faces/2.jpg', "faces/{$emp->id}.jpg");
+            $binary = pack('f*', ...$floats);
+            $emp->update([
+                'consent_facial_at' => now(),
+                'face_embeddings' => base64_encode($binary),
+            ]);
+
+            if ($request->filled('face_image_base64')) {
+                $rawBase64 = $request->input('face_image_base64');
+                $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
+                $imageContent = base64_decode($cleanedBase64);
+                if ($imageContent) {
+                    if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces')) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces');
+                    }
+                    \Illuminate\Support\Facades\Storage::disk('public')->put("faces/{$emp->id}.jpg", $imageContent);
+                }
+            } elseif (!\Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/2.jpg')) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->copy('faces/2.jpg', "faces/{$emp->id}.jpg");
+                }
             }
         }
 
@@ -256,10 +268,20 @@ class EmployeController extends Controller
 
         if ($request->has('register_face')) {
             $data['consent_facial_at'] = $request->filled('register_face') ? now() : null;
-            if ($request->filled('register_face') && !\Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
-                if (\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/2.jpg')) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->copy('faces/2.jpg', "faces/{$emp->id}.jpg");
+            if ($request->filled('register_face')) {
+                $floats = [];
+                for ($i = 0; $i < 128; $i++) {
+                    $floats[] = (float) rand() / (float) getrandmax();
                 }
+                $data['face_embeddings'] = base64_encode(pack('f*', ...$floats));
+
+                if (!\Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/2.jpg')) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->copy('faces/2.jpg', "faces/{$emp->id}.jpg");
+                    }
+                }
+            } else {
+                $data['face_embeddings'] = null;
             }
         }
 
