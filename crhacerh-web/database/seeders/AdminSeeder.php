@@ -96,37 +96,18 @@ class AdminSeeder extends Seeder
         // On inclut tous les employés, y compris Mopi
         $employeesToSimulate = Employe::all();
 
-        // Le besoin: 30 jours en BD dont les 17 prochains jours.
-        // On génère 13 jours ouvrés dans le passé, et 17 jours ouvrés (incluant aujourd'hui) vers le futur.
+        // On génère 30 jours ouvrés dans le passé jusqu'à aujourd'hui inclus (jamais dans le futur)
         $dates = [];
-        
-        // 13 jours ouvrés dans le passé
         $pastDays = 0;
-        $d = -1;
-        $pastDates = [];
-        while ($pastDays < 13) {
-            $date = \Carbon\Carbon::now()->addDays($d);
-            if (!$date->isWeekend()) {
-                array_unshift($pastDates, $date);
-                $pastDays++;
-            }
-            $d--;
-        }
-        
-        // 17 jours ouvrés (Aujourd'hui + 16 jours futurs)
-        $futureDays = 0;
         $d = 0;
-        $futureDates = [];
-        while ($futureDays < 17) {
-            $date = \Carbon\Carbon::now()->addDays($d);
+        while ($pastDays < 30) {
+            $date = \Carbon\Carbon::now()->subDays($d);
             if (!$date->isWeekend()) {
-                $futureDates[] = $date;
-                $futureDays++;
+                array_unshift($dates, $date);
+                $pastDays++;
             }
             $d++;
         }
-
-        $dates = array_merge($pastDates, $futureDates);
 
         foreach ($employeesToSimulate as $emp) {
             // Définir des probabilités d'absence, retard et présence uniques et aléatoires pour chaque employé
