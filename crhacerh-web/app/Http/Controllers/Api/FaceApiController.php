@@ -429,8 +429,7 @@ class FaceApiController extends Controller
             imagedestroy($srcImg);
             if (!$srcGrid) return null;
 
-            $bestMatch = null;
-            $bestScore = 0.0;
+            $candidates = [];
 
             foreach ($employees as $emp) {
                 $file = Storage::disk('public')->path("faces/{$emp->id}.jpg");
@@ -440,10 +439,7 @@ class FaceApiController extends Controller
                         $candGrid = $this->computeImageStructureGrid($candImg);
                         imagedestroy($candImg);
                         $sim = $this->computeGridSimilarity($srcGrid, $candGrid);
-                        if ($sim > $bestScore) {
-                            $bestScore = $sim;
-                            $bestMatch = ['type' => 'EMPLOYE', 'id' => $emp->id, 'score' => $sim];
-                        }
+                        $candidates[] = ['type' => 'EMPLOYE', 'id' => $emp->id, 'score' => $sim];
                     }
                 }
             }
@@ -456,15 +452,17 @@ class FaceApiController extends Controller
                         $candGrid = $this->computeImageStructureGrid($candImg);
                         imagedestroy($candImg);
                         $sim = $this->computeGridSimilarity($srcGrid, $candGrid);
-                        if ($sim > $bestScore) {
-                            $bestScore = $sim;
-                            $bestMatch = ['type' => 'PATIENT', 'id' => $pt->id, 'score' => $sim];
-                        }
+                        $candidates[] = ['type' => 'PATIENT', 'id' => $pt->id, 'score' => $sim];
                     }
                 }
             }
 
-            if ($bestMatch && $bestScore >= 0.40) {
+            usort($candidates, function ($a, $b) {
+                return $b['score'] <=> $a['score'];
+            });
+
+            if (!empty($candidates) && $candidates[0]['score'] >= 0.40) {
+                $bestMatch = $candidates[0];
                 $bestMatch['score'] = round(rand(955, 992) / 1000.0, 3);
                 return $bestMatch;
             }
