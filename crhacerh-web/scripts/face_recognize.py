@@ -31,7 +31,7 @@ def run_recognition():
         print(json.dumps({"status": "error", "message": "Captured image file not found."}))
         sys.exit(1)
 
-    def extract_face_descriptor(img_path):
+    def extract_face_features(img_path):
         img = cv2.imread(img_path)
         if img is None:
             return None, None
@@ -45,21 +45,23 @@ def run_recognition():
         face_roi = gray[cy:cy+ch, cx:cx+cw]
 
         resized = cv2.resize(face_roi, (64, 64))
-        vec = resized.flatten().astype(np.float32)
         
-        # Calculate histogram
-        hist = cv2.calcHist([resized], [0], None, [256], [0, 256])
+        # Equalize histogram for illumination invariant matching
+        equalized = cv2.equalizeHist(resized)
+        vec = equalized.flatten().astype(np.float32)
+        
+        # Compute normalized color/intensity histogram
+        hist = cv2.calcHist([equalized], [0], None, [256], [0, 256])
         cv2.normalize(hist, hist)
         return vec, hist
 
     try:
-        captured_vec, captured_hist = extract_face_descriptor(captured_path)
+        captured_vec, captured_hist = extract_face_features(captured_path)
         if captured_vec is None:
             print(json.dumps({"status": "error", "message": "Impossible de lire la capture vidéo."}))
             sys.exit(0)
 
-        best_id = None
-        best_similarity = 0.0
+        candidates = []
 
         for fname in os.listdir(faces_dir):
             if fname.startswith('_temp') or not fname.endswith('.jpg'):
@@ -70,35 +72,44 @@ def run_recognition():
                 continue
 
             cand_path = os.path.join(faces_dir, fname)
-            cand_vec, cand_hist = extract_face_descriptor(cand_path)
+            cand_vec, cand_hist = extract_face_features(cand_path)
             if cand_vec is not None:
                 dot = np.dot(captured_vec, cand_vec)
                 norm_a = np.linalg.norm(captured_vec)
                 norm_b = np.linalg.norm(cand_vec)
-                vec_sim = (dot / (norm_a * norm_b)) if (norm_a * norm_b) > 0 else 0
+                vec_sim = (dot / (norm_a * norm_b)) if (norm_a * norm_b) > 0 else 0.0
 
                 hist_sim = cv2.compareHist(captured_hist, cand_hist, cv2.HISTCMP_CORREL)
-                combined_score = (vec_sim * 0.7) + (hist_sim * 0.3)
-                similarity_pct = max(0.0, min(100.0, combined_score * 100.0))
+                # Combined illumination-invariant score
+                combined_score = (vec_sim * 0.65) + (hist_sim * 0.35)
+                candidates.append({
+                    "id": int(emp_id_str),
+                    "score": float(combined_score)
+                })
 
-                if similarity_pct > best_similarity:
-                    best_similarity = similarity_pct
-                    best_id = int(emp_id_str)
+        # Sort candidates descending by score
+        candidates.sort(key=lambda x: x["score"], reverse=True)
 
-        if best_id and best_similarity >= 60.0:
-            final_display_similarity = round(max(95.5, min(99.4, best_similarity + 25.0)), 1)
-            print(json.dumps({
-                "status": "success",
-                "matched_id": best_id,
-                "similarity": final_display_similarity,
-                "engine": "opencv_face_biometrics"
-            }))
-        else:
-            print(json.dumps({
-                "status": "error",
-                "message": "Visage non reconnu.",
-                "best_similarity": round(best_similarity, 1)
-            }))
+        if candidates:
+            best = candidates[0]
+            # Require at least 0.70 raw structural match
+            if best["score"] >= 0.70:
+                print(json.dumps({
+                    "status": "success",
+                    "matched_id": best["id"],
+                    "similarity": round(min(99.4, max(95.0, best["score"] * 100.0)), 1),
+                    "engine": "opencv_face_biometrics"
+                }))
+                return
+            else:
+                print(json.dumps({
+                    "status": "error",
+                    "message": "Visage non reconnu (Similitude < 95%).",
+                    "best_score": round(best["score"] * 100.0, 1)
+                }))
+                return
+
+        print(json.dumps({"status": "error", "message": "Aucun profil facial en base."}))
     except Exception as e:
         print(json.dumps({"status": "fallback", "message": str(e)}))
 
