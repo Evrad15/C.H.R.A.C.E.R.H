@@ -46,6 +46,18 @@ def run_recognition():
         img = cv2.imread(safe_path)
         if img is None:
             return None
+
+        # Preprocess illumination using CLAHE to handle low-light or shadow conditions
+        try:
+            lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+            l, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+            cl = clahe.apply(l)
+            limg = cv2.merge((cl, a, b))
+            img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+        except Exception:
+            pass
+
         h, w, _ = img.shape
         detector.setInputSize((w, h))
         _, faces = detector.detect(img)
