@@ -759,12 +759,21 @@
                 Regardez la caméra pendant la capture ou sélectionnez directement votre nom dans la liste de la borne.
             </p>
 
-            <div class="video-container">
-                <video id="webcam-stream" autoplay playsinline></video>
-                <div id="face-scan-line" style="position:absolute;top:0;left:0;width:100%;height:3px;background:#2563eb;box-shadow:0 0 10px #2563eb;animation:scanLine 2s infinite linear;display:none;"></div>
+            <div class="video-container" style="position:relative; overflow:hidden; border-radius:16px;">
+                <video id="webcam-stream" autoplay playsinline style="width:100%; height:100%; object-fit:cover; transform:scaleX(-1);"></video>
+                
+                <!-- Oval Face Guide Reticle (Identical to enrollment modal) -->
+                <div style="position:absolute; inset:0; border:2px dashed rgba(37, 99, 235, 0.85); border-radius:50%; width:210px; height:250px; margin:auto; pointer-events:none; box-shadow:0 0 0 9999px rgba(15, 23, 42, 0.55);">
+                    <div style="position:absolute; top:50%; width:100%; height:2px; background:rgba(37, 99, 235, 0.5); transform:translateY(-50%);"></div>
+                </div>
+
+                <div id="face-scan-line" style="position:absolute;top:0;left:0;width:100%;height:3px;background:#2563eb;box-shadow:0 0 10px #2563eb;animation:scanLine 2s infinite linear;display:none; z-index:5;"></div>
+                <div style="position:absolute; bottom:12px; left:0; right:0; text-align:center; color:#FFF; font-size:0.82rem; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,0.8); z-index:5;">
+                    Alignez votre visage au centre de l'ovale
+                </div>
             </div>
 
-            <button onclick="captureAndVerifyFace()" style="background:#2563eb; color:#fff; border:none; padding:0.85rem 1.75rem; border-radius:12px; font-weight:800; font-size:0.95rem; cursor:pointer; width:100%; box-shadow:0 8px 16px rgba(37,99,235,0.25);">
+            <button onclick="captureAndVerifyFace()" style="background:#2563eb; color:#fff; border:none; padding:0.85rem 1.75rem; border-radius:12px; font-weight:800; font-size:0.95rem; cursor:pointer; width:100%; box-shadow:0 8px 16px rgba(37,99,235,0.25); margin-top:0.75rem;">
                  Analyser le visage maintenant
             </button>
         </div>
@@ -1176,11 +1185,19 @@
                 return;
             }
 
+            // Découpage strict centré sur le visage (Forme ovale, élimine le décor ambiant)
+            const vw = video.videoWidth || 640;
+            const vh = video.videoHeight || 480;
+            const cropW = Math.round(vw * 0.68);
+            const cropH = Math.round(vh * 0.75);
+            const cropX = Math.round((vw - cropW) / 2);
+            const cropY = Math.round((vh - cropH) / 2);
+
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
+            canvas.width = cropW;
+            canvas.height = cropH;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
             const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
 
             try {
