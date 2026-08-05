@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('conges', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employe_id')->constrained('employés')->onDelete('cascade');
-            $table->enum('type', ['Congé', 'Permission', 'Maladie'])->default('Permission');
+            $table->string('type', 100)->default('Permission');
             $table->datetime('date_debut');
             $table->datetime('date_fin');
             $table->text('motif');
-            $table->enum('statut', ['En attente', 'Approuvée', 'Rejetée'])->default('En attente');
+            $table->string('statut', 50)->default('En attente');
             $table->text('commentaire_rh')->nullable();
             $table->timestamps();
         });

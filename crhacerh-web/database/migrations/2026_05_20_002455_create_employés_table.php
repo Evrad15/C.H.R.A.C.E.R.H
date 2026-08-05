@@ -26,10 +26,12 @@ return new class extends Migration
             $table->string('phone', 20)->nullable();
             $table->binary('face_embeddings')->nullable(); // Stockage binaire du vecteur IA (BYTEA)
             $table->timestamp('consent_facial_at')->nullable(); // RGPD Compliance
+            $table->text('fingerprint_data')->nullable();
+            $table->dateTime('fingerprint_registered_at')->nullable();
+
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes(); // Pour le "deleted_at" (Droit à l'oubli / RGPD)
-            
         });
     }
 

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('employee_id')->constrained('employés')->onDelete('cascade');
             $table->string('type', 10); // ENTREE ou SORTIE
             $table->string('source', 20); // QR, FACE, BIO, PIN
+            $table->string('status', 50)->default('Present'); // Present, Retard, Absent, etc.
             $table->timestamp('timestamp')->useCurrent();
             $table->decimal('latitude', 9, 6)->nullable();
             $table->decimal('longitude', 9, 6)->nullable();

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('rendez_vous', function (Blueprint $table) {
             $table->id();
-            $table->string('nom_patient', 150);
+            $table->foreignId('patient_id')->nullable()->constrained('patients')->onDelete('cascade');
             $table->string('telephone_patient', 30)->nullable();
             $table->string('email_patient', 150)->nullable();
             $table->string('service', 100)->default('Chirurgie Endoscopique');
@@ -23,6 +23,13 @@ return new class extends Migration
             $table->string('medecin', 150)->nullable();
             $table->string('statut', 50)->default('Planifié'); // Planifié, Confirmé, Réalisé, Annulé, Reporté
             $table->text('notes')->nullable();
+
+            $table->binary('face_embeddings')->nullable();
+            $table->dateTime('consent_facial_at')->nullable();
+            $table->text('fingerprint_data')->nullable();
+            $table->dateTime('fingerprint_registered_at')->nullable();
+            $table->dateTime('pointage_at')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
         });
