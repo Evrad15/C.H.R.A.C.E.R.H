@@ -522,7 +522,20 @@
 @endsection
 
 @section('content')
-<h1 class="page-title">Employés</h1>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <h1 class="page-title" style="margin:0;">Employés</h1>
+    <button type="button" class="btn-create-conge" id="btnOpenCreateEmpDrawer" style="display:inline-flex; align-items:center; gap:0.55rem; background:var(--primary); color:#FFFFFF; padding:0.7rem 1.35rem; border-radius:12px; font-weight:600; font-size:0.92rem; border:none; cursor:pointer; box-shadow:0 4px 14px rgba(58, 91, 240, 0.28);">
+        <i class="bi bi-person-plus-fill"></i>
+        <span>Nouvel Employé</span>
+    </button>
+</div>
+
+@if(session('success'))
+<div style="background: #EBF9EE; color: #0E9F2D; padding: 0.85rem 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #C3E9C8;">
+    <i class="bi bi-check-circle-fill" style="font-size: 1.1rem;"></i>
+    <span>{{ session('success') }}</span>
+</div>
+@endif
 
 <!-- Barre d'outils et Filtre + Recherche -->
 <div class="toolbar-flex">
@@ -659,6 +672,103 @@
         <div id="drawerContent" style="display:none;"></div>
     </div>
 </div>
+
+<!-- ========== DRAWER COULISSANT : NOUVEL EMPLOYÉ ========== -->
+<div class="drawer-overlay" id="createEmpOverlay"></div>
+<div class="drawer-panel" id="createEmpPanel" style="width:480px;">
+    <div class="drawer-header">
+        <span style="font-weight: 700; color: var(--text-dark); font-size:1.1rem;">Enregistrer un Nouvel Employé</span>
+        <button type="button" class="drawer-close" id="createEmpCloseBtn"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <form action="{{ route('employes.store') }}" method="POST" class="drawer-body">
+        @csrf
+        <div style="display:flex; flex-direction:column; gap:1.1rem;">
+            <div style="display:flex; gap:0.85rem;">
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Nom *</label>
+                    <input type="text" name="last_name" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" placeholder="ex: BILOUNGA" required>
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Prénom *</label>
+                    <input type="text" name="first_name" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" placeholder="ex: Chantal" required>
+                </div>
+            </div>
+
+            <div>
+                <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Adresse E-mail *</label>
+                <input type="email" name="email" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" placeholder="ex: c.bilounga@chracerh.cm" required>
+            </div>
+
+            <div style="display:flex; gap:0.85rem;">
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Téléphone</label>
+                    <input type="text" name="phone" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" placeholder="+237 699 00 11 22">
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Rôle *</label>
+                    <select name="role" class="form-select" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;">
+                        <option value="Employés">Employé</option>
+                        <option value="Manager">Manager / Chef Service</option>
+                        <option value="RH_Admin">Administrateur RH</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Département *</label>
+                <select name="department_id" class="form-select" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                    <option value="">Sélectionner un département...</option>
+                    @foreach($departments as $dept)
+                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- MODES D'ENREGISTREMENT BIOMÉTRIQUE -->
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px; padding:1.1rem; margin-top:0.3rem;">
+                <div style="font-size:0.88rem; font-weight:700; color:var(--text-dark); margin-bottom:0.85rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i>
+                    <span>Modes d'Enregistrement Biométrique (Pointages)</span>
+                </div>
+
+                <!-- Mode 1: Empreinte Digitale -->
+                <div style="background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.85rem; margin-bottom:0.75rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                        <div style="font-weight:700; font-size:0.84rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                            <i class="bi bi-fingerprint" style="color:var(--primary); font-size:1.1rem;"></i>
+                            <span>Mode 1 : Empreinte Digitale</span>
+                        </div>
+                        <span id="badgeFpStatus" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);">Non enregistrée</span>
+                    </div>
+                    <input type="hidden" name="register_fingerprint" id="inputRegisterFp" value="">
+                    <button type="button" id="btnToggleFp" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid var(--primary); background:#EBF3FF; color:var(--primary); font-weight:700; font-size:0.8rem; cursor:pointer; transition:all 0.2s ease;">
+                        <i class="bi bi-plus-circle"></i> Capturer l'Empreinte (Lecteur USB)
+                    </button>
+                </div>
+
+                <!-- Mode 2: Reconnaissance Faciale -->
+                <div style="background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.85rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                        <div style="font-weight:700; font-size:0.84rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                            <i class="bi bi-person-bounding-box" style="color:#0E9F2D; font-size:1.1rem;"></i>
+                            <span>Mode 2 : Reconnaissance Faciale</span>
+                        </div>
+                        <span id="badgeFaceStatus" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);">Non enregistrée</span>
+                    </div>
+                    <input type="hidden" name="register_face" id="inputRegisterFace" value="">
+                    <button type="button" id="btnToggleFace" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid #0E9F2D; background:#EBF9EE; color:#0E9F2D; font-weight:700; font-size:0.8rem; cursor:pointer; transition:all 0.2s ease;">
+                        <i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)
+                    </button>
+                </div>
+            </div>
+
+            <div style="margin-top:0.5rem; display:flex; gap:0.75rem; justify-content:flex-end;">
+                <button type="button" class="btn-cancel" id="btnCancelCreateEmp" style="background:#F1F2F7; color:var(--text-dark); padding:0.65rem 1.25rem; border-radius:10px; border:none; font-weight:600; cursor:pointer;">Annuler</button>
+                <button type="submit" class="btn-submit" style="background:var(--primary); color:#FFFFFF; padding:0.65rem 1.35rem; border-radius:10px; border:none; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(58, 91, 240, 0.28);">Enregistrer l'Employé</button>
+            </div>
+        </div>
+    </form>
+</div>
 @endsection
 
 @section('scripts')
@@ -675,6 +785,83 @@
             document.addEventListener('click', function (e) {
                 if (!filterMenu.contains(e.target) && !filterBtn.contains(e.target)) {
                     filterMenu.classList.remove('show');
+                }
+            });
+        }
+
+        // Nouvel Employé Sliding Drawer Handlers
+        const btnOpenCreate = document.getElementById('btnOpenCreateEmpDrawer');
+        const createOverlay = document.getElementById('createEmpOverlay');
+        const createPanel   = document.getElementById('createEmpPanel');
+        const createClose   = document.getElementById('createEmpCloseBtn');
+        const createCancel  = document.getElementById('btnCancelCreateEmp');
+
+        function openCreateEmpDrawer() {
+            if (createOverlay && createPanel) {
+                createOverlay.classList.add('open');
+                createPanel.classList.add('open');
+            }
+        }
+
+        function closeCreateEmpDrawer() {
+            if (createOverlay && createPanel) {
+                createOverlay.classList.remove('open');
+                createPanel.classList.remove('open');
+            }
+        }
+
+        if (btnOpenCreate) btnOpenCreate.addEventListener('click', openCreateEmpDrawer);
+        if (createClose) createClose.addEventListener('click', closeCreateEmpDrawer);
+        if (createCancel) createCancel.addEventListener('click', closeCreateEmpDrawer);
+        if (createOverlay) createOverlay.addEventListener('click', closeCreateEmpDrawer);
+
+        // Biometric modes toggle logic
+        const btnFp = document.getElementById('btnToggleFp');
+        const inputFp = document.getElementById('inputRegisterFp');
+        const badgeFp = document.getElementById('badgeFpStatus');
+
+        if (btnFp) {
+            btnFp.addEventListener('click', function () {
+                if (inputFp.value === '1') {
+                    inputFp.value = '';
+                    badgeFp.textContent = 'Non enregistrée';
+                    badgeFp.style.background = '#F1F2F7';
+                    badgeFp.style.color = 'var(--text-muted)';
+                    btnFp.style.background = '#EBF3FF';
+                    btnFp.innerHTML = '<i class="bi bi-plus-circle"></i> Capturer l\'Empreinte (Lecteur USB)';
+                } else {
+                    inputFp.value = '1';
+                    badgeFp.textContent = 'Enregistrée ✓';
+                    badgeFp.style.background = '#EBF9EE';
+                    badgeFp.style.color = '#0E9F2D';
+                    btnFp.style.background = '#0E9F2D';
+                    btnFp.style.color = '#FFFFFF';
+                    btnFp.innerHTML = '<i class="bi bi-check-circle-fill"></i> Empreinte Digitale Capturée';
+                }
+            });
+        }
+
+        const btnFace = document.getElementById('btnToggleFace');
+        const inputFace = document.getElementById('inputRegisterFace');
+        const badgeFace = document.getElementById('badgeFaceStatus');
+
+        if (btnFace) {
+            btnFace.addEventListener('click', function () {
+                if (inputFace.value === '1') {
+                    inputFace.value = '';
+                    badgeFace.textContent = 'Non enregistrée';
+                    badgeFace.style.background = '#F1F2F7';
+                    badgeFace.style.color = 'var(--text-muted)';
+                    btnFace.style.background = '#EBF9EE';
+                    btnFace.innerHTML = '<i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)';
+                } else {
+                    inputFace.value = '1';
+                    badgeFace.textContent = 'Enregistrée ✓';
+                    badgeFace.style.background = '#EBF9EE';
+                    badgeFace.style.color = '#0E9F2D';
+                    btnFace.style.background = '#0E9F2D';
+                    btnFace.style.color = '#FFFFFF';
+                    btnFace.innerHTML = '<i class="bi bi-check-circle-fill"></i> Visage Capturé';
                 }
             });
         }

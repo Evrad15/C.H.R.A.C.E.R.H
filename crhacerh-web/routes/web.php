@@ -37,6 +37,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Gestion des Employés
     Route::get('/employes',      [EmployeController::class, 'index'])->name('employes.index');
+    Route::post('/employes',     [EmployeController::class, 'store'])->name('employes.store');
     Route::get('/employes/{id}', [EmployeController::class, 'show'])->name('employes.show');
 
     // Gestion des Rendez-vous

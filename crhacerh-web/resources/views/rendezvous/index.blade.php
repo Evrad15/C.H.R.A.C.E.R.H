@@ -731,6 +731,44 @@
                     <input type="text" name="motif" class="form-input" placeholder="ex: Échographie de contrôle T2" required>
                 </div>
 
+                <!-- MODES D'ENREGISTREMENT BIOMÉTRIQUE PATIENT -->
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px; padding:1rem; margin-bottom:1rem;">
+                    <div style="font-size:0.84rem; font-weight:700; color:var(--text-dark); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.5rem;">
+                        <i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i>
+                        <span>Modes d'Enregistrement / Pointage Biométrique (Patient)</span>
+                    </div>
+
+                    <div style="display:flex; gap:0.75rem;">
+                        <!-- Mode 1: Empreinte Digitale Patient -->
+                        <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.75rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                                <div style="font-weight:700; font-size:0.8rem; color:var(--text-dark); display:flex; align-items:center; gap:0.3rem;">
+                                    <i class="bi bi-fingerprint" style="color:var(--primary);"></i> Mode 1 : Empreinte
+                                </div>
+                                <span id="badgeRdvFp" style="font-size:0.7rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:5px; background:#F1F2F7; color:var(--text-muted);">Inactif</span>
+                            </div>
+                            <input type="hidden" name="register_fingerprint" id="inputRdvFp" value="">
+                            <button type="button" id="btnToggleRdvFp" style="width:100%; padding:0.45rem; border-radius:6px; border:1px solid var(--primary); background:#EBF3FF; color:var(--primary); font-weight:700; font-size:0.76rem; cursor:pointer;">
+                                <i class="bi bi-plus-circle"></i> Capturer Empreinte
+                            </button>
+                        </div>
+
+                        <!-- Mode 2: Reconnaissance Faciale Patient -->
+                        <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.75rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                                <div style="font-weight:700; font-size:0.8rem; color:var(--text-dark); display:flex; align-items:center; gap:0.3rem;">
+                                    <i class="bi bi-person-bounding-box" style="color:#0E9F2D;"></i> Mode 2 : Visage
+                                </div>
+                                <span id="badgeRdvFace" style="font-size:0.7rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:5px; background:#F1F2F7; color:var(--text-muted);">Inactif</span>
+                            </div>
+                            <input type="hidden" name="register_face" id="inputRdvFace" value="">
+                            <button type="button" id="btnToggleRdvFace" style="width:100%; padding:0.45rem; border-radius:6px; border:1px solid #0E9F2D; background:#EBF9EE; color:#0E9F2D; font-weight:700; font-size:0.76rem; cursor:pointer;">
+                                <i class="bi bi-camera-video"></i> Capturer Visage
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="form-label">Notes complémentaires</label>
                     <textarea name="notes" class="form-textarea" rows="2" placeholder="Remarques particulières..."></textarea>
@@ -860,6 +898,57 @@
                 </form>
             </div>
         `;
+    }
+
+    // Toggle RDV Biometric buttons
+    const btnRdvFp = document.getElementById('btnToggleRdvFp');
+    const inputRdvFp = document.getElementById('inputRdvFp');
+    const badgeRdvFp = document.getElementById('badgeRdvFp');
+
+    if (btnRdvFp) {
+        btnRdvFp.addEventListener('click', function () {
+            if (inputRdvFp.value === '1') {
+                inputRdvFp.value = '';
+                badgeRdvFp.textContent = 'Inactif';
+                badgeRdvFp.style.background = '#F1F2F7';
+                badgeRdvFp.style.color = 'var(--text-muted)';
+                btnRdvFp.style.background = '#EBF3FF';
+                btnRdvFp.innerHTML = '<i class="bi bi-plus-circle"></i> Capturer Empreinte';
+            } else {
+                inputRdvFp.value = '1';
+                badgeRdvFp.textContent = 'Activé ✓';
+                badgeRdvFp.style.background = '#EBF9EE';
+                badgeRdvFp.style.color = '#0E9F2D';
+                btnRdvFp.style.background = '#0E9F2D';
+                btnRdvFp.style.color = '#FFFFFF';
+                btnRdvFp.innerHTML = '<i class="bi bi-check-circle-fill"></i> Empreinte Activée';
+            }
+        });
+    }
+
+    const btnRdvFace = document.getElementById('btnToggleRdvFace');
+    const inputRdvFace = document.getElementById('inputRdvFace');
+    const badgeRdvFace = document.getElementById('badgeRdvFace');
+
+    if (btnRdvFace) {
+        btnRdvFace.addEventListener('click', function () {
+            if (inputRdvFace.value === '1') {
+                inputRdvFace.value = '';
+                badgeRdvFace.textContent = 'Inactif';
+                badgeRdvFace.style.background = '#F1F2F7';
+                badgeRdvFace.style.color = 'var(--text-muted)';
+                btnRdvFace.style.background = '#EBF9EE';
+                btnRdvFace.innerHTML = '<i class="bi bi-camera-video"></i> Capturer Visage';
+            } else {
+                inputRdvFace.value = '1';
+                badgeRdvFace.textContent = 'Activé ✓';
+                badgeRdvFace.style.background = '#EBF9EE';
+                badgeRdvFace.style.color = '#0E9F2D';
+                btnRdvFace.style.background = '#0E9F2D';
+                btnRdvFace.style.color = '#FFFFFF';
+                btnRdvFace.innerHTML = '<i class="bi bi-check-circle-fill"></i> Visage Activé';
+            }
+        });
     }
 </script>
 @endsection

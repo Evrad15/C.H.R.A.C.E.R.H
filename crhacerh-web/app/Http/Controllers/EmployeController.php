@@ -156,4 +156,35 @@ class EmployeController extends Controller
             'weekly_stats' => $weeklyStats,
         ]);
     }
+
+    /**
+     * Enregistre un nouvel employé avec ses identifiants et options d'enrôlement biométrique.
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'last_name' => 'required|string|max:100',
+            'first_name' => 'required|string|max:100',
+            'email' => 'required|email|unique:employés,email',
+            'phone' => 'nullable|string|max:30',
+            'department_id' => 'nullable|exists:departments,id',
+            'role' => 'nullable|string|max:50',
+            'register_fingerprint' => 'nullable',
+            'register_face' => 'nullable',
+        ]);
+
+        $emp = Employe::create([
+            'last_name' => strtoupper(trim($request->input('last_name'))),
+            'first_name' => trim($request->input('first_name')),
+            'email' => strtolower(trim($request->input('email'))),
+            'phone' => $request->input('phone'),
+            'department_id' => $request->input('department_id'),
+            'role' => $request->input('role', 'Employés'),
+            'password' => 'password123',
+            'fingerprint_registered_at' => $request->filled('register_fingerprint') ? now() : null,
+            'consent_facial_at' => $request->filled('register_face') ? now() : null,
+        ]);
+
+        return redirect()->route('employes.index')->with('success', "Employé {$emp->full_name} créé avec succès !");
+    }
 }
