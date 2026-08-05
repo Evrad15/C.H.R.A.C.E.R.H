@@ -75,6 +75,13 @@ class AdminSeeder extends Seeder
             $deptName = $deptKeys[$i % count($deptKeys)];
             $deptId = $departmentModels[$deptName]->id;
 
+            $floats = [];
+            for ($f = 0; $f < 128; $f++) {
+                $floats[] = (float) rand() / (float) getrandmax();
+            }
+            $binaryEmbeddings = base64_encode(pack('f*', ...$floats));
+            $randomConsentDate = \Carbon\Carbon::now()->subDays(rand(5, 180))->subMinutes(rand(10, 500));
+
             Employe::firstOrCreate(
                 ['email' => $email],
                 [
@@ -84,7 +91,8 @@ class AdminSeeder extends Seeder
                     'password' => $defaultPassword,
                     'role' => 'Employés',
                     'department_id' => $deptId,
-                    'consent_facial_at' => now(),
+                    'consent_facial_at' => $randomConsentDate,
+                    'face_embeddings' => $binaryEmbeddings,
                 ]
             );
         }
