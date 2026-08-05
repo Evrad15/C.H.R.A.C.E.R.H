@@ -1104,10 +1104,11 @@
                     if (source === 'FACE') closeFaceModal();
                     else closeFingerModal();
 
-                    showKioskToast('Pointage Enregistré !', `${result.data.name || ''} — ${result.data.time || result.message}`, true);
+                    const simText = result.data && result.data.similarity ? ` — Similitude BD: ${result.data.similarity}` : '';
+                    showKioskToast('Pointage Validé (≥ 95%) !', `${result.data.name || ''} (${result.data.time || ''})${simText}`, true);
                     fetchAllData();
                 } else {
-                    showKioskToast('Erreur', result.message || 'Impossible de valider le pointage.', false);
+                    showKioskToast('Échec Biométrique', result.message || 'Impossible de valider le pointage.', false);
                 }
             } catch (e) {
                 showKioskToast('Erreur de Connexion', 'Impossible de joindre le serveur.', false);
