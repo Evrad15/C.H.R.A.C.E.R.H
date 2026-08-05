@@ -58,6 +58,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/rapports',                          [RapportController::class, 'index'])->name('rapports.index');
     Route::post('/rapports/generate',                [RapportController::class, 'generate'])->name('rapports.generate');
     Route::post('/rapports/delete-file',             [RapportController::class, 'deleteFile'])->name('rapports.deleteFile');
+    Route::get('/reports/preview/{filename}',        [RapportController::class, 'previewFile'])->where('filename', '.*')->name('rapports.preview');
     Route::get('/reports/open/{filename}',           [RapportController::class, 'openFile'])->where('filename', '.*')->name('rapports.open');
     Route::get('/reports/download/{filename}',       [RapportController::class, 'downloadFile'])->where('filename', '.*')->name('rapports.download');
     Route::get('/reports/legacy-open/{filename}',    [RapportController::class, 'openFile'])->where('filename', '.*')->name('report.open');

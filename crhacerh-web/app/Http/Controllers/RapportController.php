@@ -64,6 +64,7 @@ class RapportController extends Controller
                 'modified_at'   => Carbon::createFromTimestamp($lastModified)->locale('fr')->isoFormat('D MMMM YYYY à HH:mm'),
                 'download_url'  => route('rapports.download', ['filename' => $relativeFilename]),
                 'open_url'      => route('rapports.open', ['filename' => $relativeFilename]),
+                'preview_url'   => route('rapports.preview', ['filename' => $relativeFilename]),
             ];
 
             $filesInfo[] = $fileItem;
@@ -127,6 +128,54 @@ class RapportController extends Controller
     }
 
     /**
+     * Génère un aperçu HTML lisible ou PDF directement dans la visionneuse sans téléchargement.
+     */
+    public function previewFile($filename)
+    {
+        $matchedPath = $this->findMatchingFile($filename);
+
+        if (!$matchedPath || !Storage::disk('public')->exists($matchedPath)) {
+            return response()->json(['error' => 'Rapport introuvable'], 404);
+        }
+
+        $fullPath = Storage::disk('public')->path($matchedPath);
+        $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+
+        if ($ext === 'pdf') {
+            return response()->file($fullPath, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"',
+            ]);
+        }
+
+        if (in_array($ext, ['xlsx', 'xls'])) {
+            try {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($fullPath);
+                $writer = new \PhpOffice\PhpSpreadsheet\Writer\Html($spreadsheet);
+
+                $htmlContent = $writer->generateHtmlAll();
+
+                return response()->json([
+                    'type'     => 'excel',
+                    'filename' => basename($fullPath),
+                    'html'     => $htmlContent,
+                ]);
+
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'type'    => 'error',
+                    'message' => 'Impossible d\'afficher l\'aperçu Excel : ' . $e->getMessage()
+                ], 500);
+            }
+        }
+
+        return response()->file($fullPath, [
+            'Content-Type'        => mime_content_type($fullPath) ?: 'application/octet-stream',
+            'Content-Disposition' => 'inline',
+        ]);
+    }
+
+    /**
      * Ouvre un fichier rapport directement dans le navigateur.
      */
     public function openFile($filename)
@@ -138,9 +187,9 @@ class RapportController extends Controller
             $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
 
             $mimeType = match ($ext) {
-                'pdf'  => 'application/pdf',
-                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'xls'  => 'application/vnd.ms-excel',
+                'pdf'   => 'application/pdf',
+                'xlsx'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'xls'   => 'application/vnd.ms-excel',
                 default => mime_content_type($fullPath) ?: 'application/octet-stream',
             };
 

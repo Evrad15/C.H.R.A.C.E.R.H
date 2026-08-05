@@ -529,9 +529,9 @@
                 </div>
 
                 <div class="file-actions">
-                    <a href="{{ $f['open_url'] }}" target="_blank" class="btn-file-action btn-open">
+                    <button type="button" onclick="openDocumentPreview('{{ $f['extension'] }}', '{{ addslashes($f['name']) }}', '{{ $f['preview_url'] }}', '{{ $f['open_url'] }}', '{{ $f['download_url'] }}')" class="btn-file-action btn-open">
                         <i class="bi bi-eye"></i> Ouvrir
-                    </a>
+                    </button>
                     <a href="{{ $f['download_url'] }}" download class="btn-file-action btn-dl">
                         <i class="bi bi-download"></i> Télécharger
                     </a>
@@ -598,6 +598,29 @@
         </form>
     </div>
 </div>
+
+<!-- Modal Visionneuse de Document (Aperçu Sans Téléchargement) -->
+<div class="modal-backdrop" id="previewModal">
+    <div class="modal-card" style="width: 960px; max-width: 95vw; height: 85vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="background:#F8FAFC; border-bottom:1px solid #E2E8F0; padding:1rem 1.5rem;">
+            <div style="display:flex; align-items:center; gap:0.6rem; overflow:hidden;">
+                <i class="bi bi-file-earmark-text-fill" style="color:var(--primary); font-size:1.3rem;"></i>
+                <h3 class="modal-title" id="previewModalTitle" style="font-size:1.05rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Aperçu du Rapport</h3>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.65rem;">
+                <a href="#" id="previewDownloadBtn" class="btn-file-action btn-dl" download style="padding:0.4rem 0.85rem; font-size:0.8rem;">
+                    <i class="bi bi-download"></i> Télécharger le Fichier
+                </a>
+                <button type="button" class="modal-close" id="btnClosePreviewModal" style="width:34px; height:34px; border-radius:8px; background:#F1F2F7; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        <div class="modal-body" id="previewModalBody" style="flex:1; overflow-y:auto; padding:1.25rem; background:#F1F5F9; display:flex; flex-direction:column;">
+            <!-- Contenu dynamique de l'aperçu -->
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -616,6 +639,15 @@
                 if (e.target === modal) modal.classList.remove('show');
             });
         }
+
+        const previewModal = document.getElementById('previewModal');
+        const btnClosePreview = document.getElementById('btnClosePreviewModal');
+        if (previewModal && btnClosePreview) {
+            btnClosePreview.addEventListener('click', () => previewModal.classList.remove('show'));
+            previewModal.addEventListener('click', (e) => {
+                if (e.target === previewModal) previewModal.classList.remove('show');
+            });
+        }
     });
 
     function toggleFolder(folderId) {
@@ -627,6 +659,68 @@
             } else {
                 element.style.display = 'none';
             }
+        }
+    }
+
+    function openDocumentPreview(ext, filename, previewUrl, openUrl, downloadUrl) {
+        const modal = document.getElementById('previewModal');
+        const modalTitle = document.getElementById('previewModalTitle');
+        const modalBody = document.getElementById('previewModalBody');
+        const downloadBtn = document.getElementById('previewDownloadBtn');
+
+        if (!modal || !modalBody) return;
+
+        modalTitle.textContent = 'Aperçu : ' + filename;
+        downloadBtn.href = downloadUrl;
+
+        modalBody.innerHTML = `
+            <div style="text-align:center; padding:4rem 1rem; color:var(--text-muted); margin:auto;">
+                <div class="spinner-border text-primary" role="status" style="width:2.5rem; height:2.5rem; margin-bottom:1rem;"></div>
+                <p style="font-weight:700; font-size:0.95rem; color:var(--text-dark);">Chargement de l'aperçu du document...</p>
+                <p style="font-size:0.8rem;">Veuillez patienter pendant la préparation du rapport.</p>
+            </div>
+        `;
+
+        modal.classList.add('show');
+
+        if (ext === 'pdf') {
+            modalBody.innerHTML = `
+                <iframe src="${openUrl}" style="width:100%; height:100%; min-height:68vh; border:none; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.08); background:#FFF;"></iframe>
+            `;
+        } else {
+            fetch(previewUrl, { headers: { 'Accept': 'application/json' } })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.html) {
+                        modalBody.innerHTML = `
+                            <div class="excel-preview-wrapper" style="background:#FFF; padding:1.5rem; border-radius:12px; border:1px solid #CBD5E1; overflow-x:auto; box-shadow:0 4px 12px rgba(0,0,0,0.04);">
+                                <style>
+                                    .excel-preview-wrapper table { border-collapse: collapse; width: 100%; font-size: 0.85rem; color: #1E293B; }
+                                    .excel-preview-wrapper td, .excel-preview-wrapper th { border: 1px solid #CBD5E1; padding: 0.55rem 0.75rem; text-align: left; }
+                                    .excel-preview-wrapper tr:nth-child(even) { background-color: #F8FAFC; }
+                                    .excel-preview-wrapper tr:hover { background-color: #F1F5F9; }
+                                </style>
+                                ${data.html}
+                            </div>
+                        `;
+                    } else {
+                        modalBody.innerHTML = `
+                            <div style="text-align:center; padding:3rem 1rem; color:var(--accent-red); margin:auto;">
+                                <i class="bi bi-exclamation-triangle-fill" style="font-size:2.5rem;"></i>
+                                <p style="margin-top:0.75rem; font-weight:700;">${data.message || 'Impossible d\'afficher cet aperçu.'}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    modalBody.innerHTML = `
+                        <div style="text-align:center; padding:3rem 1rem; color:var(--accent-red); margin:auto;">
+                            <i class="bi bi-exclamation-circle-fill" style="font-size:2.5rem;"></i>
+                            <p style="margin-top:0.75rem; font-weight:700;">Erreur lors du chargement de l'aperçu.</p>
+                        </div>
+                    `;
+                });
         }
     }
 </script>
