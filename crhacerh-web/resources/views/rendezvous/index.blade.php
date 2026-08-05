@@ -668,118 +668,118 @@
     @endif
 </div>
 
-<!-- Modal Nouveau Rendez-vous -->
-<div class="modal-backdrop" id="rdvModal">
-    <div class="modal-card">
-        <div class="modal-header">
-            <h3 class="modal-title">Créer un Nouveau Rendez-vous</h3>
-            <button class="modal-close" id="btnCloseModal">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-        <form action="{{ route('rendezvous.store') }}" method="POST">
-            @csrf
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Nom et Prénom du Patient *</label>
-                    <input type="text" name="nom_patient" class="form-input" placeholder="ex: BILOUNGA Chantal" required>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Téléphone</label>
-                        <input type="text" name="telephone_patient" class="form-input" placeholder="+237 699 00 11 22">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email_patient" class="form-input" placeholder="patient@gmail.com">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Service Médical *</label>
-                        <select name="service" class="form-select" required>
-                            @foreach($services as $s)
-                            <option value="{{ $s }}">{{ $s }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Médecin Attribué</label>
-                        <select name="medecin" class="form-select">
-                            @foreach($medecins as $m)
-                            <option value="{{ $m }}">{{ $m }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Date du Rendez-vous *</label>
-                        <input type="date" name="date_rendez_vous" class="form-input" value="{{ date('Y-m-d') }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Heure *</label>
-                        <input type="time" name="heure_rendez_vous" class="form-input" value="09:00" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Motif de la Consultation *</label>
-                    <input type="text" name="motif" class="form-input" placeholder="ex: Échographie de contrôle T2" required>
-                </div>
-
-                <!-- MODES D'ENREGISTREMENT BIOMÉTRIQUE PATIENT -->
-                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px; padding:1rem; margin-bottom:1rem;">
-                    <div style="font-size:0.84rem; font-weight:700; color:var(--text-dark); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.5rem;">
-                        <i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i>
-                        <span>Modes d'Enregistrement / Pointage Biométrique (Patient)</span>
-                    </div>
-
-                    <div style="display:flex; gap:0.75rem;">
-                        <!-- Mode 1: Empreinte Digitale Patient -->
-                        <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.75rem;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-                                <div style="font-weight:700; font-size:0.8rem; color:var(--text-dark); display:flex; align-items:center; gap:0.3rem;">
-                                    <i class="bi bi-fingerprint" style="color:var(--primary);"></i> Mode 1 : Empreinte
-                                </div>
-                                <span id="badgeRdvFp" style="font-size:0.7rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:5px; background:#F1F2F7; color:var(--text-muted);">Inactif</span>
-                            </div>
-                            <input type="hidden" name="register_fingerprint" id="inputRdvFp" value="">
-                            <button type="button" id="btnToggleRdvFp" style="width:100%; padding:0.45rem; border-radius:6px; border:1px solid var(--primary); background:#EBF3FF; color:var(--primary); font-weight:700; font-size:0.76rem; cursor:pointer;">
-                                <i class="bi bi-plus-circle"></i> Capturer Empreinte
-                            </button>
-                        </div>
-
-                        <!-- Mode 2: Reconnaissance Faciale Patient -->
-                        <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.75rem;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-                                <div style="font-weight:700; font-size:0.8rem; color:var(--text-dark); display:flex; align-items:center; gap:0.3rem;">
-                                    <i class="bi bi-person-bounding-box" style="color:#0E9F2D;"></i> Mode 2 : Visage
-                                </div>
-                                <span id="badgeRdvFace" style="font-size:0.7rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:5px; background:#F1F2F7; color:var(--text-muted);">Inactif</span>
-                            </div>
-                            <input type="hidden" name="register_face" id="inputRdvFace" value="">
-                            <button type="button" id="btnToggleRdvFace" style="width:100%; padding:0.45rem; border-radius:6px; border:1px solid #0E9F2D; background:#EBF9EE; color:#0E9F2D; font-weight:700; font-size:0.76rem; cursor:pointer;">
-                                <i class="bi bi-camera-video"></i> Capturer Visage
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Notes complémentaires</label>
-                    <textarea name="notes" class="form-textarea" rows="2" placeholder="Remarques particulières..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" id="btnCancelModal">Annuler</button>
-                <button type="submit" class="btn-submit">Enregistrer le RDV</button>
-            </div>
-        </form>
+<!-- DRAWER COULISSANT : NOUVEAU RENDEZ-VOUS -->
+<div class="drawer-overlay" id="createRdvDrawerOverlay"></div>
+<div class="drawer-panel" id="createRdvDrawerPanel" style="width:480px;">
+    <div class="drawer-header">
+        <span style="font-weight: 700; color: var(--text-dark); font-size:1.1rem;">Créer un Nouveau Rendez-vous</span>
+        <button type="button" class="drawer-close" id="btnCloseCreateRdvDrawer">
+            <i class="bi bi-x-lg"></i>
+        </button>
     </div>
+    <form action="{{ route('rendezvous.store') }}" method="POST" class="drawer-body">
+        @csrf
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+            <div class="form-group">
+                <label class="form-label">Nom et Prénom du Patient *</label>
+                <input type="text" name="nom_patient" class="form-input" placeholder="ex: BILOUNGA Chantal" required>
+            </div>
+
+            <div class="form-row" style="display:flex; gap:0.85rem;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Téléphone</label>
+                    <input type="text" name="telephone_patient" class="form-input" placeholder="+237 699 00 11 22">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email_patient" class="form-input" placeholder="patient@gmail.com">
+                </div>
+            </div>
+
+            <div class="form-row" style="display:flex; gap:0.85rem;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Service Médical *</label>
+                    <select name="service" class="form-select" required>
+                        @foreach($services as $s)
+                        <option value="{{ $s }}">{{ $s }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Médecin Attribué</label>
+                    <select name="medecin" class="form-select">
+                        @foreach($medecins as $m)
+                        <option value="{{ $m }}">{{ $m }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row" style="display:flex; gap:0.85rem;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Date du Rendez-vous *</label>
+                    <input type="date" name="date_rendez_vous" class="form-input" value="{{ date('Y-m-d') }}" required>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Heure *</label>
+                    <input type="time" name="heure_rendez_vous" class="form-input" value="09:00" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Motif de la Consultation *</label>
+                <input type="text" name="motif" class="form-input" placeholder="ex: Échographie de contrôle T2" required>
+            </div>
+
+            <!-- MODES D'ENREGISTREMENT BIOMÉTRIQUE PATIENT -->
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px; padding:1rem; margin-bottom:0.5rem;">
+                <div style="font-size:0.84rem; font-weight:700; color:var(--text-dark); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i>
+                    <span>Modes d'Enregistrement / Pointage Biométrique (Patient)</span>
+                </div>
+
+                <div style="display:flex; gap:0.75rem;">
+                    <!-- Mode 1: Empreinte Digitale Patient -->
+                    <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.75rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                            <div style="font-weight:700; font-size:0.8rem; color:var(--text-dark); display:flex; align-items:center; gap:0.3rem;">
+                                <i class="bi bi-fingerprint" style="color:var(--primary);"></i> Mode 1 : Empreinte
+                            </div>
+                            <span id="badgeRdvFp" style="font-size:0.7rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:5px; background:#F1F2F7; color:var(--text-muted);">Inactif</span>
+                        </div>
+                        <input type="hidden" name="register_fingerprint" id="inputRdvFp" value="">
+                        <button type="button" id="btnToggleRdvFp" style="width:100%; padding:0.45rem; border-radius:6px; border:1px solid var(--primary); background:#EBF3FF; color:var(--primary); font-weight:700; font-size:0.76rem; cursor:pointer;">
+                            <i class="bi bi-plus-circle"></i> Capturer Empreinte
+                        </button>
+                    </div>
+
+                    <!-- Mode 2: Reconnaissance Faciale Patient -->
+                    <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.75rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                            <div style="font-weight:700; font-size:0.8rem; color:var(--text-dark); display:flex; align-items:center; gap:0.3rem;">
+                                <i class="bi bi-person-bounding-box" style="color:#0E9F2D;"></i> Mode 2 : Visage
+                            </div>
+                            <span id="badgeRdvFace" style="font-size:0.7rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:5px; background:#F1F2F7; color:var(--text-muted);">Inactif</span>
+                        </div>
+                        <input type="hidden" name="register_face" id="inputRdvFace" value="">
+                        <button type="button" id="btnToggleRdvFace" style="width:100%; padding:0.45rem; border-radius:6px; border:1px solid #0E9F2D; background:#EBF9EE; color:#0E9F2D; font-weight:700; font-size:0.76rem; cursor:pointer;">
+                            <i class="bi bi-camera-video"></i> Capturer Visage
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Notes complémentaires</label>
+                <textarea name="notes" class="form-textarea" rows="2" placeholder="Remarques particulières..."></textarea>
+            </div>
+
+            <div style="margin-top:0.5rem; display:flex; gap:0.75rem; justify-content:flex-end;">
+                <button type="button" class="btn-cancel" id="btnCancelCreateRdvDrawer" style="background:#F1F2F7; color:var(--text-dark); padding:0.65rem 1.25rem; border-radius:10px; border:none; font-weight:600; cursor:pointer;">Annuler</button>
+                <button type="submit" class="btn-submit" style="background:var(--primary); color:#FFFFFF; padding:0.65rem 1.35rem; border-radius:10px; border:none; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(58, 91, 240, 0.28);">Enregistrer le RDV</button>
+            </div>
+        </div>
+    </form>
 </div>
 
 <!-- Drawer Fiche Rendez-vous -->
@@ -800,20 +800,31 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Modal Handlers
-        const modal = document.getElementById('rdvModal');
-        const btnOpen = document.getElementById('btnOpenModal');
-        const btnClose = document.getElementById('btnCloseModal');
-        const btnCancel = document.getElementById('btnCancelModal');
+        // Nouveau Rendez-vous Sliding Drawer Handlers
+        const btnOpenRdvDrawer   = document.getElementById('btnOpenModal');
+        const createRdvOverlay   = document.getElementById('createRdvDrawerOverlay');
+        const createRdvPanel     = document.getElementById('createRdvDrawerPanel');
+        const btnCloseRdvDrawer  = document.getElementById('btnCloseCreateRdvDrawer');
+        const btnCancelRdvDrawer = document.getElementById('btnCancelCreateRdvDrawer');
 
-        if (btnOpen && modal) {
-            btnOpen.addEventListener('click', () => modal.classList.add('show'));
-            btnClose.addEventListener('click', () => modal.classList.remove('show'));
-            btnCancel.addEventListener('click', () => modal.classList.remove('show'));
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.classList.remove('show');
-            });
+        function openCreateRdvDrawer() {
+            if (createRdvOverlay && createRdvPanel) {
+                createRdvOverlay.classList.add('open');
+                createRdvPanel.classList.add('open');
+            }
         }
+
+        function closeCreateRdvDrawer() {
+            if (createRdvOverlay && createRdvPanel) {
+                createRdvOverlay.classList.remove('open');
+                createRdvPanel.classList.remove('open');
+            }
+        }
+
+        if (btnOpenRdvDrawer) btnOpenRdvDrawer.addEventListener('click', openCreateRdvDrawer);
+        if (btnCloseRdvDrawer) btnCloseRdvDrawer.addEventListener('click', closeCreateRdvDrawer);
+        if (btnCancelRdvDrawer) btnCancelRdvDrawer.addEventListener('click', closeCreateRdvDrawer);
+        if (createRdvOverlay) createRdvOverlay.addEventListener('click', closeCreateRdvDrawer);
 
         // Drawer Close Handlers
         const overlay = document.getElementById('drawerOverlay');
