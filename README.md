@@ -1,39 +1,38 @@
 # Système Intégré de Gestion des Présences et d'Accueil Biométrique - CHRACERH 🚀
 
-> **Application Web pour le Suivi d'Assiduité et l'Accueil Biométrique par Empreinte Digitale des Employés et Patients**
+> **Application Web pour le Suivi d'Assiduité et l'Accueil Biométrique par Reconnaissance Faciale & Empreinte Digitale des Employés et Patients**
 
 ---
 
 ## 📌 Présentation du Projet
 
-Le **Système Intégré de Gestion des Présences et d'Accueil Biométrique** est une solution conçue spécifiquement pour les besoins du **C.H.R.A.C.E.R.H** (Centre Hospitalier de Recherche et d'Application en Chirurgie Endoscopique et Reproduction Humaine). Ce système simplifie, sécurise et automatise le suivi d'assiduité du personnel hospitalier tout en fluidifiant l'accueil et l'orientation des patients lors de leur arrivée en consultation.
+Le **Système Intégré de Gestion des Présences et d'Accueil Biométrique** est une solution conçue spécifiquement pour les besoins du **C.H.R.A.C.E.R.H** (*Centre Hospitalier de Recherche et d'Application en Chirurgie Endoscopique et Reproduction Humaine*). Ce système simplifie, sécurise et automatise le suivi d'assiduité du personnel hospitalier tout en fluidifiant l'accueil et l'orientation des patients lors de leur arrivée en consultation.
 
 > [!IMPORTANT]
-> **Focus 100% Web (`crhacerh-web`) :** L'application mobile (`crhacerh-mobile`) a été officiellement isolée et retirée du flux actif d'exploitation. L'ensemble des fonctionnalités (gestion des présences, borne Kiosk de pointage, suivi des rendez-vous et rapports mensuels) est centralisé sur l'application Web Laravel / Filament PHP.
+> **Focus 100% Web (`crhacerh-web`) :** L'application est développée sur une architecture web moderne basée sur **Laravel 11, Breeze, Blade & Vanilla CSS** avec une base de données **PostgreSQL 15**. L'ensemble des fonctionnalités (gestion des présences, borne Kiosk biométrique, suivi des rendez-vous et rapports mensuels) est centralisé sur cette application web.
 
 La solution s'articule autour des deux composants actifs suivants :
-1. **L'interface Web d'administration (Laravel & Filament PHP) :** Permet aux équipes du C.H.R.A.C.E.R.H de gérer les fiches des employés, de planifier et de suivre les rendez-vous médicaux des patients, de valider les demandes de congés/permissions et d'exporter des rapports d'assiduité réguliers.
-2. **La Borne de Pointage Publique Interactive Kiosk (`/kiosk`) :** Une interface Web publique accessible depuis un écran ou une tablette à l'entrée de l'établissement. Elle permet le pointage en temps réel par **Empreinte Digitale** ou via un **QR code dynamique**, et sert également de point d'accueil pour le pointage de présence des patients ayant un rendez-vous planifié.
+1. **L'interface Web d'administration RH (Laravel 11 & Blade) :** Permet aux équipes du C.H.R.A.C.E.R.H de gérer les fiches des employés, de planifier et de suivre les rendez-vous médicaux des patients, de valider les demandes de congés/permissions et d'exporter des rapports d'assiduité réguliers (Excel & PDF).
+2. **La Borne de Pointage Publique Interactive Kiosk (`/kiosk`) :** Une interface Web publique biométrique accessible depuis un écran tactile ou une tablette à l'entrée de l'établissement. Elle permet le pointage en temps réel par **Reconnaissance Faciale**, **Empreinte Digitale** ou via un **QR code dynamique**, et sert également de point d'accueil pour le pointage des patients ayant un rendez-vous planifié.
 
 ---
 
 ## ⚙️ Fonctionnalités Majeures (Composant Web)
 
-### 💻 Portail Web & Administration (Filament PHP)
-* **Tableau de Bord RH (Dashboard) :** Indicateurs visuels dynamiques (via Chart.js) sur l'état des présences quotidiennes (présents, absents, retards) et graphiques comparatifs entre départements.
-* **Gestion des Congés & Permissions :** Flux de validation et de suivi des demandes d'absences (Maladie, Congé, Permission) soumises par le personnel.
+### 💻 Portail Web & Administration RH (Blade & Laravel Breeze)
+* **Tableau de Bord RH (Dashboard) :** Indicateurs visuels dynamiques sur l'état des présences quotidiennes (présents, absents, retards) et graphiques statistiques par département.
+* **Sécurité Conforme OWASP Top 10 :** Authentification robuste via Laravel Breeze, chiffrement des mots de passe par Bcrypt, protection contre le *Brute-Force* (Rate Limiting à 5 essais/min), jetons CSRF et requêtes préparées anti-injection SQL.
+* **Gestion des Congés & Permissions :** Flux de validation des demandes d'absences neutralisant automatiquement les périodes de congés validées pour éviter de marquer injustement un agent absent.
 * **Gestion des Rendez-vous Patients :** Module complet de planification, d'assignation des médecins spécialistes et de suivi du statut des consultations.
-* **Calendrier RH Synchronisé :** Intégration bidirectionnelle avec **Google Calendar** et affichage interactif (FullCalendar) pour coordonner les plannings.
 * **Génération de Rapports d'Assiduité :** 
-  * Exportation de rapports détaillés au format Excel (`.xlsx`) via PhpSpreadsheet.
-  * Espace de stockage structuré classant automatiquement les rapports dans des sous-dossiers par mois.
-* **Messagerie de Support Interne :** Chat en direct (Livewire) permettant aux agents de communiquer avec les RH et de transmettre leurs pièces justificatives numérisées.
+  * Exportation de rapports d'assiduité détaillés au format Excel (`.xlsx`) via **PhpSpreadsheet** et PDF via **Dompdf**.
+  * Espace de stockage structuré classant automatiquement les rapports dans des sous-dossiers mensuels.
 
-### 🏢 Borne Interactive Kiosk
-* **Pointage par Empreinte Digitale :** Enregistrement et vérification instantanée des empreintes digitales des employés et des patients.
+### 🏢 Borne Interactive Kiosk (`/kiosk`)
+* **Pointage Bimodal Biométrique :** Enregistrement et vérification instantanée des employés et patients par **Reconnaissance Faciale** ou **Empreinte Digitale** (temps de réponse < 300 ms).
 * **Accueil des Patients :** Pointage d'arrivée autonome pour les consultations du jour, mettant à jour en temps réel le statut du patient en "Présent" dans l'administration.
-* **Pointage par QR Code Dynamique :** Affichage d'un code QR temporaire mis à jour en continu pour sécuriser l'enregistrement et éviter les fraudes.
-* **Pointages Récents :** Flux visuel en temps réel confirmant la bonne prise en compte du pointage des utilisateurs.
+* **Pointage par QR Code Dynamique :** Affichage d'un code QR temporaire mis à jour en continu pour sécuriser l'enregistrement.
+* **Flux des Pointages Récents :** Confirmation visuelle en temps réel avec horodatage de la prise en compte du pointage.
 
 ---
 
@@ -42,17 +41,16 @@ La solution s'articule autour des deux composants actifs suivants :
 ```text
 Système Intégré de Gestion des Présences.../
 ├── README.md                           <- Ce fichier (vue d'ensemble)
-├── cahier_des_charges.md               <- Spécifications fonctionnelles et techniques détaillées
 ├── dictionnaire_de_donnees.html         <- Modèle relationnel et dictionnaire des tables SQL
-├── rapport_de_stage_diagrammes.md      <- Modèles UML & diagrammes d'architecture (Mermaid)
+├── images_rapport_stage/                <- Diagrammes UML (Cas d'utilisation, Composants, Paquetages, Architecture)
 │
-├── crhacerh-web/                       <- [COMPOSANT ACTIF] Backend Laravel & Filament Admin
-│   ├── app/                            <- Contrôleurs API, Modèles Eloquent et logique de génération des rapports
-│   ├── config/                         <- Configuration de l'application (Google Calendar, etc.)
-│   ├── database/                       <- Migrations de base de données et Seeders de test
-│   ├── public/                         <- Actifs publics, scripts de la borne Kiosk (lecteur d'empreinte/QR)
-│   ├── resources/                      <- Vues Blade, fichiers de styles et composants Livewire (chat)
-│   └── routes/                         <- Définitions des routes (Web & API)
+├── crhacerh-web/                       <- [COMPOSANT ACTIF] Application Web Laravel 11
+│   ├── app/                            <- Contrôleurs API & Web, Modèles Eloquent, Middleware et ReportService
+│   ├── config/                         <- Configuration applicative (auth, database, etc.)
+│   ├── database/                       <- Migrations PostgreSQL et Seeders de démonstration
+│   ├── public/                         <- Actifs publics, favicon, logo CHRACERH, scripts Kiosk
+│   ├── resources/                      <- Vues Blade (auth/login.blade.php, layouts/dashboard.blade.php, kiosk.blade.php)
+│   └── routes/                         <- Définitions des routes Web (`web.php`) & API (`api.php`)
 │
 └── crhacerh-mobile/                    <- [ARCHIVÉ] Client mobile Flutter (exclu du flux d'exploitation)
 ```
@@ -61,47 +59,72 @@ Système Intégré de Gestion des Présences.../
 
 ## ⚙️ Installation et Démarrage rapide
 
-### Configuration du Serveur Web (Laravel & Filament)
+### 1. Prérequis techniques
+* **PHP :** Version `>= 8.2` avec extensions `pdo_pgsql`, `gd`, `zip`, `xml`, `mbstring`.
+* **SGBD :** PostgreSQL version `>= 15`.
+* **Gestionnaires :** Composer `>= 2.6` & Node.js `>= 18` (npm).
+
+---
+
+### 2. Procédure d'installation pas à pas
 
 1. Accédez au répertoire de l'application Web :
    ```bash
    cd crhacerh-web
    ```
 
-2. Installez les dépendances PHP (Composer) :
+2. Installez les dépendances PHP et Node.js :
    ```bash
    composer install
-   ```
-
-3. Installez les dépendances Node et compilez les actifs JavaScript/CSS :
-   ```bash
    npm install
    npm run build
    ```
 
-4. Configurez l'environnement :
-   * Créez votre fichier d'environnement : `cp .env.example .env`
-   * Configurez la base de données dans le fichier `.env` (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`).
-   * Renseignez vos identifiants d'API Google Calendar si nécessaire.
+3. Créez la base de données PostgreSQL :
+   ```sql
+   CREATE DATABASE chracerh_db;
+   ```
 
-5. Exécutez les migrations de base de données et peuplez les tables :
+4. Configurez le fichier d'environnement :
    ```bash
+   cp .env.example .env
+   ```
+   Renseignez la configuration de la base de données dans le fichier `.env` :
+   ```ini
+   DB_CONNECTION=pgsql
+   DB_HOST=127.0.0.1
+   DB_PORT=5432
+   DB_DATABASE=chracerh_db
+   DB_USERNAME=postgres
+   DB_PASSWORD=votre_mot_de_passe
+   ```
+
+5. Générez la clé d'application et exécutez les migrations :
+   ```bash
+   php artisan key:generate
    php artisan migrate --seed
+   php artisan storage:link
    ```
 
-6. Lancez le serveur de développement et le compilateur d'actifs :
+6. Lancez le serveur de développement :
    ```bash
-   # Lance le serveur Laravel, les écouteurs de files d'attente et Vite simultanément :
-   npm run dev
+   php artisan serve
    ```
-
-* Le panel d'administration est disponible sur : `http://localhost:8000/ressources-humaines` (ou `/login`).
-* La borne de pointage Kiosk est accessible sur : `http://localhost:8000/kiosk`.
 
 ---
 
-## 📖 Liens Utiles et Documentation
+### 🌐 Liens d'accès aux interfaces :
 
-* **Spécifications Fonctionnelles & Techniques :** [cahier_des_charges.md](file:///c:/Users/SOLUTION%20TECH/Documents/Syst%C3%A8me%20Int%C3%A9gr%C3%A9%20de%20Gestion%20des%20Pr%C3%A9sences%20et%20d%27Accueil%20Biom%C3%A9trique%20-%20CHRACERH/cahier_des_charges.md)
-* **Diagrammes d'Architecture et Modèles UML :** [rapport_de_stage_diagrammes.md](file:///c:/Users/SOLUTION%20TECH/Documents/Syst%C3%A8me%20Int%C3%A9gr%C3%A9%20de%20Gestion%20des%20Pr%C3%A9sences%20et%20d%27Accueil%20Biom%C3%A9trique%20-%20CHRACERH/rapport_de_stage_diagrammes.md)
+* **Formulaire de Connexion RH :** `http://localhost:8000/login`
+* **Tableau de Bord Administration RH :** `http://localhost:8000/dashboard`
+* **Borne Interactive Kiosk :** `http://localhost:8000/kiosk`
+
+---
+
+## 📖 Documentation & Diagrammes UML
+
 * **Dictionnaire de Données SQL :** [dictionnaire_de_donnees.html](file:///c:/Users/SOLUTION%20TECH/Documents/Syst%C3%A8me%20Int%C3%A9gr%C3%A9%20de%20Gestion%20des%20Pr%C3%A9sences%20et%20d%27Accueil%20Biom%C3%A9trique%20-%20CHRACERH/dictionnaire_de_donnees.html)
+* **Diagrammes d'Architecture & UML :**
+  * **Cas d'Utilisation :** [`images_rapport_stage/1_1_diagramme_de_cas_d_utilisation_use_case_diagram.png`](file:///c:/Users/SOLUTION%20TECH/Documents/Syst%C3%A8me%20Int%C3%A9gr%C3%A9%20de%20Gestion%20des%20Pr%C3%A9sences%20et%20d%27Accueil%20Biom%C3%A9trique%20-%20CHRACERH/images_rapport_stage/1_1_diagramme_de_cas_d_utilisation_use_case_diagram.png)
+  * **Composants System :** [`images_rapport_stage/8_7_diagramme_de_composants_component_diagram.png`](file:///c:/Users/SOLUTION%20TECH/Documents/Syst%C3%A8me%20Int%C3%A9gr%C3%A9%20de%20Gestion%20des%20Pr%C3%A9sences%20et%20d%27Accueil%20Biom%C3%A9trique%20-%20CHRACERH/images_rapport_stage/8_7_diagramme_de_composants_component_diagram.png)
+  * **Architecture Applicative :** [`images_rapport_stage/17_16_architecture_de_l_application.png`](file:///c:/Users/SOLUTION%20TECH/Documents/Syst%C3%A8me%20Int%C3%A9gr%C3%A9%20de%20Gestion%20des%20Pr%C3%A9sences%20et%20d%27Accueil%20Biom%C3%A9trique%20-%20CHRACERH/images_rapport_stage/17_16_architecture_de_l_application.png)
