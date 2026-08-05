@@ -750,31 +750,55 @@
 
     </div>
 
-    <!-- MODAL RECONNAISSANCE FACIALE -->
+    <!-- MODAL RECONNAISSANCE FACIALE HAUTE PRÉCISION (CYBER HUD) -->
     <div class="modal-overlay" id="modal-face">
-        <div class="modal-box">
-            <button class="modal-close" onclick="closeFaceModal()">✕</button>
-            <h3 style="font-size:1.35rem; font-weight:800; color:var(--text-main);">Reconnaissance Faciale</h3>
-            <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.3rem;">
-                Regardez la caméra pendant la capture ou sélectionnez directement votre nom dans la liste de la borne.
+        <div class="modal-box" style="background:#0F172A; border:1px solid rgba(56, 189, 248, 0.25); border-radius:24px; padding:1.75rem; color:#FFF; box-shadow:0 25px 60px rgba(0,0,0,0.6); max-width:540px;">
+            <button class="modal-close" onclick="closeFaceModal()" style="color:#94A3B8; background:rgba(255,255,255,0.08); border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer;">✕</button>
+            
+            <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.3rem;">
+                <div style="width:10px; height:10px; border-radius:50%; background:#38BDF8; box-shadow:0 0 10px #38BDF8; animation:pulseGlow 1.5s infinite;"></div>
+                <h3 style="font-size:1.35rem; font-weight:800; color:#F8FAFC; letter-spacing:-0.02em;">Scanner Facial Biométrique IA</h3>
+            </div>
+            <p style="font-size:0.85rem; color:#94A3B8; margin-bottom:1.25rem;">
+                Positionnez votre visage au centre du viseur holographique pour la comparaison biométrique (≥ 95%).
             </p>
 
-            <div class="video-container" style="position:relative; overflow:hidden; border-radius:16px;">
+            <div class="video-container" style="position:relative; width:100%; height:330px; background:#020617; border-radius:18px; overflow:hidden; border:1px solid rgba(56,189,248,0.2);">
                 <video id="webcam-stream" autoplay playsinline style="width:100%; height:100%; object-fit:cover; transform:scaleX(-1);"></video>
                 
-                <!-- Oval Face Guide Reticle (Identical to enrollment modal) -->
-                <div style="position:absolute; inset:0; border:2px dashed rgba(37, 99, 235, 0.85); border-radius:50%; width:210px; height:250px; margin:auto; pointer-events:none; box-shadow:0 0 0 9999px rgba(15, 23, 42, 0.55);">
-                    <div style="position:absolute; top:50%; width:100%; height:2px; background:rgba(37, 99, 235, 0.5); transform:translateY(-50%);"></div>
+                <!-- HUD Corner Brackets -->
+                <div style="position:absolute; top:16px; left:16px; width:20px; height:20px; border-top:3px solid #38BDF8; border-left:3px solid #38BDF8; pointer-events:none; z-index:4;"></div>
+                <div style="position:absolute; top:16px; right:16px; width:20px; height:20px; border-top:3px solid #38BDF8; border-right:3px solid #38BDF8; pointer-events:none; z-index:4;"></div>
+                <div style="position:absolute; bottom:16px; left:16px; width:20px; height:20px; border-bottom:3px solid #38BDF8; border-left:3px solid #38BDF8; pointer-events:none; z-index:4;"></div>
+                <div style="position:absolute; bottom:16px; right:16px; width:20px; height:20px; border-bottom:3px solid #38BDF8; border-right:3px solid #38BDF8; pointer-events:none; z-index:4;"></div>
+
+                <!-- Réticule Ovale d'alignement avec masque assombri -->
+                <div style="position:absolute; inset:0; border:2px dashed #38BDF8; border-radius:50%; width:210px; height:255px; margin:auto; pointer-events:none; box-shadow:0 0 0 9999px rgba(2, 6, 23, 0.65); z-index:3;">
+                    <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(56, 189, 248, 0.4); transform:translateY(-50%);"></div>
+                    <div style="position:absolute; left:50%; height:100%; width:1px; background:rgba(56, 189, 248, 0.4); transform:translateX(-50%);"></div>
+
+                    <!-- Landmark Keypoint Dots -->
+                    <div style="position:absolute; top:35%; left:30%; width:6px; height:6px; border-radius:50%; background:#38BDF8; box-shadow:0 0 8px #38BDF8; animation:pulseGlow 1.2s infinite alternate;"></div>
+                    <div style="position:absolute; top:35%; right:30%; width:6px; height:6px; border-radius:50%; background:#38BDF8; box-shadow:0 0 8px #38BDF8; animation:pulseGlow 1.2s infinite alternate 0.2s;"></div>
+                    <div style="position:absolute; top:52%; left:50%; transform:translateX(-50%); width:6px; height:6px; border-radius:50%; background:#38BDF8; box-shadow:0 0 8px #38BDF8; animation:pulseGlow 1.2s infinite alternate 0.4s;"></div>
+                    <div style="position:absolute; top:70%; left:50%; transform:translateX(-50%); width:14px; height:4px; border-radius:4px; border-bottom:2px solid #38BDF8;"></div>
                 </div>
 
-                <div id="face-scan-line" style="position:absolute;top:0;left:0;width:100%;height:3px;background:#2563eb;box-shadow:0 0 10px #2563eb;animation:scanLine 2s infinite linear;display:none; z-index:5;"></div>
-                <div style="position:absolute; bottom:12px; left:0; right:0; text-align:center; color:#FFF; font-size:0.82rem; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,0.8); z-index:5;">
-                    Alignez votre visage au centre de l'ovale
+                <!-- Ligne de balayage Laser -->
+                <div id="face-scan-line" style="position:absolute; top:0; left:0; width:100%; height:3px; background:linear-gradient(90deg, transparent, #38BDF8, #818CF8, transparent); box-shadow:0 0 15px #38BDF8; animation:scanLine 2.2s infinite linear; display:none; z-index:5;"></div>
+
+                <div style="position:absolute; bottom:14px; left:0; right:0; text-align:center; color:#E2E8F0; font-size:0.82rem; font-weight:700; text-shadow:0 2px 6px rgba(0,0,0,0.9); z-index:5; display:flex; align-items:center; justify-content:center; gap:0.4rem;">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981; box-shadow:0 0 8px #10B981;"></span>
+                    <span>Alignement automatique • Détection 128D</span>
                 </div>
             </div>
 
-            <button onclick="captureAndVerifyFace()" style="background:#2563eb; color:#fff; border:none; padding:0.85rem 1.75rem; border-radius:12px; font-weight:800; font-size:0.95rem; cursor:pointer; width:100%; box-shadow:0 8px 16px rgba(37,99,235,0.25); margin-top:0.75rem;">
-                 Analyser le visage maintenant
+            <button onclick="captureAndVerifyFace()" style="background:linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color:#FFFFFF; border:1px solid rgba(255,255,255,0.15); padding:0.9rem 1.75rem; border-radius:14px; font-weight:800; font-size:0.95rem; cursor:pointer; width:100%; box-shadow:0 10px 25px rgba(37,99,235,0.4); margin-top:1.1rem; display:flex; align-items:center; justify-content:center; gap:0.5rem; transition:transform 0.2s ease;">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-cpu-fill" viewBox="0 0 16 16">
+                     <path d="M6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
+                     <path d="M5.5.5A.5.5 0 0 0 5 1v1.05A2.5 2.5 0 0 0 2.05 5H1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1.05a2.5 2.5 0 0 0 0 2H1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1.05A2.5 2.5 0 0 0 5 13.95V15a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1.05a2.5 2.5 0 0 0 2 0V15a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1.05A2.5 2.5 0 0 0 13.95 11H15a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1.05a2.5 2.5 0 0 0 0-2H15a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1.05A2.5 2.5 0 0 0 11 2.05V1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.05a2.5 2.5 0 0 0-2 0V1a.5.5 0 0 0-.5-.5zM4.5 5h7a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5v-7A1.5 1.5 0 0 1 4.5 5"/>
+                 </svg>
+                 <span>Analyser & Valider le Pointage</span>
             </button>
         </div>
     </div>

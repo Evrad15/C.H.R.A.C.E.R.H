@@ -397,33 +397,48 @@
         </div>
     </div>
 
-    <!-- MODAL ACQUISITION FACIALE HD (MODE 2) -->
+    <!-- MODAL ACQUISITION FACIALE HD (MODE 2 - CYBER HUD) -->
     <div class="bio-modal-backdrop" id="globalModalFaceCam">
-        <div class="bio-modal-card" style="width: 520px; max-width: 95vw; padding: 1.5rem; text-align: center;">
+        <div class="bio-modal-card" style="width: 540px; max-width: 95vw; padding: 1.75rem; background:#0F172A; border:1px solid rgba(14, 159, 45, 0.3); border-radius:24px; color:#FFF; box-shadow:0 25px 60px rgba(0,0,0,0.6); text-align:center;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <div style="font-weight:700; font-size:1.05rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
-                    <i class="bi bi-camera-video-fill" style="color:#0E9F2D;"></i> Acquisition Faciale HD
+                <div style="font-weight:800; font-size:1.15rem; color:#F8FAFC; display:flex; align-items:center; gap:0.5rem;">
+                    <div style="width:10px; height:10px; border-radius:50%; background:#0E9F2D; box-shadow:0 0 10px #0E9F2D; animation:pulseGlow 1.5s infinite;"></div>
+                    <span>Enrôlement Facial HD</span>
                 </div>
-                <button type="button" id="btnCloseFaceCam" style="background:#F1F2F7; border:none; width:32px; height:32px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="bi bi-x-lg"></i></button>
+                <button type="button" id="btnCloseFaceCam" style="background:rgba(255,255,255,0.08); border:none; width:34px; height:34px; border-radius:50%; color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
             </div>
 
-            <div style="position:relative; width:100%; height:320px; background:#0F172A; border-radius:14px; overflow:hidden; margin-bottom:1rem;">
+            <div style="position:relative; width:100%; height:330px; background:#020617; border-radius:18px; overflow:hidden; margin-bottom:1.25rem; border:1px solid rgba(14, 159, 45, 0.25);">
                 <video id="faceWebcamVideo" autoplay playsinline style="width:100%; height:100%; object-fit:cover; transform: scaleX(-1);"></video>
                 <canvas id="faceWebcamCanvas" style="display:none;"></canvas>
 
-                <!-- Reticle d'alignement du visage -->
-                <div style="position:absolute; inset:0; border:2px dashed rgba(22, 222, 66, 0.7); border-radius:50%; width:210px; height:250px; margin:auto; pointer-events:none; box-shadow:0 0 0 9999px rgba(15, 23, 42, 0.45);">
-                    <div style="position:absolute; top:50%; width:100%; height:2px; background:rgba(22, 222, 66, 0.4); transform:translateY(-50%);"></div>
+                <!-- HUD Corner Brackets -->
+                <div style="position:absolute; top:16px; left:16px; width:20px; height:20px; border-top:3px solid #0E9F2D; border-left:3px solid #0E9F2D; pointer-events:none; z-index:4;"></div>
+                <div style="position:absolute; top:16px; right:16px; width:20px; height:20px; border-top:3px solid #0E9F2D; border-right:3px solid #0E9F2D; pointer-events:none; z-index:4;"></div>
+                <div style="position:absolute; bottom:16px; left:16px; width:20px; height:20px; border-bottom:3px solid #0E9F2D; border-left:3px solid #0E9F2D; pointer-events:none; z-index:4;"></div>
+                <div style="position:absolute; bottom:16px; right:16px; width:20px; height:20px; border-bottom:3px solid #0E9F2D; border-right:3px solid #0E9F2D; pointer-events:none; z-index:4;"></div>
+
+                <!-- Réticule d'alignement Ovale Assombri -->
+                <div style="position:absolute; inset:0; border:2px dashed #0E9F2D; border-radius:50%; width:210px; height:255px; margin:auto; pointer-events:none; box-shadow:0 0 0 9999px rgba(2, 6, 23, 0.65); z-index:3;">
+                    <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(14, 159, 45, 0.4); transform:translateY(-50%);"></div>
+                    <div style="position:absolute; left:50%; height:100%; width:1px; background:rgba(14, 159, 45, 0.4); transform:translateX(-50%);"></div>
+
+                    <!-- Landmark Keypoint Dots -->
+                    <div style="position:absolute; top:35%; left:30%; width:6px; height:6px; border-radius:50%; background:#0E9F2D; box-shadow:0 0 8px #0E9F2D; animation:pulseGlow 1.2s infinite alternate;"></div>
+                    <div style="position:absolute; top:35%; right:30%; width:6px; height:6px; border-radius:50%; background:#0E9F2D; box-shadow:0 0 8px #0E9F2D; animation:pulseGlow 1.2s infinite alternate 0.2s;"></div>
+                    <div style="position:absolute; top:52%; left:50%; transform:translateX(-50%); width:6px; height:6px; border-radius:50%; background:#0E9F2D; box-shadow:0 0 8px #0E9F2D; animation:pulseGlow 1.2s infinite alternate 0.4s;"></div>
+                    <div style="position:absolute; top:70%; left:50%; transform:translateX(-50%); width:14px; height:4px; border-radius:4px; border-bottom:2px solid #0E9F2D;"></div>
                 </div>
-                <div style="position:absolute; bottom:12px; left:0; right:0; text-align:center; color:#FFF; font-size:0.82rem; font-weight:600; text-shadow:0 2px 4px rgba(0,0,0,0.8);" id="faceCamStatusText">
+
+                <div style="position:absolute; bottom:14px; left:0; right:0; text-align:center; color:#E2E8F0; font-size:0.82rem; font-weight:700; text-shadow:0 2px 6px rgba(0,0,0,0.9); z-index:5;" id="faceCamStatusText">
                     Alignez votre visage au centre de l'ovale
                 </div>
             </div>
 
             <div style="display:flex; gap:0.75rem;">
-                <button type="button" id="btnCancelFaceCam" style="flex:1; background:#F1F2F7; color:var(--text-dark); padding:0.65rem; border-radius:10px; border:none; font-weight:600; cursor:pointer;">Annuler</button>
-                <button type="button" id="btnCaptureFaceCam" style="flex:2; background:#0E9F2D; color:#FFFFFF; padding:0.65rem; border-radius:10px; border:none; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(14, 159, 45, 0.3);">
-                    <i class="bi bi-camera-fill"></i> Capturer le Visage
+                <button type="button" id="btnCancelFaceCam" style="flex:1; background:rgba(255,255,255,0.08); color:#94A3B8; padding:0.75rem; border-radius:12px; border:none; font-weight:700; cursor:pointer;">Annuler</button>
+                <button type="button" id="btnCaptureFaceCam" style="flex:2; background:linear-gradient(135deg, #0E9F2D 0%, #059669 100%); color:#FFFFFF; padding:0.75rem; border-radius:12px; border:none; font-weight:800; cursor:pointer; box-shadow:0 8px 20px rgba(14, 159, 45, 0.4); display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                    <i class="bi bi-camera-fill"></i> Capturer & Enregistrer le Visage
                 </button>
             </div>
         </div>
