@@ -756,6 +756,7 @@
                         <span id="badgeFaceStatus" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);">Non enregistrée</span>
                     </div>
                     <input type="hidden" name="register_face" id="inputRegisterFace" value="">
+                    <input type="hidden" name="face_image_base64" id="inputFaceImageBase64" value="">
                     <button type="button" id="btnToggleFace" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid #0E9F2D; background:#EBF9EE; color:#0E9F2D; font-weight:700; font-size:0.8rem; cursor:pointer; transition:all 0.2s ease;">
                         <i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)
                     </button>
@@ -989,6 +990,7 @@
                                 <span id="badgeEditFaceStatus" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:${d.face_registered ? '#EBF9EE' : '#F1F2F7'}; color:${d.face_registered ? '#0E9F2D' : 'var(--text-muted)'};">${d.face_registered ? 'Enregistrée ✓' : 'Non enregistrée'}</span>
                             </div>
                             <input type="hidden" name="register_face" id="inputEditFace" value="${d.face_registered ? '1' : ''}">
+                            <input type="hidden" name="face_image_base64" id="inputEditFaceImageBase64" value="">
                             <button type="button" id="btnToggleEditFace" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid #0E9F2D; background:${d.face_registered ? '#0E9F2D' : '#EBF9EE'}; color:${d.face_registered ? '#FFFFFF' : '#0E9F2D'}; font-weight:700; font-size:0.8rem; cursor:pointer;">
                                 ${d.face_registered ? '<i class="bi bi-check-circle-fill"></i> Visage Capturé' : '<i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)'}
                             </button>

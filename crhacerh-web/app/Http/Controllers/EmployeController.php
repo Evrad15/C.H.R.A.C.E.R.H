@@ -199,32 +199,34 @@ class EmployeController extends Controller
         ]);
 
         // Sauvegarde de l'image faciale de référence et du descripteur face_embeddings
-        if ($request->filled('register_face') || $request->filled('face_image_base64')) {
+        if ($request->filled('face_image_base64')) {
+            $rawBase64 = $request->input('face_image_base64');
+            $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
+            $imageContent = base64_decode($cleanedBase64);
+            if ($imageContent) {
+                if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces')) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces');
+                }
+                \Illuminate\Support\Facades\Storage::disk('public')->put("faces/{$emp->id}.jpg", $imageContent);
+
+                $floats = [];
+                for ($i = 0; $i < 128; $i++) {
+                    $floats[] = (float) rand() / (float) getrandmax();
+                }
+                $emp->update([
+                    'consent_facial_at' => now(),
+                    'face_embeddings' => base64_encode(pack('f*', ...$floats)),
+                ]);
+            }
+        } elseif ($request->filled('register_face') && \Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
             $floats = [];
             for ($i = 0; $i < 128; $i++) {
                 $floats[] = (float) rand() / (float) getrandmax();
             }
-            $binary = pack('f*', ...$floats);
             $emp->update([
                 'consent_facial_at' => now(),
-                'face_embeddings' => base64_encode($binary),
+                'face_embeddings' => base64_encode(pack('f*', ...$floats)),
             ]);
-
-            if ($request->filled('face_image_base64')) {
-                $rawBase64 = $request->input('face_image_base64');
-                $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
-                $imageContent = base64_decode($cleanedBase64);
-                if ($imageContent) {
-                    if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces')) {
-                        \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces');
-                    }
-                    \Illuminate\Support\Facades\Storage::disk('public')->put("faces/{$emp->id}.jpg", $imageContent);
-                }
-            } elseif (!\Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
-                if (\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/2.jpg')) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->copy('faces/2.jpg', "faces/{$emp->id}.jpg");
-                }
-            }
         }
 
         return redirect()->route('employes.index')->with('success', "Employé {$emp->full_name} ({$emp->matricule}) créé avec succès !");
@@ -266,22 +268,30 @@ class EmployeController extends Controller
             $data['fingerprint_registered_at'] = $request->filled('register_fingerprint') ? now() : null;
         }
 
+        if ($request->filled('face_image_base64')) {
+            $rawBase64 = $request->input('face_image_base64');
+            $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
+            $imageContent = base64_decode($cleanedBase64);
+            if ($imageContent) {
+                if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces')) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces');
+                }
+                \Illuminate\Support\Facades\Storage::disk('public')->put("faces/{$emp->id}.jpg", $imageContent);
+            }
+        }
+
         if ($request->has('register_face')) {
-            $data['consent_facial_at'] = $request->filled('register_face') ? now() : null;
             if ($request->filled('register_face')) {
+                $data['consent_facial_at'] = now();
                 $floats = [];
                 for ($i = 0; $i < 128; $i++) {
                     $floats[] = (float) rand() / (float) getrandmax();
                 }
                 $data['face_embeddings'] = base64_encode(pack('f*', ...$floats));
-
-                if (!\Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
-                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/2.jpg')) {
-                        \Illuminate\Support\Facades\Storage::disk('public')->copy('faces/2.jpg', "faces/{$emp->id}.jpg");
-                    }
-                }
             } else {
+                $data['consent_facial_at'] = null;
                 $data['face_embeddings'] = null;
+                \Illuminate\Support\Facades\Storage::disk('public')->delete("faces/{$emp->id}.jpg");
             }
         }
 

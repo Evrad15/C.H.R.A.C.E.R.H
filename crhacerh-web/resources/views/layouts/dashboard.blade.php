@@ -583,6 +583,20 @@
             }
 
             btnCapture.onclick = function () {
+                const canvas = document.getElementById('faceWebcamCanvas');
+                if (canvas && video && video.videoWidth > 0) {
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+
+                    const createBase64 = document.getElementById('inputFaceImageBase64');
+                    if (createBase64) createBase64.value = dataUrl;
+                    const editBase64 = document.getElementById('inputEditFaceImageBase64');
+                    if (editBase64) editBase64.value = dataUrl;
+                }
+
                 statusText.textContent = 'Visage capturé avec succès ! ✓';
                 statusText.style.color = '#16DE42';
 
