@@ -1075,6 +1075,35 @@
                 </div>
             </div>
 
+            <!-- MODES DE POINTAGE BIOMÉTRIQUE ENREGISTRÉS -->
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px; padding:0.85rem 1rem; margin-bottom:1.1rem;">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.6rem; display:flex; align-items:center; gap:0.4rem;">
+                    <i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i>
+                    <span>Modes de Pointage Biométrique d'Accueil Enregistrés</span>
+                </div>
+                <div style="display:flex; gap:0.65rem;">
+                    <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.6rem 0.75rem; display:flex; align-items:center; justify-content:space-between;">
+                        <div style="font-size:0.78rem; font-weight:700; color:var(--text-dark); display:flex; align-items:center; gap:0.35rem;">
+                            <i class="bi bi-fingerprint" style="color:var(--primary); font-size:1.05rem;"></i>
+                            <span>Empreinte USB</span>
+                        </div>
+                        <span style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:${d.fingerprint_registered ? '#EBF9EE' : '#F1F2F7'}; color:${d.fingerprint_registered ? '#0E9F2D' : 'var(--text-muted)'};">
+                            ${d.fingerprint_registered ? 'Actif ✓' : 'Inactif'}
+                        </span>
+                    </div>
+
+                    <div style="flex:1; background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.6rem 0.75rem; display:flex; align-items:center; justify-content:space-between;">
+                        <div style="font-size:0.78rem; font-weight:700; color:var(--text-dark); display:flex; align-items:center; gap:0.35rem;">
+                            <i class="bi bi-person-bounding-box" style="color:#0E9F2D; font-size:1.05rem;"></i>
+                            <span>Visage HD</span>
+                        </div>
+                        <span style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:${d.face_registered ? '#EBF9EE' : '#F1F2F7'}; color:${d.face_registered ? '#0E9F2D' : 'var(--text-muted)'};">
+                            ${d.face_registered ? 'Actif ✓' : 'Inactif'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             <div class="drawer-stats-grid">
                 <div class="stat-card stat-green">
                     <div class="stat-value">${d.presents}</div>
