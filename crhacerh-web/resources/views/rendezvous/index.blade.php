@@ -900,19 +900,232 @@
         window.location.href = "{{ route('rendezvous.index') }}?" + params.toString();
     }
 
+    const allServices = @json($services);
+    const allMedecins = @json($medecins);
+    const csrfToken = "{{ csrf_token() }}";
+    let currentRdvData = null;
+
     function openRdvDetails(rdv) {
+        currentRdvData = rdv;
         const overlay = document.getElementById('drawerOverlay');
         const panel   = document.getElementById('drawerPanel');
         const content = document.getElementById('drawerContent');
 
         overlay.classList.add('open');
         panel.classList.add('open');
+        content.innerHTML = buildRdvDrawerHTML(rdv);
+    }
 
+    function showEditRdvForm() {
+        if (!currentRdvData) return;
+        const content = document.getElementById('drawerContent');
+        content.innerHTML = buildEditRdvHTML(currentRdvData);
+        initEditRdvBiometricToggles(currentRdvData);
+    }
+
+    function cancelEditRdvForm() {
+        if (!currentRdvData) return;
+        const content = document.getElementById('drawerContent');
+        content.innerHTML = buildRdvDrawerHTML(currentRdvData);
+    }
+
+    function initEditRdvBiometricToggles(rdv) {
+        const btnFp = document.getElementById('btnToggleEditRdvFp');
+        const inputFp = document.getElementById('inputEditRdvFp');
+        const badgeFp = document.getElementById('badgeEditRdvFp');
+
+        if (btnFp) {
+            btnFp.addEventListener('click', function () {
+                if (inputFp.value === '1') {
+                    inputFp.value = '';
+                    badgeFp.textContent = 'Non enregistrée';
+                    badgeFp.style.background = '#F1F2F7';
+                    badgeFp.style.color = 'var(--text-muted)';
+                    btnFp.style.background = '#EBF3FF';
+                    btnFp.style.color = 'var(--primary)';
+                    btnFp.innerHTML = '<i class="bi bi-plus-circle"></i> Capturer l\'Empreinte (Lecteur USB)';
+                } else {
+                    inputFp.value = '1';
+                    badgeFp.textContent = 'Enregistrée ✓';
+                    badgeFp.style.background = '#EBF9EE';
+                    badgeFp.style.color = '#0E9F2D';
+                    btnFp.style.background = '#0E9F2D';
+                    btnFp.style.color = '#FFFFFF';
+                    btnFp.innerHTML = '<i class="bi bi-check-circle-fill"></i> Empreinte Digitale Capturée';
+                }
+            });
+        }
+
+        const btnFace = document.getElementById('btnToggleEditRdvFace');
+        const inputFace = document.getElementById('inputEditRdvFace');
+        const badgeFace = document.getElementById('badgeEditRdvFace');
+
+        if (btnFace) {
+            btnFace.addEventListener('click', function () {
+                if (inputFace.value === '1') {
+                    inputFace.value = '';
+                    badgeFace.textContent = 'Non enregistrée';
+                    badgeFace.style.background = '#F1F2F7';
+                    badgeFace.style.color = 'var(--text-muted)';
+                    btnFace.style.background = '#EBF9EE';
+                    btnFace.style.color = '#0E9F2D';
+                    btnFace.innerHTML = '<i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)';
+                } else {
+                    inputFace.value = '1';
+                    badgeFace.textContent = 'Enregistrée ✓';
+                    badgeFace.style.background = '#EBF9EE';
+                    badgeFace.style.color = '#0E9F2D';
+                    btnFace.style.background = '#0E9F2D';
+                    btnFace.style.color = '#FFFFFF';
+                    btnFace.innerHTML = '<i class="bi bi-check-circle-fill"></i> Visage Capturé';
+                }
+            });
+        }
+    }
+
+    function buildEditRdvHTML(rdv) {
+        const patientName = rdv.patient ? rdv.patient.nom_complet : (rdv.nom_patient || '');
+        const rdvDateObj = new Date(rdv.date_rendez_vous);
+        const dateStr = rdvDateObj.toISOString().split('T')[0];
+        const hoursStr = String(rdvDateObj.getHours()).padStart(2, '0') + ':' + String(rdvDateObj.getMinutes()).padStart(2, '0');
+
+        const serviceOptions = allServices.map(s =>
+            `<option value="${s}" ${s === rdv.service ? 'selected' : ''}>${s}</option>`
+        ).join('');
+
+        const medecinOptions = allMedecins.map(m =>
+            `<option value="${m}" ${m === rdv.medecin ? 'selected' : ''}>${m}</option>`
+        ).join('');
+
+        return `
+            <form action="/rendez-vous/${rdv.id}" method="POST">
+                <input type="hidden" name="_token" value="${csrfToken}">
+                <input type="hidden" name="_method" value="PUT">
+
+                <div style="display:flex; flex-direction:column; gap:1.1rem;">
+                    <div style="font-weight:800; font-size:1.05rem; color:var(--text-dark); margin-bottom:0.2rem; display:flex; align-items:center; gap:0.4rem;">
+                        <i class="bi bi-pencil-square" style="color:var(--primary);"></i> Modifier le Rendez-vous
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Nom et Prénom du Patient *</label>
+                        <input type="text" name="nom_patient" value="${patientName}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                    </div>
+
+                    <div style="display:flex; gap:0.85rem;">
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Téléphone</label>
+                            <input type="text" name="telephone_patient" value="${rdv.telephone_patient || ''}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Email</label>
+                            <input type="email" name="email_patient" value="${rdv.email_patient || ''}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;">
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:0.85rem;">
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Service Médical *</label>
+                            <select name="service" class="form-select" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                                ${serviceOptions}
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Médecin Attribué</label>
+                            <select name="medecin" class="form-select" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;">
+                                ${medecinOptions}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:0.85rem;">
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Date du Rendez-vous *</label>
+                            <input type="date" name="date_rendez_vous" value="${dateStr}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                        </div>
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Heure *</label>
+                            <input type="time" name="heure_rendez_vous" value="${hoursStr}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Motif de la Consultation *</label>
+                        <input type="text" name="motif" value="${rdv.motif}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                    </div>
+
+                    <!-- MODES D'ENREGISTREMENT BIOMÉTRIQUE PATIENT -->
+                    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px; padding:1.1rem; margin-top:0.3rem;">
+                        <div style="font-size:0.88rem; font-weight:700; color:var(--text-dark); margin-bottom:0.85rem; display:flex; align-items:center; gap:0.5rem;">
+                            <i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i>
+                            <span>Modes d'Enregistrement / Pointage Biométrique</span>
+                        </div>
+
+                        <!-- Mode 1: Empreinte Digitale Patient -->
+                        <div style="background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.85rem; margin-bottom:0.75rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <div style="font-weight:700; font-size:0.84rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                                    <i class="bi bi-fingerprint" style="color:var(--primary); font-size:1.1rem;"></i>
+                                    <span>Mode 1 : Empreinte Digitale</span>
+                                </div>
+                                <span id="badgeEditRdvFp" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);">Non enregistrée</span>
+                            </div>
+                            <input type="hidden" name="register_fingerprint" id="inputEditRdvFp" value="">
+                            <button type="button" id="btnToggleEditRdvFp" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid var(--primary); background:#EBF3FF; color:var(--primary); font-weight:700; font-size:0.8rem; cursor:pointer;">
+                                <i class="bi bi-plus-circle"></i> Capturer l'Empreinte (Lecteur USB)
+                            </button>
+                        </div>
+
+                        <!-- Mode 2: Reconnaissance Faciale Patient -->
+                        <div style="background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.85rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <div style="font-weight:700; font-size:0.84rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                                    <i class="bi bi-person-bounding-box" style="color:#0E9F2D; font-size:1.1rem;"></i>
+                                    <span>Mode 2 : Reconnaissance Faciale</span>
+                                </div>
+                                <span id="badgeEditRdvFace" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);">Non enregistrée</span>
+                            </div>
+                            <input type="hidden" name="register_face" id="inputEditRdvFace" value="">
+                            <button type="button" id="btnToggleEditRdvFace" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid #0E9F2D; background:#EBF9EE; color:#0E9F2D; font-weight:700; font-size:0.8rem; cursor:pointer;">
+                                <i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Notes complémentaires</label>
+                        <textarea name="notes" class="form-textarea" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" rows="2">${rdv.notes || ''}</textarea>
+                    </div>
+
+                    <div style="margin-top:0.5rem; display:flex; gap:0.75rem; justify-content:flex-end;">
+                        <button type="button" onclick="cancelEditRdvForm()" class="btn-cancel" style="background:#F1F2F7; color:var(--text-dark); padding:0.65rem 1.25rem; border-radius:10px; border:none; font-weight:600; cursor:pointer;">Annuler</button>
+                        <button type="submit" class="btn-submit" style="background:var(--primary); color:#FFFFFF; padding:0.65rem 1.35rem; border-radius:10px; border:none; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(58, 91, 240, 0.28);">Enregistrer les Modifications</button>
+                    </div>
+                </div>
+            </form>
+        `;
+    }
+
+    function buildRdvDrawerHTML(rdv) {
         const dateFormatted = new Date(rdv.date_rendez_vous).toLocaleDateString('fr-FR', {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
-        content.innerHTML = `
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; background:#F8FAFC; padding:0.75rem 1rem; border-radius:12px; border:1px solid #E2E8F0;">
+                <button type="button" onclick="showEditRdvForm()" style="background:#EBF3FF; color:var(--primary); border:none; padding:0.45rem 0.9rem; border-radius:8px; font-weight:700; font-size:0.8rem; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+                    <i class="bi bi-pencil-square"></i> Modifier le RDV
+                </button>
+
+                <form action="/rendez-vous/${rdv.id}" method="POST" onsubmit="return confirm('Confirmez-vous la suppression de ce rendez-vous ?');" style="margin:0;">
+                    <input type="hidden" name="_token" value="${csrfToken}">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="submit" style="background:#FDE8E8; color:var(--accent-red); border:none; padding:0.45rem 0.9rem; border-radius:8px; font-weight:700; font-size:0.8rem; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+                        <i class="bi bi-trash3-fill"></i> Supprimer
+                    </button>
+                </form>
+            </div>
+
             <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
                 <div style="width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg, #3A5BF0, #6C88FF); color:#FFF; font-weight:800; font-size:1.2rem; display:flex; align-items:center; justify-content:center;">
                     ${rdv.patient ? rdv.patient.nom_complet.charAt(0).toUpperCase() : 'P'}
@@ -941,7 +1154,7 @@
             <div style="border-top:1px solid #E8EBF2; padding-top:1rem;">
                 <div style="font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.5rem;">Changer le Statut :</div>
                 <form action="/rendez-vous/${rdv.id}/status" method="POST" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="_token" value="${csrfToken}">
                     <input type="hidden" name="_method" value="PATCH">
                     <button type="submit" name="statut" value="Confirmé" class="btn-cancel" style="background:#EBF9EE; color:#0E9F2D;">Confirmé</button>
                     <button type="submit" name="statut" value="Réalisé" class="btn-cancel" style="background:#EBF9EE; color:#07691C;">Réalisé</button>
@@ -952,7 +1165,7 @@
         `;
     }
 
-    // Toggle RDV Biometric buttons
+    // Toggle RDV Biometric buttons for creation drawer
     const btnRdvFp = document.getElementById('btnToggleRdvFp');
     const inputRdvFp = document.getElementById('inputRdvFp');
     const badgeRdvFp = document.getElementById('badgeRdvFp');
@@ -989,6 +1202,7 @@
                 inputRdvFace.value = '';
                 badgeRdvFace.textContent = 'Non enregistrée';
                 badgeRdvFace.style.background = '#F1F2F7';
+                badgeRdvFace.style.color = 'var(--text-muted)';
                 badgeRdvFace.style.color = 'var(--text-muted)';
                 btnRdvFace.style.background = '#EBF9EE';
                 btnRdvFace.style.color = '#0E9F2D';

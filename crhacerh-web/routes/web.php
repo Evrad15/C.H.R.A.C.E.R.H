@@ -45,6 +45,8 @@ Route::middleware(['auth'])->group(function () {
     // Gestion des Rendez-vous
     Route::get('/rendez-vous',                    [RendezVousController::class, 'index'])->name('rendezvous.index');
     Route::post('/rendez-vous',                   [RendezVousController::class, 'store'])->name('rendezvous.store');
+    Route::put('/rendez-vous/{id}',               [RendezVousController::class, 'update'])->name('rendezvous.update');
+    Route::delete('/rendez-vous/{id}',            [RendezVousController::class, 'destroy'])->name('rendezvous.destroy');
     Route::patch('/rendez-vous/{id}/status',      [RendezVousController::class, 'updateStatus'])->name('rendezvous.updateStatus');
 
     // Gestion des Congés et Permissions

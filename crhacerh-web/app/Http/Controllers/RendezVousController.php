@@ -166,4 +166,59 @@ class RendezVousController extends Controller
 
         return redirect()->back()->with('success', 'Statut du rendez-vous mis à jour.');
     }
+
+    /**
+     * Met à jour les informations complètes d'un rendez-vous.
+     */
+    public function update(Request $request, $id)
+    {
+        $rdv = RendezVous::findOrFail($id);
+
+        $validated = $request->validate([
+            'nom_patient'       => 'required|string|max:150',
+            'telephone_patient' => 'nullable|string|max:30',
+            'email_patient'     => 'nullable|email|max:150',
+            'service'           => 'required|string|max:100',
+            'motif'             => 'required|string|max:255',
+            'date_rendez_vous'  => 'required|date',
+            'heure_rendez_vous' => 'required|string',
+            'medecin'           => 'nullable|string|max:150',
+            'notes'             => 'nullable|string',
+        ]);
+
+        if ($rdv->patient) {
+            $rdv->patient->update([
+                'nom_complet' => trim($validated['nom_patient']),
+                'telephone'   => $validated['telephone_patient'] ?? $rdv->patient->telephone,
+            ]);
+        }
+
+        $dateTimeStr = $validated['date_rendez_vous'] . ' ' . $validated['heure_rendez_vous'];
+        $dateStart = Carbon::parse($dateTimeStr);
+        $dateEnd   = (clone $dateStart)->addMinutes(30);
+
+        $rdv->update([
+            'telephone_patient' => $validated['telephone_patient'],
+            'email_patient'     => $validated['email_patient'],
+            'service'           => $validated['service'],
+            'motif'             => $validated['motif'],
+            'date_rendez_vous'  => $dateStart,
+            'fin_rendez_vous'   => $dateEnd,
+            'medecin'           => $validated['medecin'],
+            'notes'             => $validated['notes'],
+        ]);
+
+        return redirect()->route('rendezvous.index')->with('success', 'Rendez-vous mis à jour avec succès !');
+    }
+
+    /**
+     * Supprime un rendez-vous.
+     */
+    public function destroy($id)
+    {
+        $rdv = RendezVous::findOrFail($id);
+        $rdv->delete();
+
+        return redirect()->route('rendezvous.index')->with('success', 'Rendez-vous supprimé avec succès !');
+    }
 }
