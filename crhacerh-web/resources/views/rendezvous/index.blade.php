@@ -459,7 +459,8 @@
     .drawer-panel {
         position: fixed;
         top: 0; right: 0; bottom: 0;
-        width: 420px;
+        width: 480px;
+        max-width: 92vw;
         background: #FFFFFF;
         z-index: 1000;
         transform: translateX(100%);
@@ -469,8 +470,47 @@
         flex-direction: column;
         overflow-y: auto;
         scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .drawer-panel::-webkit-scrollbar {
+        display: none;
     }
     .drawer-panel.open { transform: translateX(0); }
+
+    .drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #E8EBF2;
+        background: #FFFFFF;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .drawer-close {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: #F1F2F7;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.1rem;
+        color: var(--text-dark);
+        transition: background 0.2s;
+    }
+    .drawer-close:hover {
+        background: #DEE1F4;
+    }
+
+    .drawer-body {
+        padding: 1.5rem !important;
+        flex: 1;
+        box-sizing: border-box !important;
+    }
 </style>
 @endsection
 
