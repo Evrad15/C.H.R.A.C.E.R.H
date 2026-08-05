@@ -18,6 +18,7 @@ class Employe extends Authenticatable
 
     // Champs modifiables en masse (sécurité Laravel)
     protected $fillable = [
+        'matricule',
         'email',
         'password',
         'first_name',
