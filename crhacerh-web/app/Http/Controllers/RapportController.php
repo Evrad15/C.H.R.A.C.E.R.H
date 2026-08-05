@@ -107,7 +107,7 @@ class RapportController extends Controller
     public function generate(Request $request)
     {
         $request->validate([
-            'period' => 'required|in:week,month,year,day',
+            'period' => 'required|string',
             'format' => 'required|in:excel,pdf',
             'date'   => 'nullable|date',
         ]);

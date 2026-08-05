@@ -13,10 +13,24 @@ use Throwable;
 class ReportService
 {
     /**
+     * Normalise la période demandée (week/weekly/hebdo, month/monthly, year/yearly, day/daily).
+     */
+    public function normalizePeriod(string $period): string
+    {
+        return match (strtolower(trim($period))) {
+            'weekly', 'week', 'hebdo', 'semaine' => 'week',
+            'monthly', 'month', 'mensuel', 'mois' => 'month',
+            'yearly', 'year', 'annuel', 'an' => 'year',
+            default => 'day',
+        };
+    }
+
+    /**
      * Calcule et génère les statistiques agrégées pour une période donnée.
      */
     public function generateReport(string $period, ?Carbon $endDate = null): array
     {
+        $period = $this->normalizePeriod($period);
         $range = $this->buildRange($period, $endDate);
         $records = Pointage::with('employe')
             ->whereBetween('created_at', [$range['from'], $range['to']])
@@ -394,6 +408,7 @@ class ReportService
      */
     public function generateAndExport(string $period, string $format = 'excel', ?Carbon $endDate = null): string
     {
+        $period = $this->normalizePeriod($period);
         $report = $this->generateReport($period, $endDate);
         
         $title = match ($period) {
