@@ -456,8 +456,17 @@ class FaceApiController extends Controller
     {
         $w = 32;
         $h = 32;
+        $origW = imagesx($gdImg);
+        $origH = imagesy($gdImg);
+
+        // Isolement centré strict du visage (55% largeur x 65% hauteur) pour éliminer le décor
+        $cropW = (int)($origW * 0.55);
+        $cropH = (int)($origH * 0.65);
+        $cropX = (int)(($origW - $cropW) / 2);
+        $cropY = (int)(($origH - $cropH) / 2);
+
         $thumb = imagecreatetruecolor($w, $h);
-        imagecopyresampled($thumb, $gdImg, 0, 0, 0, 0, $w, $h, imagesx($gdImg), imagesy($gdImg));
+        imagecopyresampled($thumb, $gdImg, 0, 0, $cropX, $cropY, $w, $h, $cropW, $cropH);
         
         $grid = [];
         $sum = 0;
