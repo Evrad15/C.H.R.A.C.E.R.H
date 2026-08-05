@@ -138,13 +138,18 @@ class EmployeController extends Controller
 
         return response()->json([
             'id' => $emp->id,
+            'last_name' => $emp->last_name,
+            'first_name' => $emp->first_name,
             'full_name' => strtoupper($emp->last_name) . ' ' . $emp->first_name,
             'initials' => strtoupper(substr($emp->last_name, 0, 1) . substr($emp->first_name, 0, 1)),
             'matricule' => $emp->matricule ?? '—',
+            'department_id' => $emp->department_id,
             'department' => $emp->department->name ?? 'Général',
             'role' => $emp->role ?? 'Employé',
             'email' => $emp->email ?? '—',
             'phone' => $emp->phone ?? '—',
+            'fingerprint_registered' => !empty($emp->fingerprint_registered_at),
+            'face_registered' => !empty($emp->consent_facial_at),
             'presents' => $presents,
             'retards' => $retards,
             'absences' => $absences,
@@ -186,5 +191,57 @@ class EmployeController extends Controller
         ]);
 
         return redirect()->route('employes.index')->with('success', "Employé {$emp->full_name} créé avec succès !");
+    }
+
+    /**
+     * Met à jour les informations d'un employé existant.
+     */
+    public function update(Request $request, $id)
+    {
+        $emp = Employe::findOrFail($id);
+
+        $request->validate([
+            'last_name' => 'required|string|max:100',
+            'first_name' => 'required|string|max:100',
+            'email' => 'required|email|unique:employés,email,' . $id,
+            'phone' => 'nullable|string|max:30',
+            'department_id' => 'nullable|exists:departments,id',
+            'role' => 'nullable|string|max:50',
+            'register_fingerprint' => 'nullable',
+            'register_face' => 'nullable',
+        ]);
+
+        $data = [
+            'last_name' => strtoupper(trim($request->input('last_name'))),
+            'first_name' => trim($request->input('first_name')),
+            'email' => strtolower(trim($request->input('email'))),
+            'phone' => $request->input('phone'),
+            'department_id' => $request->input('department_id'),
+            'role' => $request->input('role', 'Employés'),
+        ];
+
+        if ($request->has('register_fingerprint')) {
+            $data['fingerprint_registered_at'] = $request->filled('register_fingerprint') ? now() : null;
+        }
+
+        if ($request->has('register_face')) {
+            $data['consent_facial_at'] = $request->filled('register_face') ? now() : null;
+        }
+
+        $emp->update($data);
+
+        return redirect()->route('employes.index')->with('success', "Employé {$emp->full_name} mis à jour avec succès !");
+    }
+
+    /**
+     * Supprime un employé.
+     */
+    public function destroy($id)
+    {
+        $emp = Employe::findOrFail($id);
+        $name = $emp->full_name;
+        $emp->delete();
+
+        return redirect()->route('employes.index')->with('success', "Employé {$name} supprimé avec succès !");
     }
 }

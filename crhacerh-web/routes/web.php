@@ -36,9 +36,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Gestion des Employés
-    Route::get('/employes',      [EmployeController::class, 'index'])->name('employes.index');
-    Route::post('/employes',     [EmployeController::class, 'store'])->name('employes.store');
-    Route::get('/employes/{id}', [EmployeController::class, 'show'])->name('employes.show');
+    Route::get('/employes',           [EmployeController::class, 'index'])->name('employes.index');
+    Route::post('/employes',          [EmployeController::class, 'store'])->name('employes.store');
+    Route::get('/employes/{id}',      [EmployeController::class, 'show'])->name('employes.show');
+    Route::put('/employes/{id}',      [EmployeController::class, 'update'])->name('employes.update');
+    Route::delete('/employes/{id}',   [EmployeController::class, 'destroy'])->name('employes.destroy');
 
     // Gestion des Rendez-vous
     Route::get('/rendez-vous',                    [RendezVousController::class, 'index'])->name('rendezvous.index');

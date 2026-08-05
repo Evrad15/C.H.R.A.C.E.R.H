@@ -882,6 +882,10 @@
         });
     });
 
+    const allDepartments = @json($departments);
+    const csrfToken = "{{ csrf_token() }}";
+    let currentEmpData = null;
+
     function openEmployeeDrawer(id) {
         const overlay = document.getElementById('drawerOverlay');
         const panel   = document.getElementById('drawerPanel');
@@ -901,12 +905,182 @@
                 content.innerHTML = buildDrawerHTML(data);
             })
             .catch(err => {
-                loading.innerHTML = '<p style="color:var(--accent-red);">Erreur de chargement.</p>';
+                loading.innerHTML = '<p style="color:var(--accent-red); padding:1rem;">Erreur de chargement.</p>';
                 console.error(err);
             });
     }
 
+    function showEditEmpForm() {
+        if (!currentEmpData) return;
+        const content = document.getElementById('drawerContent');
+        content.innerHTML = buildEditDrawerHTML(currentEmpData);
+        initEditBiometricToggles(currentEmpData);
+    }
+
+    function cancelEditEmpForm() {
+        if (!currentEmpData) return;
+        const content = document.getElementById('drawerContent');
+        content.innerHTML = buildDrawerHTML(currentEmpData);
+    }
+
+    function initEditBiometricToggles(d) {
+        const btnFp = document.getElementById('btnToggleEditFp');
+        const inputFp = document.getElementById('inputEditFp');
+        const badgeFp = document.getElementById('badgeEditFpStatus');
+
+        if (btnFp) {
+            btnFp.addEventListener('click', function () {
+                if (inputFp.value === '1') {
+                    inputFp.value = '';
+                    badgeFp.textContent = 'Non enregistrée';
+                    badgeFp.style.background = '#F1F2F7';
+                    badgeFp.style.color = 'var(--text-muted)';
+                    btnFp.style.background = '#EBF3FF';
+                    btnFp.style.color = 'var(--primary)';
+                    btnFp.innerHTML = '<i class="bi bi-plus-circle"></i> Capturer l\'Empreinte (Lecteur USB)';
+                } else {
+                    inputFp.value = '1';
+                    badgeFp.textContent = 'Enregistrée ✓';
+                    badgeFp.style.background = '#EBF9EE';
+                    badgeFp.style.color = '#0E9F2D';
+                    btnFp.style.background = '#0E9F2D';
+                    btnFp.style.color = '#FFFFFF';
+                    btnFp.innerHTML = '<i class="bi bi-check-circle-fill"></i> Empreinte Digitale Capturée';
+                }
+            });
+        }
+
+        const btnFace = document.getElementById('btnToggleEditFace');
+        const inputFace = document.getElementById('inputEditFace');
+        const badgeFace = document.getElementById('badgeEditFaceStatus');
+
+        if (btnFace) {
+            btnFace.addEventListener('click', function () {
+                if (inputFace.value === '1') {
+                    inputFace.value = '';
+                    badgeFace.textContent = 'Non enregistrée';
+                    badgeFace.style.background = '#F1F2F7';
+                    badgeFace.style.color = 'var(--text-muted)';
+                    btnFace.style.background = '#EBF9EE';
+                    btnFace.style.color = '#0E9F2D';
+                    btnFace.innerHTML = '<i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)';
+                } else {
+                    inputFace.value = '1';
+                    badgeFace.textContent = 'Enregistrée ✓';
+                    badgeFace.style.background = '#EBF9EE';
+                    badgeFace.style.color = '#0E9F2D';
+                    btnFace.style.background = '#0E9F2D';
+                    btnFace.style.color = '#FFFFFF';
+                    btnFace.innerHTML = '<i class="bi bi-check-circle-fill"></i> Visage Capturé';
+                }
+            });
+        }
+    }
+
+    function buildEditDrawerHTML(d) {
+        const deptOptions = allDepartments.map(dept => 
+            `<option value="${dept.id}" ${dept.id == d.department_id ? 'selected' : ''}>${dept.name}</option>`
+        ).join('');
+
+        return `
+            <form action="/employes/${d.id}" method="POST">
+                <input type="hidden" name="_token" value="${csrfToken}">
+                <input type="hidden" name="_method" value="PUT">
+
+                <div style="display:flex; flex-direction:column; gap:1.1rem;">
+                    <div style="font-weight:800; font-size:1.05rem; color:var(--text-dark); margin-bottom:0.2rem; display:flex; align-items:center; gap:0.4rem;">
+                        <i class="bi bi-pencil-square" style="color:var(--primary);"></i> Modifier les informations
+                    </div>
+
+                    <div style="display:flex; gap:0.85rem;">
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Nom *</label>
+                            <input type="text" name="last_name" value="${d.last_name}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                        </div>
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Prénom *</label>
+                            <input type="text" name="first_name" value="${d.first_name}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Adresse E-mail *</label>
+                        <input type="email" name="email" value="${d.email !== '—' ? d.email : ''}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                    </div>
+
+                    <div style="display:flex; gap:0.85rem;">
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Téléphone</label>
+                            <input type="text" name="phone" value="${d.phone !== '—' ? d.phone : ''}" class="form-input" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Rôle *</label>
+                            <select name="role" class="form-select" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;">
+                                <option value="Employés" ${d.role === 'Employés' || d.role === 'Employé' ? 'selected' : ''}>Employé</option>
+                                <option value="Manager" ${d.role === 'Manager' ? 'selected' : ''}>Manager / Chef Service</option>
+                                <option value="RH_Admin" ${d.role === 'RH_Admin' ? 'selected' : ''}>Administrateur RH</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.35rem;">Département *</label>
+                        <select name="department_id" class="form-select" style="width:100%; padding:0.6rem 0.85rem; border-radius:10px; border:1px solid #E2E7E7; font-size:0.88rem; box-sizing:border-box;" required>
+                            <option value="">Sélectionner un département...</option>
+                            ${deptOptions}
+                        </select>
+                    </div>
+
+                    <!-- MODES D'ENREGISTREMENT BIOMÉTRIQUE -->
+                    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px; padding:1.1rem; margin-top:0.3rem;">
+                        <div style="font-size:0.88rem; font-weight:700; color:var(--text-dark); margin-bottom:0.85rem; display:flex; align-items:center; gap:0.5rem;">
+                            <i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i>
+                            <span>Modes d'Enregistrement Biométrique</span>
+                        </div>
+
+                        <!-- Mode 1: Empreinte Digitale -->
+                        <div style="background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.85rem; margin-bottom:0.75rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <div style="font-weight:700; font-size:0.84rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                                    <i class="bi bi-fingerprint" style="color:var(--primary); font-size:1.1rem;"></i>
+                                    <span>Mode 1 : Empreinte Digitale</span>
+                                </div>
+                                <span id="badgeEditFpStatus" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:${d.fingerprint_registered ? '#EBF9EE' : '#F1F2F7'}; color:${d.fingerprint_registered ? '#0E9F2D' : 'var(--text-muted)'};">${d.fingerprint_registered ? 'Enregistrée ✓' : 'Non enregistrée'}</span>
+                            </div>
+                            <input type="hidden" name="register_fingerprint" id="inputEditFp" value="${d.fingerprint_registered ? '1' : ''}">
+                            <button type="button" id="btnToggleEditFp" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid ${d.fingerprint_registered ? '#0E9F2D' : 'var(--primary)'}; background:${d.fingerprint_registered ? '#0E9F2D' : '#EBF3FF'}; color:${d.fingerprint_registered ? '#FFFFFF' : 'var(--primary)'}; font-weight:700; font-size:0.8rem; cursor:pointer;">
+                                ${d.fingerprint_registered ? '<i class="bi bi-check-circle-fill"></i> Empreinte Digitale Capturée' : '<i class="bi bi-plus-circle"></i> Capturer l\'Empreinte (Lecteur USB)'}
+                            </button>
+                        </div>
+
+                        <!-- Mode 2: Reconnaissance Faciale -->
+                        <div style="background:#FFFFFF; border:1px solid #E2E7E7; border-radius:10px; padding:0.85rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <div style="font-weight:700; font-size:0.84rem; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                                    <i class="bi bi-person-bounding-box" style="color:#0E9F2D; font-size:1.1rem;"></i>
+                                    <span>Mode 2 : Reconnaissance Faciale</span>
+                                </div>
+                                <span id="badgeEditFaceStatus" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:${d.face_registered ? '#EBF9EE' : '#F1F2F7'}; color:${d.face_registered ? '#0E9F2D' : 'var(--text-muted)'};">${d.face_registered ? 'Enregistrée ✓' : 'Non enregistrée'}</span>
+                            </div>
+                            <input type="hidden" name="register_face" id="inputEditFace" value="${d.face_registered ? '1' : ''}">
+                            <button type="button" id="btnToggleEditFace" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid #0E9F2D; background:${d.face_registered ? '#0E9F2D' : '#EBF9EE'}; color:${d.face_registered ? '#FFFFFF' : '#0E9F2D'}; font-weight:700; font-size:0.8rem; cursor:pointer;">
+                                ${d.face_registered ? '<i class="bi bi-check-circle-fill"></i> Visage Capturé' : '<i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:0.5rem; display:flex; gap:0.75rem; justify-content:flex-end;">
+                        <button type="button" onclick="cancelEditEmpForm()" class="btn-cancel" style="background:#F1F2F7; color:var(--text-dark); padding:0.65rem 1.25rem; border-radius:10px; border:none; font-weight:600; cursor:pointer;">Annuler</button>
+                        <button type="submit" class="btn-submit" style="background:var(--primary); color:#FFFFFF; padding:0.65rem 1.35rem; border-radius:10px; border:none; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(58, 91, 240, 0.28);">Enregistrer les Modifications</button>
+                    </div>
+                </div>
+            </form>
+        `;
+    }
+
     function buildDrawerHTML(d) {
+        currentEmpData = d;
+
         // Weekly timeline
         let weeklyHtml = '';
         if (d.weekly_stats && d.weekly_stats.length) {
@@ -938,6 +1112,20 @@
         }
 
         return `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; background:#F8FAFC; padding:0.75rem 1rem; border-radius:12px; border:1px solid #E2E8F0;">
+                <button type="button" onclick="showEditEmpForm()" style="background:#EBF3FF; color:var(--primary); border:none; padding:0.45rem 0.9rem; border-radius:8px; font-weight:700; font-size:0.8rem; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+                    <i class="bi bi-pencil-square"></i> Modifier l'Employé
+                </button>
+
+                <form action="/employes/${d.id}" method="POST" onsubmit="return confirm('Confirmez-vous la suppression définitve de cet employé ?');" style="margin:0;">
+                    <input type="hidden" name="_token" value="${csrfToken}">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="submit" style="background:#FDE8E8; color:var(--accent-red); border:none; padding:0.45rem 0.9rem; border-radius:8px; font-weight:700; font-size:0.8rem; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+                        <i class="bi bi-trash3-fill"></i> Supprimer
+                    </button>
+                </form>
+            </div>
+
             <div class="drawer-profile">
                 <div class="drawer-avatar">${d.initials}</div>
                 <div>
