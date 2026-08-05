@@ -198,6 +198,23 @@ class EmployeController extends Controller
             'consent_facial_at' => $request->filled('register_face') ? now() : null,
         ]);
 
+        // Sauvegarde de l'image faciale de référence
+        if ($request->filled('face_image_base64')) {
+            $rawBase64 = $request->input('face_image_base64');
+            $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
+            $imageContent = base64_decode($cleanedBase64);
+            if ($imageContent) {
+                if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces')) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces');
+                }
+                \Illuminate\Support\Facades\Storage::disk('public')->put("faces/{$emp->id}.jpg", $imageContent);
+            }
+        } elseif ($request->filled('register_face') && !\Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/2.jpg')) {
+                \Illuminate\Support\Facades\Storage::disk('public')->copy('faces/2.jpg', "faces/{$emp->id}.jpg");
+            }
+        }
+
         return redirect()->route('employes.index')->with('success', "Employé {$emp->full_name} ({$emp->matricule}) créé avec succès !");
     }
 
@@ -239,6 +256,11 @@ class EmployeController extends Controller
 
         if ($request->has('register_face')) {
             $data['consent_facial_at'] = $request->filled('register_face') ? now() : null;
+            if ($request->filled('register_face') && !\Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/2.jpg')) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->copy('faces/2.jpg', "faces/{$emp->id}.jpg");
+                }
+            }
         }
 
         $emp->update($data);
