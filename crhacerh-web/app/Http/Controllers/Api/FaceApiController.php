@@ -230,7 +230,7 @@ class FaceApiController extends Controller
                 $facesDir = storage_path('app/public/faces');
                 $scriptPath = base_path('scripts/face_recognize.py');
 
-                $cmd = "python " . escapeshellarg($scriptPath) . " " . escapeshellarg($tempPath) . " " . escapeshellarg($facesDir);
+                $cmd = "python " . escapeshellarg($scriptPath) . " compare " . escapeshellarg($tempPath) . " " . escapeshellarg($facesDir);
                 $pyOutput = shell_exec($cmd);
                 if ($pyOutput) {
                     $pyData = json_decode(trim($pyOutput), true);

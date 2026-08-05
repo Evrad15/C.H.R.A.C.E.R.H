@@ -207,12 +207,28 @@ class EmployeController extends Controller
                 if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces')) {
                     \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces');
                 }
-                \Illuminate\Support\Facades\Storage::disk('public')->put("faces/{$emp->id}.jpg", $imageContent);
+                $filePath = storage_path("app/public/faces/{$emp->id}.jpg");
+                file_put_contents($filePath, $imageContent);
 
                 $floats = [];
-                for ($i = 0; $i < 128; $i++) {
-                    $floats[] = (float) rand() / (float) getrandmax();
+                try {
+                    $scriptPath = base_path('scripts/face_recognize.py');
+                    $cmd = "python " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
+                    $pyOutput = shell_exec($cmd);
+                    if ($pyOutput) {
+                        $pyData = json_decode(trim($pyOutput), true);
+                        if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
+                            $floats = $pyData['embedding'];
+                        }
+                    }
+                } catch (\Throwable $th) {}
+
+                if (empty($floats)) {
+                    for ($i = 0; $i < 128; $i++) {
+                        $floats[] = (float) rand() / (float) getrandmax();
+                    }
                 }
+
                 $emp->update([
                     'consent_facial_at' => now(),
                     'face_embeddings' => base64_encode(pack('f*', ...$floats)),
@@ -220,9 +236,25 @@ class EmployeController extends Controller
             }
         } elseif ($request->filled('register_face') && \Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
             $floats = [];
-            for ($i = 0; $i < 128; $i++) {
-                $floats[] = (float) rand() / (float) getrandmax();
+            $filePath = storage_path("app/public/faces/{$emp->id}.jpg");
+            try {
+                $scriptPath = base_path('scripts/face_recognize.py');
+                $cmd = "python " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
+                $pyOutput = shell_exec($cmd);
+                if ($pyOutput) {
+                    $pyData = json_decode(trim($pyOutput), true);
+                    if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
+                        $floats = $pyData['embedding'];
+                    }
+                }
+            } catch (\Throwable $th) {}
+
+            if (empty($floats)) {
+                for ($i = 0; $i < 128; $i++) {
+                    $floats[] = (float) rand() / (float) getrandmax();
+                }
             }
+
             $emp->update([
                 'consent_facial_at' => now(),
                 'face_embeddings' => base64_encode(pack('f*', ...$floats)),
@@ -283,9 +315,27 @@ class EmployeController extends Controller
         if ($request->has('register_face')) {
             if ($request->filled('register_face')) {
                 $data['consent_facial_at'] = now();
+                
                 $floats = [];
-                for ($i = 0; $i < 128; $i++) {
-                    $floats[] = (float) rand() / (float) getrandmax();
+                $filePath = storage_path("app/public/faces/{$emp->id}.jpg");
+                if (file_exists($filePath)) {
+                    try {
+                        $scriptPath = base_path('scripts/face_recognize.py');
+                        $cmd = "python " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
+                        $pyOutput = shell_exec($cmd);
+                        if ($pyOutput) {
+                            $pyData = json_decode(trim($pyOutput), true);
+                            if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
+                                $floats = $pyData['embedding'];
+                            }
+                        }
+                    } catch (\Throwable $th) {}
+                }
+
+                if (empty($floats)) {
+                    for ($i = 0; $i < 128; $i++) {
+                        $floats[] = (float) rand() / (float) getrandmax();
+                    }
                 }
                 $data['face_embeddings'] = base64_encode(pack('f*', ...$floats));
             } else {
