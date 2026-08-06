@@ -33,17 +33,13 @@ def run_recognition():
         sys.exit(0)
 
     def get_embedding(img_path):
-        # Handle non-ASCII accents in paths under Windows by copying to a temp location
-        safe_path = img_path
-        if any(ord(c) > 127 for c in img_path):
-            safe_path = os.path.join(temp_dir, '_temp_image.jpg')
-            import shutil
-            try:
-                shutil.copy(img_path, safe_path)
-            except Exception:
-                pass
+        try:
+            with open(img_path, 'rb') as f:
+                img_bytes = f.read()
+            img = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_COLOR)
+        except Exception:
+            return None
 
-        img = cv2.imread(safe_path)
         if img is None:
             return None
 
@@ -71,14 +67,25 @@ def run_recognition():
     if action == 'extract':
         captured_input = sys.argv[2]
         captured_path = captured_input
+        is_temp = False
         if captured_input.startswith('data:image') or len(captured_input) > 255:
+            import time, random
             raw_b64 = captured_input.split(',')[-1]
             img_bytes = base64.b64decode(raw_b64)
-            captured_path = os.path.join(temp_dir, '_temp_extract.jpg')
+            captured_path = os.path.join(temp_dir, f'_temp_ext_{int(time.time())}_{random.randint(1000,9999)}.jpg')
             with open(captured_path, 'wb') as f:
                 f.write(img_bytes)
+            is_temp = True
 
         v = get_embedding(captured_path)
+        
+        # Cleanup
+        if is_temp and os.path.exists(captured_path):
+            try:
+                os.remove(captured_path)
+            except Exception:
+                pass
+
         if v is not None:
             print(json.dumps({
                 "status": "success",
@@ -97,14 +104,25 @@ def run_recognition():
         faces_dir = sys.argv[3]
 
         captured_path = captured_input
+        is_temp = False
         if captured_input.startswith('data:image') or len(captured_input) > 255:
+            import time, random
             raw_b64 = captured_input.split(',')[-1]
             img_bytes = base64.b64decode(raw_b64)
-            captured_path = os.path.join(temp_dir, '_temp_verify.jpg')
+            captured_path = os.path.join(temp_dir, f'_temp_cmp_{int(time.time())}_{random.randint(1000,9999)}.jpg')
             with open(captured_path, 'wb') as f:
                 f.write(img_bytes)
+            is_temp = True
 
         v_captured = get_embedding(captured_path)
+        
+        # Cleanup
+        if is_temp and os.path.exists(captured_path):
+            try:
+                os.remove(captured_path)
+            except Exception:
+                pass
+
         if v_captured is None:
             print(json.dumps({
                 "status": "error",
