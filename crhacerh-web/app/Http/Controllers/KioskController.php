@@ -28,9 +28,9 @@ class KioskController extends Controller
                 $emp = $pointage->employee;
                 return [
                     'id' => $pointage->id,
-                    'first_name' => $emp ? $emp->first_name : 'Employé',
-                    'last_name' => $emp ? (substr($emp->last_name, 0, 1) . '.') : 'X.',
-                    'full_name' => $emp ? ($emp->first_name . ' ' . $emp->last_name) : 'Employé',
+                    'first_name' => $emp ? $emp->last_name : 'Employé',
+                    'last_name' => $emp ? (substr($emp->first_name, 0, 1) . '.') : 'X.',
+                    'full_name' => $emp ? ($emp->last_name . ' ' . $emp->first_name) : 'Employé',
                     'department' => ($emp && $emp->department) ? $emp->department->name : 'Général',
                     'type' => $pointage->type,
                     'time' => Carbon::parse($pointage->timestamp)->format('H:i:s'),
@@ -79,7 +79,7 @@ class KioskController extends Controller
         $employees = Employe::with('department')->get()->map(function ($emp) {
             return [
                 'id' => $emp->id,
-                'name' => $emp->first_name . ' ' . $emp->last_name,
+                'name' => $emp->last_name . ' ' . $emp->first_name,
                 'role_info' => $emp->department ? $emp->department->name : 'Employé',
                 'category' => 'EMPLOYE',
                 'has_fingerprint' => !empty($emp->fingerprint_data),
@@ -128,7 +128,7 @@ class KioskController extends Controller
                 if (empty($employee->fingerprint_registered_at) && empty($employee->fingerprint_data)) {
                     return response()->json([
                         'status' => 'error',
-                        'message' => "Échec : Aucune empreinte enregistrée dans la base de données pour {$employee->first_name} {$employee->last_name}. Veuillez réaliser l'enrôlement biométrique préalablement."
+                        'message' => "Échec : Aucune empreinte enregistrée dans la base de données pour {$employee->last_name} {$employee->first_name}. Veuillez réaliser l'enrôlement biométrique préalablement."
                     ], 400);
                 }
 
@@ -167,7 +167,7 @@ class KioskController extends Controller
                     'category' => 'EMPLOYE',
                     'message' => "Pointage validé par empreinte USB ! (Similitude BD : {$similarityPercent}% ≥ 95%)",
                     'data' => [
-                        'name' => $employee->first_name . ' ' . $employee->last_name,
+                        'name' => $employee->last_name . ' ' . $employee->first_name,
                         'department' => $employee->department ? $employee->department->name : 'N/A',
                         'type' => $pointage->type,
                         'time' => $pointage->timestamp->format('H:i:s'),

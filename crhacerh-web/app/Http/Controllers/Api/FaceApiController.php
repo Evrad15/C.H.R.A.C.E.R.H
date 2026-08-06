@@ -428,7 +428,7 @@ class FaceApiController extends Controller
                 'category' => 'EMPLOYE',
                 'message' => 'Pointage enregistré avec succès !',
                 'data' => [
-                    'name' => $employee->first_name . ' ' . $employee->last_name,
+                    'name' => $employee->last_name . ' ' . $employee->first_name,
                     'department' => $employee->department ? $employee->department->name : 'N/A',
                     'type' => $pointage->type,
                     'time' => $pointage->timestamp->format('H:i:s'),
