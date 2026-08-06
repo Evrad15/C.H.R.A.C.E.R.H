@@ -131,6 +131,34 @@ namespace App\Providers {
                 ];
                 return strtr($englishDate, $translations);
             });
+
+            // Génération automatique quotidienne des pointages au démarrage du serveur ou au premier accès du jour (uniquement à partir de 8h00)
+            try {
+                $argv = $_SERVER['argv'] ?? [];
+                $isServe = isset($argv[1]) && $argv[1] === 'serve';
+
+                if (! $this->app->runningInConsole() || $isServe) {
+                    $now = Carbon::now();
+                    if ($now->hour >= 8) {
+                        $today = Carbon::today()->toDateString();
+                        $cacheKey = 'daily_pointages_generated_' . $today;
+
+                        if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                            $exists = \Illuminate\Support\Facades\DB::table('pointages')
+                                ->whereDate('created_at', $today)
+                                ->exists();
+
+                            if (!$exists) {
+                                \Illuminate\Support\Facades\Artisan::call('pointages:generate-daily');
+                            }
+
+                            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->endOfDay());
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Pointages Boot Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            }
         }
     }
 }
