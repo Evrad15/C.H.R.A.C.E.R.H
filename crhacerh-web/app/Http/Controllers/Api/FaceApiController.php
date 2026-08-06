@@ -223,25 +223,77 @@ class FaceApiController extends Controller
             $confidence = 0.0;
             $usedGemini = false;
 
-            // 1. Déclenchement Prioritaire du Moteur Python (ageitgey/face_recognition)
+            // 1. Déclenchement Prioritaire du Moteur de reconnaissance faciale SFace (1:N Vector Match en PHP)
             try {
                 $tempPath = storage_path('app/public/_temp_verify.jpg');
                 file_put_contents($tempPath, $imageContent);
-                $facesDir = storage_path('app/public/faces');
                 $scriptPath = base_path('scripts/face_recognize.py');
 
-                $cmd = "python " . escapeshellarg($scriptPath) . " compare " . escapeshellarg($tempPath) . " " . escapeshellarg($facesDir);
+                // Extraire le vecteur d'embedding 128D du visage capturé
+                $cmd = "python " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($tempPath);
                 $pyOutput = shell_exec($cmd);
+                
+                // Supprimer immédiatement l'image temporaire
+                if (file_exists($tempPath)) {
+                    @unlink($tempPath);
+                }
+
                 if ($pyOutput) {
                     $pyData = json_decode(trim($pyOutput), true);
                     if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
-                        $matchedEmployeeId = $pyData['matched_id'];
-                        $confidence = (float)($pyData['similarity'] / 100.0);
-                        $usedGemini = true;
+                        $capturedVector = $pyData['embedding']; // array de 128 floats
+
+                        $bestSimilarity = 0.0;
+                        $bestEmpId = null;
+
+                        foreach ($employees as $emp) {
+                            $embeddings = $emp->face_embeddings;
+                            if (is_resource($embeddings)) {
+                                $embeddings = stream_get_contents($embeddings);
+                            }
+                            if (empty($embeddings)) {
+                                continue;
+                            }
+                            
+                            $binary = base64_decode($embeddings);
+                            $candVector = array_values(unpack('f*', $binary));
+                            
+                            if (count($candVector) === 128) {
+                                // Calcul de similarité cosinus
+                                $dotProduct = 0.0;
+                                $normA = 0.0;
+                                $normB = 0.0;
+                                for ($i = 0; $i < 128; $i++) {
+                                    $dotProduct += $capturedVector[$i] * $candVector[$i];
+                                    $normA += $capturedVector[$i] * $capturedVector[$i];
+                                    $normB += $candVector[$i] * $candVector[$i];
+                                }
+                                $cosSim = ($normA == 0 || $normB == 0) ? 0.0 : $dotProduct / (sqrt($normA) * sqrt($normB));
+
+                                // Seuil de confiance SFace cosinus >= 0.36 correspond à >= 95%
+                                if ($cosSim >= 0.36) {
+                                    $similarityPct = 95.0 + ($cosSim - 0.36) * 10.0;
+                                } else {
+                                    $similarityPct = ($cosSim / 0.36) * 94.0;
+                                }
+                                $similarityPct = max(0.0, min(99.4, $similarityPct));
+
+                                if ($cosSim >= 0.36 && $similarityPct > $bestSimilarity) {
+                                    $bestSimilarity = $similarityPct;
+                                    $bestEmpId = $emp->id;
+                                }
+                            }
+                        }
+
+                        if ($bestEmpId && $bestSimilarity >= 95.0) {
+                            $matchedEmployeeId = $bestEmpId;
+                            $confidence = (float)($bestSimilarity / 100.0);
+                            $usedGemini = true; // Indique le succès biométrique
+                        }
                     }
                 }
             } catch (\Throwable $pyEx) {
-                Log::warning('Python face_recognition script error: ' . $pyEx->getMessage());
+                Log::warning('PHP 1:N face vector match error: ' . $pyEx->getMessage());
             }
 
             $apiKey = env('GEMINI_API_KEY');
