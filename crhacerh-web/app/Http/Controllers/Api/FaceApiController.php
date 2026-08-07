@@ -296,9 +296,17 @@ class FaceApiController extends Controller
                 Log::warning('PHP 1:N face vector match error: ' . $pyEx->getMessage());
             }
 
-            $apiKey = env('GEMINI_API_KEY');
+            // Vérification rapide de la connexion internet (timeout 400ms) pour éviter les freezes en mode hors-ligne intranet
+            $isOnline = false;
+            if (!empty($apiKey)) {
+                $connection = @fsockopen("8.8.8.8", 53, $errno, $errstr, 0.4);
+                if ($connection) {
+                    $isOnline = true;
+                    fclose($connection);
+                }
+            }
 
-            if (!$matchedEmployeeId && !empty($apiKey)) {
+            if (!$matchedEmployeeId && $isOnline && !empty($apiKey)) {
                 try {
                     $client = \Gemini::client($apiKey);
                     $blobCaptured = new \Gemini\Data\Blob(
