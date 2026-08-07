@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Tableau de bord | C.H.R.A.C.E.R.H')</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo_chracerh-removebg-preview.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/vendor/fonts/outfit.css">
+    <link rel="stylesheet" href="/vendor/bootstrap-icons/bootstrap-icons.min.css">
 
     <style>
         :root {
@@ -444,7 +442,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/vendor/chartjs/chart.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const adminBtn = document.getElementById('adminProfileBtn');
