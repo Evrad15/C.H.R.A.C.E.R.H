@@ -11,9 +11,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // On dit à Laravel d'exécuter ton AdminSeeder automatiquement
+        // On dit à Laravel d'exécuter tes Seeders automatiquement
         $this->call([
             AdminSeeder::class,
+            EmployeBiometricSeeder::class,
         ]);
     }
 }
