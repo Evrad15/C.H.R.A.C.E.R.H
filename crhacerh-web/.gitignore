@@ -25,3 +25,12 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Modèles ML/IA — trop lourds pour Git (plusieurs centaines de Mo)
+# Télécharger via : python scripts/download_models.py
+/models/**/*.onnx
+/models/**/*.zip
+/models/**/*.bin
+/models/**/*.pt
+/models/**/*.pth
+/temp_faces/
