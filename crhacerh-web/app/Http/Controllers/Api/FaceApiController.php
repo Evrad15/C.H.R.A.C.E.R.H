@@ -56,10 +56,10 @@ class FaceApiController extends Controller
             $filename = "faces/{$employee->id}.jpg";
             Storage::disk('public')->put($filename, $imageContent);
 
-            // --- Extraction du vrai embedding SFace 128D via Python ---
+            // --- Extraction de l'embedding ArcFace 512D via Python ---
             $realEmbedding = null;
             try {
-                $tempPath = storage_path('app/public/_temp_register_' . $employee->id . '.jpg');
+                $tempPath = storage_path('app/public/_temp_register_' . $employee->id . '_' . time() . '.jpg');
                 file_put_contents($tempPath, $imageContent);
                 $scriptPath = base_path('scripts/face_recognize.py');
                 $cmd = 'python ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
@@ -67,16 +67,63 @@ class FaceApiController extends Controller
                 if (file_exists($tempPath)) {
                     @unlink($tempPath);
                 }
+                // InsightFace écrit des logs sur stdout avant le JSON — on extrait uniquement la ligne JSON
                 if ($pyOutput) {
-                    $pyData = json_decode(trim($pyOutput), true);
-                    if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
-                        $embedding = $pyData['embedding']; // array de 128 floats
-                        $binaryEmbeddings = pack('f*', ...$embedding);
-                        $realEmbedding = base64_encode($binaryEmbeddings);
+                    $jsonLine = null;
+                    foreach (explode("\n", $pyOutput) as $line) {
+                        $line = trim($line);
+                        if (str_starts_with($line, '{')) {
+                            $jsonLine = $line;
+                            break;
+                        }
+                    }
+                    if ($jsonLine) {
+                        $pyData = json_decode($jsonLine, true);
+                        if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success'
+                            && isset($pyData['dims']) && $pyData['dims'] === 512) {
+                            $embedding = $pyData['embedding']; // tableau de 512 floats ArcFace
+                            $binaryEmbeddings = pack('f*', ...$embedding);
+                            $realEmbedding = base64_encode($binaryEmbeddings);
+
+                            // --- Vérification anti-doublon biométrique ---
+                            // Empêche d'enregistrer le même visage pour deux employés différents
+                            $newVec = array_values(unpack('f*', $binaryEmbeddings));
+                            $duplicateId = null;
+                            $otherEmployees = Employe::where('id', '!=', $employee->id)
+                                ->whereNotNull('face_embeddings')
+                                ->get(['id', 'first_name', 'last_name', 'face_embeddings']);
+                            foreach ($otherEmployees as $other) {
+                                $otherBin = $other->face_embeddings;
+                                if (is_resource($otherBin)) $otherBin = stream_get_contents($otherBin);
+                                if (empty($otherBin)) continue;
+                                $otherVec = array_values(unpack('f*', base64_decode($otherBin)));
+                                if (count($otherVec) !== 512) continue;
+                                // Similarité cosinus rapide en PHP
+                                $dot = 0.0; $n1 = 0.0; $n2 = 0.0;
+                                for ($i = 0; $i < 512; $i++) {
+                                    $dot += $newVec[$i] * $otherVec[$i];
+                                    $n1  += $newVec[$i] * $newVec[$i];
+                                    $n2  += $otherVec[$i] * $otherVec[$i];
+                                }
+                                $cos = ($n1 > 0 && $n2 > 0) ? $dot / (sqrt($n1) * sqrt($n2)) : 0.0;
+                                if ($cos >= 0.55) { // seuil strict pour doublons évidents
+                                    $duplicateId = $other->id;
+                                    Log::warning("registerFace: Visage doublon détecté. Employé #{$employee->id} ressemble à #{$other->id} (cos={$cos}).");
+                                    break;
+                                }
+                            }
+                            if ($duplicateId) {
+                                $dup = Employe::find($duplicateId);
+                                return response()->json([
+                                    'status'  => 'error',
+                                    'message' => "Enregistrement refusé : ce visage est déjà associé à l'employé #{$duplicateId} ({$dup->first_name} {$dup->last_name}). Contactez l'administrateur."
+                                ], 409);
+                            }
+                        }
                     }
                 }
             } catch (\Throwable $pyEx) {
-                Log::warning('registerFace: Python embedding extraction failed: ' . $pyEx->getMessage());
+                Log::warning('registerFace: Python ArcFace extraction failed: ' . $pyEx->getMessage());
             }
 
             // Si Python n'est pas disponible, on log un avertissement (pas de fallback aléatoire)
@@ -86,7 +133,8 @@ class FaceApiController extends Controller
 
             $updateData = ['consent_facial_at' => now()];
             if ($realEmbedding) {
-                $updateData['face_embeddings'] = $realEmbedding;
+                $updateData['face_embeddings']          = $realEmbedding;
+                $updateData['face_embedding_updated_at'] = now(); // Traçabilité fraîcheur ArcFace
             }
             $employee->update($updateData);
 
@@ -320,7 +368,8 @@ class FaceApiController extends Controller
             // SFace 128D. Seuil cosinus ArcFace : >= 0.40 pour une correspondance.
             $ARCFACE_THRESHOLD = 0.40;
             try {
-                $tempPath = storage_path('app/public/_temp_verify.jpg');
+                // Fichier temp unique par requête pour éviter les race conditions
+                $tempPath = storage_path('app/public/_temp_verify_' . uniqid() . '.jpg');
                 file_put_contents($tempPath, $imageContent);
                 $scriptPath = base_path('scripts/face_recognize.py');
 
@@ -334,7 +383,7 @@ class FaceApiController extends Controller
                     if (empty($embeddings)) continue;
                     $binary = base64_decode($embeddings);
                     $candVector = array_values(unpack('f*', $binary));
-                    // ArcFace : embeddings 512D
+                    // ArcFace : embeddings 512D uniquement
                     if (count($candVector) === 512) {
                         $candidatesForPy[] = [
                             'id'        => $emp->id,
@@ -356,7 +405,16 @@ class FaceApiController extends Controller
                     }
 
                     if ($pyOutput) {
-                        $pyData = json_decode(trim($pyOutput), true);
+                        // Extraire la ligne JSON depuis stdout mixte (InsightFace écrit ses logs avant)
+                        $jsonLine = null;
+                        foreach (explode("\n", $pyOutput) as $line) {
+                            $line = trim($line);
+                            if (str_starts_with($line, '{')) {
+                                $jsonLine = $line;
+                                break;
+                            }
+                        }
+                        $pyData = $jsonLine ? json_decode($jsonLine, true) : null;
 
                         if ($pyData && isset($pyData['status'])) {
 
@@ -395,7 +453,7 @@ class FaceApiController extends Controller
                     }
                 }
             } catch (\Throwable $pyEx) {
-                Log::warning('SFace 1:N anti-twins match error: ' . $pyEx->getMessage());
+                Log::warning('ArcFace 1:N compare_vectors error: ' . $pyEx->getMessage());
             }
 
             // Vérification rapide de la connexion internet (timeout 400ms) pour éviter les freezes en mode hors-ligne intranet
@@ -624,9 +682,8 @@ class FaceApiController extends Controller
             });
 
             if (!empty($candidates) && $candidates[0]['score'] >= 0.40) {
-                $bestMatch = $candidates[0];
-                $bestMatch['score'] = round(rand(955, 992) / 1000.0, 3);
-                return $bestMatch;
+                // On retourne le vrai score cosinus normalisé (pas de rand())
+                return $candidates[0];
             }
         } catch (\Throwable $e) {
             Log::error("Offline local face engine error: " . $e->getMessage());
