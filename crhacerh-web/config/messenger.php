@@ -2,7 +2,7 @@
 
 return [
 
-    // 'user_model' => App\Models\User::class,
+    'user_model' => App\Models\Employe::class,
 
     'message_model' => Cmgmyr\Messenger\Models\Message::class,
 

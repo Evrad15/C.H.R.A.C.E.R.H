@@ -416,83 +416,6 @@
     </div>
 </div>
 
-<!-- Quick Action Generation Section -->
-<div class="quick-gen-section">
-    <div class="section-subtitle">
-        <i class="bi bi-lightning-charge-fill" style="color:var(--primary);"></i>
-        <span>Génération Rapide en 1-Clic</span>
-    </div>
-    <div class="quick-gen-grid">
-        <!-- Card 1: Rapport Hebdomadaire Excel -->
-        <div class="quick-card">
-            <div>
-                <div class="quick-card-title">Rapport Hebdomadaire (Excel)</div>
-                <div class="quick-card-desc">Synthèse complète de la semaine en cours avec détails par employé (.xlsx).</div>
-            </div>
-            <form action="{{ route('rapports.generate') }}" method="POST">
-                @csrf
-                <input type="hidden" name="period" value="week">
-                <input type="hidden" name="format" value="excel">
-                <button type="submit" class="btn-quick-gen">
-                    <i class="bi bi-file-earmark-excel"></i>
-                    <span>Générer Hebdomadaire</span>
-                </button>
-            </form>
-        </div>
-
-        <!-- Card 2: Rapport Mensuel Excel -->
-        <div class="quick-card">
-            <div>
-                <div class="quick-card-title">Rapport Mensuel (Excel)</div>
-                <div class="quick-card-desc">Fichier mensuel classé dans le dossier du mois en cours (.xlsx).</div>
-            </div>
-            <form action="{{ route('rapports.generate') }}" method="POST">
-                @csrf
-                <input type="hidden" name="period" value="month">
-                <input type="hidden" name="format" value="excel">
-                <button type="submit" class="btn-quick-gen">
-                    <i class="bi bi-file-earmark-excel"></i>
-                    <span>Générer Mensuel</span>
-                </button>
-            </form>
-        </div>
-
-        <!-- Card 3: Rapport Journalier PDF -->
-        <div class="quick-card">
-            <div>
-                <div class="quick-card-title">Rapport Journalier (PDF)</div>
-                <div class="quick-card-desc">Bilan officiel de la journée prêt à l'impression (.pdf).</div>
-            </div>
-            <form action="{{ route('rapports.generate') }}" method="POST">
-                @csrf
-                <input type="hidden" name="period" value="day">
-                <input type="hidden" name="format" value="pdf">
-                <button type="submit" class="btn-quick-gen">
-                    <i class="bi bi-file-earmark-pdf"></i>
-                    <span>Générer Journalier PDF</span>
-                </button>
-            </form>
-        </div>
-
-        <!-- Card 4: Rapport Annuel Excel -->
-        <div class="quick-card">
-            <div>
-                <div class="quick-card-title">Bilan Annuel (Excel)</div>
-                <div class="quick-card-desc">Statistiques globales et taux d'assiduité annuels (.xlsx).</div>
-            </div>
-            <form action="{{ route('rapports.generate') }}" method="POST">
-                @csrf
-                <input type="hidden" name="period" value="year">
-                <input type="hidden" name="format" value="excel">
-                <button type="submit" class="btn-quick-gen">
-                    <i class="bi bi-file-earmark-excel"></i>
-                    <span>Générer Bilan Annuel</span>
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-
 <!-- Library Section (Dossiers et Fichiers) -->
 <div class="library-section">
     <div class="section-subtitle" style="margin-bottom:1.25rem;">
@@ -583,6 +506,17 @@
                         <option value="excel">Tableur Excel (.xlsx)</option>
                         <option value="pdf">Document PDF (.pdf)</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Employé spécifique (Optionnel)</label>
+                    <select name="employee_id" class="form-select">
+                        <option value="">Tous les employés</option>
+                        @foreach($employees as $employee)
+                            <option value="{{ $employee->id }}">{{ $employee->getFullNameAttribute() }}@if($employee->department) - {{ $employee->department->name }}@endif</option>
+                        @endforeach
+                    </select>
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Sélectionnez un employé pour générer un rapport ciblé.</div>
                 </div>
 
                 <div class="form-group">

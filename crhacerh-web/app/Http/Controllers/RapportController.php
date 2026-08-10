@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Employe;
 use App\Models\Rapport;
 use App\Services\ReportService;
 use Carbon\Carbon;
@@ -29,6 +30,8 @@ class RapportController extends Controller
         if (!$disk->exists($baseDir)) {
             $disk->makeDirectory($baseDir);
         }
+
+        $employees = Employe::orderBy('first_name')->orderBy('last_name')->get();
 
         // Récupération de tous les fichiers et sous-dossiers
         $allFiles = $disk->allFiles($baseDir);
@@ -99,6 +102,7 @@ class RapportController extends Controller
             'foldersInfo' => $foldersInfo,
             'dbRapports'  => $dbRapports,
             'stats'       => $stats,
+            'employees'   => $employees,
         ]);
     }
 
@@ -111,14 +115,16 @@ class RapportController extends Controller
             'period' => 'required|string',
             'format' => 'required|in:excel,pdf',
             'date'   => 'nullable|date',
+            'employee_id' => 'nullable|integer|exists:employés,id',
         ]);
 
         try {
             $period = $request->input('period');
             $format = $request->input('format');
             $targetDate = $request->filled('date') ? Carbon::parse($request->input('date')) : Carbon::today();
+            $employeeId = $request->filled('employee_id') ? (int) $request->input('employee_id') : null;
 
-            $filePath = $this->reportService->generateAndExport($period, $format, $targetDate);
+            $filePath = $this->reportService->generateAndExport($period, $format, $targetDate, $employeeId);
 
             return redirect()->route('rapports.index')->with('success', 'Rapport généré et enregistré avec succès dans la bibliothèque !');
 

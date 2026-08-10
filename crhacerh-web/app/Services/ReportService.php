@@ -6,12 +6,15 @@ use App\Models\Employe;
 use App\Models\Pointage;
 use App\Models\Rapport;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class ReportService
 {
+    private const HOURS_PER_ABSENCE = 8;
+
     /**
      * Normalise la période demandée (week/weekly/hebdo, month/monthly, year/yearly, day/daily).
      */
@@ -28,20 +31,27 @@ class ReportService
     /**
      * Calcule et génère les statistiques agrégées pour une période donnée.
      */
-    public function generateReport(string $period, ?Carbon $endDate = null): array
+    public function generateReport(string $period, ?Carbon $endDate = null, ?int $employeeId = null): array
     {
         $period = $this->normalizePeriod($period);
         $range = $this->buildRange($period, $endDate);
-        $records = Pointage::with('employe')
-            ->whereBetween('created_at', [$range['from'], $range['to']])
-            ->get();
+
+        $query = Pointage::with(['employe.department'])
+            ->whereBetween('created_at', [$range['from'], $range['to']]);
+
+        if ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        }
+
+        $records = $query->get();
 
         $totalEmployes = Employe::count();
         $present = $records->where('status', 'Present')->count();
         $absent = $records->where('status', 'Absent')->count();
         $late = $records->where('status', 'Retard')->count();
+        $absenceHours = $absent * self::HOURS_PER_ABSENCE;
 
-        $lateByEmployee = $records
+        $topRetards = $records
             ->where('status', 'Retard')
             ->groupBy('employee_id')
             ->map(function ($items) {
@@ -56,32 +66,87 @@ class ReportService
             ->take(5)
             ->all();
 
-        $absentByEmployee = $records
+        $topAbsences = $records
             ->where('status', 'Absent')
             ->groupBy('employee_id')
             ->map(function ($items) {
                 $employee = $items->first()->employe;
+                $count = $items->count();
                 return [
                     'nom' => $employee?->getFullNameAttribute() ?? 'Employé inconnu',
-                    'absences' => $items->count(),
+                    'absences' => $count,
+                    'absence_hours' => $count * self::HOURS_PER_ABSENCE,
                 ];
             })
-            ->sortByDesc('absences')
+            ->sortByDesc('absence_hours')
             ->values()
             ->take(5)
             ->all();
+
+        $topAssidus = $records
+            ->groupBy('employee_id')
+            ->map(function ($items) {
+                $employee = $items->first()->employe;
+                $presentCount = $items->where('status', 'Present')->count();
+                $lateCount = $items->where('status', 'Retard')->count();
+                $absentCount = $items->where('status', 'Absent')->count();
+                $total = $presentCount + $lateCount + $absentCount;
+
+                if ($total === 0) {
+                    return null;
+                }
+
+                return [
+                    'nom' => $employee?->getFullNameAttribute() ?? 'Employé inconnu',
+                    'departement' => $employee?->department?->name ?? 'N/A',
+                    'taux_assiduite' => $this->formatAttendanceRate($presentCount, $lateCount, $total),
+                    'presents' => $presentCount,
+                    'retards' => $lateCount,
+                    'absences' => $absentCount,
+                    'absence_hours' => $absentCount * self::HOURS_PER_ABSENCE,
+                ];
+            })
+            ->filter()
+            ->sort(function ($a, $b) {
+                if ($a['taux_assiduite'] === $b['taux_assiduite']) {
+                    return $b['presents'] <=> $a['presents'];
+                }
+                return $b['taux_assiduite'] <=> $a['taux_assiduite'];
+            })
+            ->values()
+            ->take(5)
+            ->all();
+
+        $employeeStats = null;
+        if ($employeeId) {
+            $employee = Employe::find($employeeId);
+            $employeeStats = [
+                'employee_id' => $employeeId,
+                'name' => $employee?->getFullNameAttribute() ?? 'Employé inconnu',
+                'total_records' => $records->count(),
+                'present' => $present,
+                'retard' => $late,
+                'absent' => $absent,
+                'absence_hours' => $absenceHours,
+                'attendance_rate' => $this->formatAttendanceRate($present, $late, $present + $late + $absent),
+            ];
+        }
 
         return [
             'period' => $period,
             'from' => $range['from']->toDateString(),
             'to' => $range['to']->toDateString(),
             'total_employes' => $totalEmployes,
+            'scope' => $employeeStats ? 'Employé ciblé' : 'Global',
             'enregistrements' => $records->count(),
             'present' => $present,
             'absent' => $absent,
             'retard' => $late,
-            'top_retards' => $lateByEmployee,
-            'top_absences' => $absentByEmployee,
+            'absence_hours' => $absenceHours,
+            'top_retards' => $topRetards,
+            'top_absences' => $topAbsences,
+            'top_assidus' => $topAssidus,
+            'employee_stats' => $employeeStats,
         ];
     }
 
@@ -92,26 +157,43 @@ class ReportService
     {
         $summary = [
             "{$title} ({$report['from']} → {$report['to']})",
+            "Portée : {$report['scope']}",
             "Effectif total : {$report['total_employes']}",
             "Enregistrements de présence : {$report['enregistrements']}",
             "Présents : {$report['present']}",
             "Absents : {$report['absent']}",
             "Retards : {$report['retard']}",
+            "Heures d'absence estimées : {$report['absence_hours']}h",
             '',
         ];
+
+        if (!empty($report['employee_stats'])) {
+            $summary[] = 'Rapport ciblé sur : ' . ($report['employee_stats']['name'] ?? 'Employé inconnu');
+            $summary[] = 'Taux d’assiduité : ' . ($report['employee_stats']['attendance_rate'] ?? '0%');
+            $summary[] = 'Heures d’absence estimées : ' . ($report['employee_stats']['absence_hours'] ?? 0) . 'h';
+            $summary[] = '';
+        }
+
+        if (!empty($report['top_assidus'])) {
+            $summary[] = 'Top 5 des employés les plus assidus :';
+            foreach ($report['top_assidus'] as $item) {
+                $summary[] = "- {$item['nom']} ({$item['departement']}) : {$item['taux_assiduite']}% d'assiduité";
+            }
+            $summary[] = '';
+        }
 
         if (!empty($report['top_retards'])) {
             $summary[] = 'Top 5 des retards :';
             foreach ($report['top_retards'] as $item) {
                 $summary[] = "- {$item['nom']} : {$item['retards']} retard(s)";
             }
+            $summary[] = '';
         }
 
         if (!empty($report['top_absences'])) {
-            $summary[] = '';
-            $summary[] = 'Top 5 des absences :';
+            $summary[] = 'Top 5 des absences (heures estimées) :';
             foreach ($report['top_absences'] as $item) {
-                $summary[] = "- {$item['nom']} : {$item['absences']} absence(s)";
+                $summary[] = "- {$item['nom']} : {$item['absence_hours']}h d'absence";
             }
         }
 
@@ -144,7 +226,7 @@ class ReportService
      *
      * @throws \RuntimeException
      */
-    public function exportReportAsExcel(array $report, string $filename = null): string
+    public function exportReportAsExcel(array $report, ?string $filename = null): string
     {
         if (!class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class)) {
             throw new \RuntimeException('PhpSpreadsheet missing. Run: composer require phpoffice/phpspreadsheet');
@@ -176,74 +258,85 @@ class ReportService
             }
         }
 
-        // Dossier du mois ex: "reports/Juin 2026"
         $subFolder = "reports/{$month} {$year}";
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Résumé Global');
 
-        // Header
         $sheet->setCellValue('A1', "Rapport ({$report['from']} → {$report['to']})");
-        $sheet->setCellValue('A2', 'Total employés');
-        $sheet->setCellValue('B2', $report['total_employes']);
-        $sheet->setCellValue('A3', 'Enregistrements');
-        $sheet->setCellValue('B3', $report['enregistrements']);
-        $sheet->setCellValue('A4', 'Présents');
-        $sheet->setCellValue('B4', $report['present']);
-        $sheet->setCellValue('A5', 'Absents');
-        $sheet->setCellValue('B5', $report['absent']);
-        $sheet->setCellValue('A6', 'Retards');
-        $sheet->setCellValue('B6', $report['retard']);
+        $sheet->setCellValue('A2', 'Portée');
+        $sheet->setCellValue('B2', $report['scope'] ?? 'Global');
+        $sheet->setCellValue('A3', 'Total employés');
+        $sheet->setCellValue('B3', $report['total_employes']);
+        $sheet->setCellValue('A4', 'Enregistrements');
+        $sheet->setCellValue('B4', $report['enregistrements']);
+        $sheet->setCellValue('A5', 'Présents');
+        $sheet->setCellValue('B5', $report['present']);
+        $sheet->setCellValue('A6', 'Absents');
+        $sheet->setCellValue('B6', $report['absent']);
+        $sheet->setCellValue('A7', 'Retards');
+        $sheet->setCellValue('B7', $report['retard']);
+        $sheet->setCellValue('A8', 'Heures d’absence estimées');
+        $sheet->setCellValue('B8', $report['absence_hours'] . 'h');
 
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A2:A6')->getFont()->setBold(true);
+        $sheet->getStyle('A2:A8')->getFont()->setBold(true);
 
-        $row = 8;
-        if (!empty($report['top_retards'])) {
-            $sheet->setCellValue("A{$row}", 'Top retards');
+        $row = 10;
+        if (!empty($report['top_assidus'])) {
+            $sheet->setCellValue("A{$row}", 'Top 5 des employés les plus assidus');
             $sheet->getStyle("A{$row}")->getFont()->setBold(true);
             $row++;
             $sheet->setCellValue("A{$row}", 'Nom');
-            $sheet->setCellValue("B{$row}", 'Retards');
-            $sheet->getStyle("A{$row}:B{$row}")->getFont()->setBold(true);
+            $sheet->setCellValue("B{$row}", 'Département');
+            $sheet->setCellValue("C{$row}", 'Taux d’assiduité');
+            $sheet->setCellValue("D{$row}", 'Présences');
+            $sheet->setCellValue("E{$row}", 'Retards');
+            $sheet->setCellValue("F{$row}", 'Absences');
+            $sheet->getStyle("A{$row}:F{$row}")->getFont()->setBold(true);
             $row++;
-            foreach ($report['top_retards'] as $item) {
+            foreach ($report['top_assidus'] as $item) {
                 $sheet->setCellValue("A{$row}", $item['nom']);
-                $sheet->setCellValue("B{$row}", $item['retards']);
+                $sheet->setCellValue("B{$row}", $item['departement']);
+                $sheet->setCellValue("C{$row}", $item['taux_assiduite'] . '%');
+                $sheet->setCellValue("D{$row}", $item['presents']);
+                $sheet->setCellValue("E{$row}", $item['retards']);
+                $sheet->setCellValue("F{$row}", $item['absences']);
                 $row++;
             }
+            $row++;
         }
 
         if (!empty($report['top_absences'])) {
-            $row += 1;
-            $sheet->setCellValue("A{$row}", 'Top absences');
+            $sheet->setCellValue("A{$row}", 'Top 5 des absences en heures');
             $sheet->getStyle("A{$row}")->getFont()->setBold(true);
             $row++;
             $sheet->setCellValue("A{$row}", 'Nom');
             $sheet->setCellValue("B{$row}", 'Absences');
-            $sheet->getStyle("A{$row}:B{$row}")->getFont()->setBold(true);
+            $sheet->setCellValue("C{$row}", 'Heures estimées');
+            $sheet->getStyle("A{$row}:C{$row}")->getFont()->setBold(true);
             $row++;
             foreach ($report['top_absences'] as $item) {
                 $sheet->setCellValue("A{$row}", $item['nom']);
                 $sheet->setCellValue("B{$row}", $item['absences']);
+                $sheet->setCellValue("C{$row}", $item['absence_hours'] . 'h');
                 $row++;
             }
         }
 
-        foreach (range('A', 'B') as $col) {
+        foreach (range('A', 'F') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // Deuxième onglet : Détail Employés
         $sheet2 = $spreadsheet->createSheet();
         $sheet2->setTitle('Détail Employés');
 
         $sheet2->setCellValue('A1', "Détails de Présence des Employés ({$report['from']} → {$report['to']})");
         $sheet2->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet2->mergeCells('A1:F1');
+        $sheet2->mergeCells('A1:G1');
 
-        $headers = ['Nom Complet', 'Département', 'Présences', 'Retards', 'Absences', 'Taux de Présence'];
+        $headers = ['Nom Complet', 'Département', 'Présences', 'Retards', 'Absences', 'Heures d’absence', 'Taux de Présence'];
         $colChar = 'A';
         foreach ($headers as $header) {
             $sheet2->setCellValue($colChar . '3', $header);
@@ -257,8 +350,12 @@ class ReportService
 
         $from = Carbon::parse($report['from'])->startOfDay();
         $to = Carbon::parse($report['to'])->endOfDay();
-        
-        $employes = Employe::with(['department', 'pointages' => function ($query) use ($from, $to) {
+
+        $selectedEmployeeId = $report['employee_stats']['employee_id'] ?? null;
+
+        $employes = Employe::when($selectedEmployeeId, function ($query) use ($selectedEmployeeId) {
+            $query->where('id', $selectedEmployeeId);
+        })->with(['department', 'pointages' => function ($query) use ($from, $to) {
             $query->whereBetween('created_at', [$from, $to]);
         }])->get();
 
@@ -278,7 +375,8 @@ class ReportService
             $sheet2->setCellValue("C{$rowNum}", $presentsCount);
             $sheet2->setCellValue("D{$rowNum}", $retardsCount);
             $sheet2->setCellValue("E{$rowNum}", $absencesCount);
-            $sheet2->setCellValue("F{$rowNum}", $attendanceRate);
+            $sheet2->setCellValue("F{$rowNum}", $absencesCount * self::HOURS_PER_ABSENCE . 'h');
+            $sheet2->setCellValue("G{$rowNum}", $attendanceRate);
 
             if ($rowNum % 2 == 0) {
                 $sheet2->getStyle("A{$rowNum}:F{$rowNum}")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
@@ -289,7 +387,7 @@ class ReportService
             $rowNum++;
         }
 
-        foreach (range('A', 'F') as $col) {
+        foreach (range('A', 'G') as $col) {
             $sheet2->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -308,7 +406,7 @@ class ReportService
      *
      * @throws \RuntimeException
      */
-    public function exportReportAsPdf(array $report, string $filename = null): string
+    public function exportReportAsPdf(array $report, ?string $filename = null): string
     {
         $monthsFr = [
             1=>'Janvier',2=>'Février',3=>'Mars',4=>'Avril',5=>'Mai',6=>'Juin',
@@ -374,9 +472,9 @@ class ReportService
 
         if (!empty($report['top_absences'])) {
             $html .= '<h3>Top 5 des absences</h3>';
-            $html .= '<table class="stats-table"><tr><th>Nom Complet</th><th>Nombre d\'Absences</th></tr>';
+            $html .= '<table class="stats-table"><tr><th>Nom Complet</th><th>Nombre d\'Absences</th><th>Heures estimées</th></tr>';
             foreach ($report['top_absences'] as $item) {
-                $html .= '<tr><td>' . e($item['nom']) . '</td><td>' . e($item['absences']) . '</td></tr>';
+                $html .= '<tr><td>' . e($item['nom']) . '</td><td>' . e($item['absences']) . '</td><td>' . e($item['absence_hours']) . 'h</td></tr>';
             }
             $html .= '</table>';
         }
@@ -406,10 +504,10 @@ class ReportService
     /**
      * Génère et exporte un rapport complet, puis l'enregistre en BDD.
      */
-    public function generateAndExport(string $period, string $format = 'excel', ?Carbon $endDate = null): string
+    public function generateAndExport(string $period, string $format = 'excel', ?Carbon $endDate = null, ?int $employeeId = null): string
     {
         $period = $this->normalizePeriod($period);
-        $report = $this->generateReport($period, $endDate);
+        $report = $this->generateReport($period, $endDate, $employeeId);
         
         $title = match ($period) {
             'week' => 'Rapport hebdomadaire',
@@ -418,6 +516,10 @@ class ReportService
             default => 'Rapport journalier',
         };
 
+        if (!empty($report['employee_stats'])) {
+            $title .= ' - ' . ($report['employee_stats']['name'] ?? 'Employé');
+        }
+
         $content = $this->formatReportText($report, $title);
         $this->createReportRecord($title, $content, $endDate);
 
@@ -425,6 +527,15 @@ class ReportService
             'pdf' => $this->exportReportAsPdf($report),
             default => $this->exportReportAsExcel($report),
         };
+    }
+
+    protected function formatAttendanceRate(int $present, int $late, int $total): float
+    {
+        if ($total <= 0) {
+            return 0.0;
+        }
+
+        return round((($present + $late) / $total) * 100, 1);
     }
 
     protected function buildRange(string $period, ?Carbon $endDate = null): array

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Cmgmyr\Messenger\Models\Message;
 use Cmgmyr\Messenger\Traits\Messagable;
 
 class Employe extends Authenticatable
