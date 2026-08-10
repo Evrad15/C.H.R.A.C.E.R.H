@@ -33,11 +33,11 @@
             background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             color: var(--text-main);
             height: 100vh;
+            width: 100vw;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            /* Fixe sur l'écran, aucun défilement */
             position: relative;
         }
 
@@ -78,15 +78,15 @@
             }
         }
 
-        /* Grille principale : Gauche (Tableau/Historique) + Droite (Borne Biométrique 450px) */
+        /* Grille principale : Gauche (Tableau/Historique) + Droite (Borne Biométrique) */
         .container {
-            width: 100%;
-            max-width: 1440px;
-            padding: 1.5rem 2rem;
+            width: 96vw;
+            height: 94vh;
+            padding: 2vh 1vw;
             display: grid;
-            grid-template-columns: 1fr 450px;
-            gap: 2.5rem;
-            height: 92vh;
+            grid-template-columns: 1fr min(450px, 30vw);
+            gap: 2vw;
+            max-width: 1920px;
         }
 
         .r-card {

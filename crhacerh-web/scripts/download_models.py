@@ -2,7 +2,8 @@ import os
 import urllib.request
 
 def download_models():
-    models_dir = 'C:/Users/SOLUTION TECH/.gemini/antigravity-ide/models'
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    models_dir = os.path.join(base_dir, 'models')
     os.makedirs(models_dir, exist_ok=True)
 
     yunet_url = 'https://huggingface.co/opencv/face_detection_yunet/resolve/main/face_detection_yunet_2023mar.onnx'

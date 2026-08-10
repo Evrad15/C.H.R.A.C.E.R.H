@@ -52,24 +52,48 @@ class FaceApiController extends Controller
                 Storage::disk('public')->makeDirectory('faces');
             }
 
+            // Sauvegarder la photo brute
             $filename = "faces/{$employee->id}.jpg";
             Storage::disk('public')->put($filename, $imageContent);
 
-            // Vecteur binaire fictif (128 floats)
-            $floats = [];
-            for ($i = 0; $i < 128; $i++) {
-                $floats[] = (float) rand() / (float) getrandmax();
+            // --- Extraction du vrai embedding SFace 128D via Python ---
+            $realEmbedding = null;
+            try {
+                $tempPath = storage_path('app/public/_temp_register_' . $employee->id . '.jpg');
+                file_put_contents($tempPath, $imageContent);
+                $scriptPath = base_path('scripts/face_recognize.py');
+                $cmd = 'python ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
+                $pyOutput = shell_exec($cmd);
+                if (file_exists($tempPath)) {
+                    @unlink($tempPath);
+                }
+                if ($pyOutput) {
+                    $pyData = json_decode(trim($pyOutput), true);
+                    if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
+                        $embedding = $pyData['embedding']; // array de 128 floats
+                        $binaryEmbeddings = pack('f*', ...$embedding);
+                        $realEmbedding = base64_encode($binaryEmbeddings);
+                    }
+                }
+            } catch (\Throwable $pyEx) {
+                Log::warning('registerFace: Python embedding extraction failed: ' . $pyEx->getMessage());
             }
-            $binaryEmbeddings = pack('f*', ...$floats);
 
-            $employee->update([
-                'consent_facial_at' => now(),
-                'face_embeddings' => base64_encode($binaryEmbeddings),
-            ]);
+            // Si Python n'est pas disponible, on log un avertissement (pas de fallback aléatoire)
+            if (!$realEmbedding) {
+                Log::warning("registerFace: Impossible d'extraire l'embedding ArcFace pour l'employé {$employee->id}. Photo sauvegardée uniquement.");
+            }
+
+            $updateData = ['consent_facial_at' => now()];
+            if ($realEmbedding) {
+                $updateData['face_embeddings'] = $realEmbedding;
+            }
+            $employee->update($updateData);
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Visage enregistré avec succès !',
+                'embedding_extracted' => !is_null($realEmbedding),
                 'consent_facial_at' => $employee->consent_facial_at->toDateTimeString()
             ], 200);
 
@@ -105,28 +129,61 @@ class FaceApiController extends Controller
                 ], 400);
             }
 
-            // Si catégorie et ID sont fournis explicitement (sélection sur la borne ou acquisition faciale)
+            // Si catégorie et ID sont fournis explicitement (sélection sur la borne)
+            // → Vérification biométrique RÉELLE via ArcFace Python (plus de rand())
             if ($request->category && $request->id) {
-                $requiredThreshold = 0.95;
+
+                $scriptPath = base_path('scripts/face_recognize.py');
+                $tempPath   = storage_path('app/public/_temp_verify_manual.jpg');
+                file_put_contents($tempPath, $imageContent);
 
                 if ($request->category === 'EMPLOYE') {
                     $employee = Employe::with('department')->find($request->id);
                     if (!$employee) return response()->json(['status' => 'error', 'message' => 'Employé introuvable.'], 404);
 
-                    if (empty($employee->consent_facial_at) && !Storage::disk('public')->exists("faces/{$employee->id}.jpg")) {
+                    // Vérifier qu'un profil facial existe
+                    $embeddings = $employee->face_embeddings;
+                    if (is_resource($embeddings)) $embeddings = stream_get_contents($embeddings);
+
+                    if (empty($embeddings)) {
+                        if (file_exists($tempPath)) @unlink($tempPath);
                         return response()->json([
-                            'status' => 'error',
-                            'message' => "Échec : Aucun profil facial enregistré dans la base de données pour {$employee->first_name} {$employee->last_name}."
+                            'status'  => 'error',
+                            'message' => "Aucun profil facial ArcFace enregistré pour {$employee->first_name} {$employee->last_name}. Veuillez d'abord enregistrer votre visage."
                         ], 400);
                     }
 
-                    $similarityScore = round(rand(952, 991) / 1000.0, 3);
-                    $similarityPercent = round($similarityScore * 100, 1);
+                    // Appel ArcFace réel : compare le visage capturé contre l'embedding DB de cet employé
+                    $binary    = base64_decode($embeddings);
+                    $candVector = array_values(unpack('f*', $binary));
+                    $similarityPercent = 0.0;
+                    $cosSimRaw = 0.0;
 
-                    if ($similarityScore < $requiredThreshold) {
+                    if (count($candVector) === 512) {
+                        $candidatesJson = json_encode([[
+                            'id'        => $employee->id,
+                            'type'      => 'EMPLOYE',
+                            'embedding' => $candVector,
+                        ]]);
+                        $cmd       = 'python ' . escapeshellarg($scriptPath)
+                                   . ' compare_vectors ' . escapeshellarg($tempPath)
+                                   . ' ' . escapeshellarg($candidatesJson);
+                        $pyOutput  = shell_exec($cmd);
+                        $pyData    = $pyOutput ? json_decode(trim($pyOutput), true) : null;
+
+                        if ($pyData && ($pyData['status'] ?? '') === 'success') {
+                            $similarityPercent = (float)($pyData['similarity'] ?? 0.0);
+                            $cosSimRaw         = (float)($pyData['cos_sim']   ?? 0.0);
+                        }
+                    }
+
+                    if (file_exists($tempPath)) @unlink($tempPath);
+
+                    // Seuil ArcFace 95% affiché (cosinus >= 0.40 interne)
+                    if ($similarityPercent < 95.0) {
                         return response()->json([
-                            'status' => 'error',
-                            'message' => "Rejet Biométrique Facial : Taux de similitude ({$similarityPercent}%) inférieur au seuil obligatoire de 95%."
+                            'status'  => 'error',
+                            'message' => "Rejet Biométrique ArcFace : Similitude ({$similarityPercent}%) insuffisante pour {$employee->first_name} {$employee->last_name}. Votre visage ne correspond pas au profil enregistré."
                         ], 401);
                     }
 
@@ -135,67 +192,102 @@ class FaceApiController extends Controller
                         ->orderBy('timestamp', 'desc')
                         ->first();
 
-                    $type = ($lastPointage && $lastPointage->type === 'ENTREE') ? 'SORTIE' : 'ENTREE';
+                    $type   = ($lastPointage && $lastPointage->type === 'ENTREE') ? 'SORTIE' : 'ENTREE';
                     $status = ($type === 'ENTREE' && date('H:i') > '08:15') ? 'Retard' : 'Present';
 
                     $pointage = Pointage::create([
-                        'employee_id' => $employee->id,
-                        'type' => $type,
-                        'status' => $status,
-                        'source' => 'FACE',
-                        'timestamp' => now(),
-                        'confidence_score' => $similarityScore,
+                        'employee_id'      => $employee->id,
+                        'type'             => $type,
+                        'status'           => $status,
+                        'source'           => 'FACE',
+                        'timestamp'        => now(),
+                        'confidence_score' => round($cosSimRaw, 4),
                         'anomaly_detected' => false
                     ]);
 
                     return response()->json([
-                        'status' => 'success',
+                        'status'   => 'success',
                         'category' => 'EMPLOYE',
-                        'message' => "Pointage facial validé ! (Similitude BD : {$similarityPercent}% ≥ 95%)",
-                        'data' => [
-                            'name' => $employee->first_name . ' ' . $employee->last_name,
+                        'message'  => "Pointage facial ArcFace validé ! (Similitude : {$similarityPercent}% ≥ 95%)",
+                        'data'     => [
+                            'name'       => $employee->first_name . ' ' . $employee->last_name,
                             'department' => $employee->department ? $employee->department->name : 'N/A',
-                            'type' => $pointage->type,
-                            'time' => $pointage->timestamp->format('H:i:s'),
-                            'similarity' => "{$similarityPercent}%"
+                            'type'       => $pointage->type,
+                            'time'       => $pointage->timestamp->format('H:i:s'),
+                            'similarity' => "{$similarityPercent}%",
+                            'engine'     => 'arcface_512d'
                         ]
                     ], 200);
-                } else {
-                    $rdv = \App\Models\RendezVous::find($request->id);
-                    if (!$rdv) return response()->json(['status' => 'error', 'message' => 'Rendez-vous introuvable.'], 404);
 
-                    if (empty($rdv->consent_facial_at) && !Storage::disk('public')->exists("faces/patients/{$rdv->id}.jpg")) {
+                } else {
+                    // PATIENT
+                    $rdv = \App\Models\RendezVous::find($request->id);
+                    if (!$rdv) {
+                        if (file_exists($tempPath)) @unlink($tempPath);
+                        return response()->json(['status' => 'error', 'message' => 'Rendez-vous introuvable.'], 404);
+                    }
+
+                    // Comparer contre la photo stockée sur disque (patients n'ont pas forcément d'embedding DB)
+                    $patientFacePath = Storage::disk('public')->path("faces/patients/{$rdv->id}.jpg");
+                    $similarityPercent = 0.0;
+                    $cosSimRaw = 0.0;
+
+                    if (file_exists($patientFacePath)) {
+                        $cmd      = 'python ' . escapeshellarg($scriptPath)
+                                  . ' compare ' . escapeshellarg($tempPath)
+                                  . ' ' . escapeshellarg(Storage::disk('public')->path('faces/patients'));
+                        // Comparaison simplifiée : on extrait l'embedding du patient et on compare
+                        $cmdExtract = 'python ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($patientFacePath);
+                        $pyExtract  = shell_exec($cmdExtract);
+                        $extData    = $pyExtract ? json_decode(trim($pyExtract), true) : null;
+
+                        if ($extData && ($extData['status'] ?? '') === 'success' && count($extData['embedding']) === 512) {
+                            $candidatesJson = json_encode([[
+                                'id'        => $rdv->id,
+                                'type'      => 'PATIENT',
+                                'embedding' => $extData['embedding'],
+                            ]]);
+                            $cmdCmp    = 'python ' . escapeshellarg($scriptPath)
+                                       . ' compare_vectors ' . escapeshellarg($tempPath)
+                                       . ' ' . escapeshellarg($candidatesJson);
+                            $pyOutput  = shell_exec($cmdCmp);
+                            $pyData    = $pyOutput ? json_decode(trim($pyOutput), true) : null;
+
+                            if ($pyData && ($pyData['status'] ?? '') === 'success') {
+                                $similarityPercent = (float)($pyData['similarity'] ?? 0.0);
+                                $cosSimRaw         = (float)($pyData['cos_sim']   ?? 0.0);
+                            }
+                        }
+                    } elseif (empty($rdv->consent_facial_at)) {
+                        if (file_exists($tempPath)) @unlink($tempPath);
                         return response()->json([
-                            'status' => 'error',
-                            'message' => "Échec : Aucun profil facial enregistré en base pour le patient {$rdv->nom_patient}."
+                            'status'  => 'error',
+                            'message' => "Aucun profil facial enregistré pour le patient {$rdv->nom_patient}."
                         ], 400);
                     }
 
-                    $similarityScore = round(rand(952, 991) / 1000.0, 3);
-                    $similarityPercent = round($similarityScore * 100, 1);
+                    if (file_exists($tempPath)) @unlink($tempPath);
 
-                    if ($similarityScore < $requiredThreshold) {
+                    if ($similarityPercent < 95.0) {
                         return response()->json([
-                            'status' => 'error',
-                            'message' => "Rejet Biométrique Facial : Taux de similitude ({$similarityPercent}%) inférieur au seuil obligatoire de 95%."
+                            'status'  => 'error',
+                            'message' => "Rejet Biométrique ArcFace : Similitude ({$similarityPercent}%) insuffisante pour le patient {$rdv->nom_patient}."
                         ], 401);
                     }
 
-                    $rdv->update([
-                        'statut' => 'Présent',
-                        'pointage_at' => now()
-                    ]);
+                    $rdv->update(['statut' => 'Présent', 'pointage_at' => now()]);
 
                     return response()->json([
-                        'status' => 'success',
+                        'status'   => 'success',
                         'category' => 'PATIENT',
-                        'message' => "Arrivée patient validée par reconnaissance faciale ! (Similitude BD : {$similarityPercent}% ≥ 95%)",
-                        'data' => [
-                            'name' => $rdv->nom_patient,
-                            'service' => $rdv->service ?? 'Consultation',
-                            'medecin' => $rdv->medecin ?? 'Médecin traitant',
-                            'time' => Carbon::now()->format('H:i:s'),
-                            'similarity' => "{$similarityPercent}%"
+                        'message'  => "Arrivée patient validée par ArcFace ! (Similitude : {$similarityPercent}% ≥ 95%)",
+                        'data'     => [
+                            'name'       => $rdv->nom_patient,
+                            'service'    => $rdv->service  ?? 'Consultation',
+                            'medecin'    => $rdv->medecin  ?? 'Médecin traitant',
+                            'time'       => Carbon::now()->format('H:i:s'),
+                            'similarity' => "{$similarityPercent}%",
+                            'engine'     => 'arcface_512d'
                         ]
                     ], 200);
                 }
@@ -223,77 +315,87 @@ class FaceApiController extends Controller
             $confidence = 0.0;
             $usedGemini = false;
 
-            // 1. Déclenchement Prioritaire du Moteur de reconnaissance faciale SFace (1:N Vector Match en PHP)
+            // --- Moteur InsightFace ArcFace : comparaison 1:N via vecteurs DB ---
+            // ArcFace produit des embeddings 512D, nettement plus discriminants que
+            // SFace 128D. Seuil cosinus ArcFace : >= 0.40 pour une correspondance.
+            $ARCFACE_THRESHOLD = 0.40;
             try {
                 $tempPath = storage_path('app/public/_temp_verify.jpg');
                 file_put_contents($tempPath, $imageContent);
                 $scriptPath = base_path('scripts/face_recognize.py');
 
-                // Extraire le vecteur d'embedding 128D du visage capturé
-                $cmd = "python " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($tempPath);
-                $pyOutput = shell_exec($cmd);
-                
-                // Supprimer immédiatement l'image temporaire
-                if (file_exists($tempPath)) {
-                    @unlink($tempPath);
+                // Construire la liste JSON des candidats avec leurs embeddings DB
+                $candidatesForPy = [];
+                foreach ($employees as $emp) {
+                    $embeddings = $emp->face_embeddings;
+                    if (is_resource($embeddings)) {
+                        $embeddings = stream_get_contents($embeddings);
+                    }
+                    if (empty($embeddings)) continue;
+                    $binary = base64_decode($embeddings);
+                    $candVector = array_values(unpack('f*', $binary));
+                    // ArcFace : embeddings 512D
+                    if (count($candVector) === 512) {
+                        $candidatesForPy[] = [
+                            'id'        => $emp->id,
+                            'type'      => 'EMPLOYE',
+                            'embedding' => $candVector,
+                        ];
+                    }
                 }
 
-                if ($pyOutput) {
-                    $pyData = json_decode(trim($pyOutput), true);
-                    if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
-                        $capturedVector = $pyData['embedding']; // array de 128 floats
+                if (!empty($candidatesForPy)) {
+                    $candidatesJson = json_encode($candidatesForPy);
+                    $cmd = 'python ' . escapeshellarg($scriptPath)
+                         . ' compare_vectors ' . escapeshellarg($tempPath)
+                         . ' ' . escapeshellarg($candidatesJson);
+                    $pyOutput = shell_exec($cmd);
 
-                        $bestSimilarity = 0.0;
-                        $bestEmpId = null;
+                    if (file_exists($tempPath)) {
+                        @unlink($tempPath);
+                    }
 
-                        foreach ($employees as $emp) {
-                            $embeddings = $emp->face_embeddings;
-                            if (is_resource($embeddings)) {
-                                $embeddings = stream_get_contents($embeddings);
+                    if ($pyOutput) {
+                        $pyData = json_decode(trim($pyOutput), true);
+
+                        if ($pyData && isset($pyData['status'])) {
+
+                            // Cas : ambiguïté biométrique (delta < 0.05 entre Top-2)
+                            if ($pyData['status'] === 'ambiguous') {
+                                Log::info('verifyFace: Ambiguïté biométrique détectée', [
+                                    'candidates' => $pyData['candidates'],
+                                    'delta'      => $pyData['delta'] ?? null,
+                                ]);
+                                return response()->json([
+                                    'status'     => 'ambiguous',
+                                    'message'    => 'Ambiguïté biométrique détectée. Veuillez confirmer votre identité.',
+                                    'candidates' => array_map(function ($c) {
+                                        $emp = Employe::find($c['id']);
+                                        return [
+                                            'id'         => $c['id'],
+                                            'type'       => $c['type'] ?? 'EMPLOYE',
+                                            'name'       => $emp ? $emp->first_name . ' ' . $emp->last_name : 'Inconnu',
+                                            'similarity' => $c['similarity'],
+                                        ];
+                                    }, $pyData['candidates']),
+                                ], 200);
                             }
-                            if (empty($embeddings)) {
-                                continue;
-                            }
-                            
-                            $binary = base64_decode($embeddings);
-                            $candVector = array_values(unpack('f*', $binary));
-                            
-                            if (count($candVector) === 128) {
-                                // Calcul de similarité cosinus
-                                $dotProduct = 0.0;
-                                $normA = 0.0;
-                                $normB = 0.0;
-                                for ($i = 0; $i < 128; $i++) {
-                                    $dotProduct += $capturedVector[$i] * $candVector[$i];
-                                    $normA += $capturedVector[$i] * $capturedVector[$i];
-                                    $normB += $candVector[$i] * $candVector[$i];
-                                }
-                                $cosSim = ($normA == 0 || $normB == 0) ? 0.0 : $dotProduct / (sqrt($normA) * sqrt($normB));
 
-                                // Seuil de confiance SFace cosinus >= 0.36 correspond à >= 95%
-                                if ($cosSim >= 0.36) {
-                                    $similarityPct = 95.0 + ($cosSim - 0.36) * 10.0;
-                                } else {
-                                    $similarityPct = ($cosSim / 0.36) * 94.0;
-                                }
-                                $similarityPct = max(0.0, min(99.4, $similarityPct));
-
-                                if ($cosSim >= 0.36 && $similarityPct > $bestSimilarity) {
-                                    $bestSimilarity = $similarityPct;
-                                    $bestEmpId = $emp->id;
-                                }
+                            // Cas : correspondance trouvée
+                            if ($pyData['status'] === 'success' && isset($pyData['matched_id'])) {
+                                $matchedEmployeeId = (int)$pyData['matched_id'];
+                                $confidence = (float)(($pyData['similarity'] ?? 95.0) / 100.0);
+                                $usedGemini = true;
                             }
                         }
-
-                        if ($bestEmpId && $bestSimilarity >= 95.0) {
-                            $matchedEmployeeId = $bestEmpId;
-                            $confidence = (float)($bestSimilarity / 100.0);
-                            $usedGemini = true; // Indique le succès biométrique
-                        }
+                    }
+                } else {
+                    if (file_exists($tempPath)) {
+                        @unlink($tempPath);
                     }
                 }
             } catch (\Throwable $pyEx) {
-                Log::warning('PHP 1:N face vector match error: ' . $pyEx->getMessage());
+                Log::warning('SFace 1:N anti-twins match error: ' . $pyEx->getMessage());
             }
 
             // Vérification rapide de la connexion internet (timeout 400ms) pour éviter les freezes en mode hors-ligne intranet

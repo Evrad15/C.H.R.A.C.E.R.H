@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AdminSeeder::class,
             EmployeBiometricSeeder::class,
+            PointageSeeder::class,
         ]);
     }
 }
