@@ -181,8 +181,26 @@ class EmployeController extends Controller
 
         $matricule = trim($request->input('matricule'));
         if (empty($matricule)) {
-            $nextNumber = (Employe::max('id') ?? 0) + 1;
-            $matricule = sprintf('chr-%s-%04d', date('Y'), $nextNumber);
+            $year = date('Y');
+            $existingMatricules = Employe::where('matricule', 'like', "chr-{$year}-%")->pluck('matricule');
+            
+            $maxNum = 0;
+            foreach ($existingMatricules as $m) {
+                if (preg_match('/chr-\d{4}-(\d+)/', $m, $matches)) {
+                    $num = (int)$matches[1];
+                    if ($num > $maxNum) {
+                        $maxNum = $num;
+                    }
+                }
+            }
+            $nextNumber = max($maxNum + 1, (Employe::max('id') ?? 0) + 1);
+            $matricule = sprintf('chr-%s-%04d', $year, $nextNumber);
+
+            // Sécurité anti-collision
+            while (Employe::where('matricule', $matricule)->exists()) {
+                $nextNumber++;
+                $matricule = sprintf('chr-%s-%04d', $year, $nextNumber);
+            }
         }
 
         $emp = Employe::create([

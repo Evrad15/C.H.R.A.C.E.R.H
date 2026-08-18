@@ -147,6 +147,61 @@ class RendezVousController extends Controller
             'notes'             => $validated['notes'] ?? null,
         ]);
 
+        // ── ENREGISTREMENT BIOMÉTRIQUE FACIAL PATIENT (ArcFace 512D) ──
+        if ($request->filled('register_face')) {
+            try {
+                $rawBase64 = $request->input('register_face');
+                $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
+                $imageContent = base64_decode($cleanedBase64);
+
+                if ($imageContent) {
+                    if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/patients')) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces/patients');
+                    }
+                    \Illuminate\Support\Facades\Storage::disk('public')->put("faces/patients/{$rdv->id}.jpg", $imageContent);
+
+                    $tempPath = storage_path('app/public/_temp_pat_' . $rdv->id . '_' . uniqid() . '.jpg');
+                    file_put_contents($tempPath, $imageContent);
+                    $scriptPath = base_path('scripts/face_recognize.py');
+                    $cmd = 'python ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
+                    $pyOutput = shell_exec($cmd);
+                    if (file_exists($tempPath)) @unlink($tempPath);
+
+                    if ($pyOutput) {
+                        $jsonLine = null;
+                        foreach (explode("\n", $pyOutput) as $line) {
+                            $line = trim($line);
+                            if (str_starts_with($line, '{')) {
+                                $jsonLine = $line;
+                                break;
+                            }
+                        }
+                        if ($jsonLine) {
+                            $pyData = json_decode($jsonLine, true);
+                            if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success' && isset($pyData['dims']) && $pyData['dims'] === 512) {
+                                $binaryEmbeddings = pack('f*', ...$pyData['embedding']);
+                                $rdv->update([
+                                    'face_embeddings'   => base64_encode($binaryEmbeddings),
+                                    'consent_facial_at' => now(),
+                                ]);
+                                Log::info("Visage ArcFace 512D enregistré avec succès pour RDV #{$rdv->id} ({$rdv->nom_patient})");
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error("Erreur enregistrement visage RDV : " . $e->getMessage());
+            }
+        }
+
+        // ── ENREGISTREMENT EMPREINTE DIGITALE PATIENT ──
+        if ($request->filled('register_fingerprint')) {
+            $rdv->update([
+                'fingerprint_data'          => $request->input('register_fingerprint'),
+                'fingerprint_registered_at' => now(),
+            ]);
+        }
+
         // ── DÉCLENCHEUR SMS AUTOMATIQUE : Confirmation immédiate ──
         try {
             if (!empty($rdv->telephone_patient)) {
@@ -156,7 +211,7 @@ class RendezVousController extends Controller
             Log::error('Erreur envoi SMS confirmation auto : ' . $e->getMessage());
         }
 
-        return redirect()->route('rendezvous.index')->with('success', 'Rendez-vous créé avec succès et SMS de confirmation envoyé !');
+        return redirect()->route('rendezvous.index')->with('success', 'Rendez-vous créé avec succès et profil biométrique enregistré !');
     }
 
     /**
@@ -168,18 +223,41 @@ class RendezVousController extends Controller
         $oldStatus = $rdv->statut;
         
         $request->validate([
-            'statut' => 'required|in:Planifié,Confirmé,Réalisé,Annulé,Reporté',
+            'statut' => 'required|in:Planifié,Confirmé,Présent,Réalisé,Annulé,Reporté',
         ]);
+
+        // ── RÈGLE MÉTIER STRICTE : Verrouillage des statuts avancés/terminaux ──
+        // On ne peut plus revenir à "Confirmé" ou "Planifié" si le RDV est déjà Réalisé, Présent, Reporté, Annulé ou si le patient a pointé.
+        $isAdvancedOrTerminal = in_array($oldStatus, ['Présent', 'Réalisé', 'Reporté', 'Annulé']) || !empty($rdv->pointage_at);
+        if ($isAdvancedOrTerminal && in_array($request->statut, ['Confirmé', 'Planifié'])) {
+            $msg = "Action non autorisée : Impossible de repasser à l'état '{$request->statut}' car ce rendez-vous est déjà '{$oldStatus}'" . (!empty($rdv->pointage_at) ? " (présence déjà enregistrée à la borne)" : "") . ".";
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
 
         $rdv->update(['statut' => $request->statut]);
 
-        // ── DÉCLENCHEURS SMS AUTOMATIQUES : Changement de Statut ──
+        // ── DÉCLENCHEURS SMS AUTOMATIQUES SPÉCIFIQUES À CHAQUE STATUT ──
         try {
             if (!empty($rdv->telephone_patient) && $oldStatus !== $request->statut) {
-                if ($request->statut === 'Annulé') {
-                    SmsService::sendCancellation($rdv);
-                } elseif ($request->statut === 'Reporté') {
-                    SmsService::sendRescheduled($rdv);
+                switch ($request->statut) {
+                    case 'Confirmé':
+                        SmsService::sendConfirmation($rdv);
+                        break;
+                    case 'Réalisé':
+                        SmsService::sendCompleted($rdv);
+                        break;
+                    case 'Reporté':
+                        SmsService::sendRescheduled($rdv);
+                        break;
+                    case 'Annulé':
+                        SmsService::sendCancellation($rdv);
+                        break;
+                    case 'Présent':
+                        SmsService::sendCheckIn($rdv);
+                        break;
                 }
             }
         } catch (\Throwable $e) {
@@ -187,10 +265,10 @@ class RendezVousController extends Controller
         }
 
         if ($request->wantsJson()) {
-            return response()->json(['success' => true, 'statut' => $rdv->statut]);
+            return response()->json(['success' => true, 'statut' => $rdv->statut, 'message' => 'Statut mis à jour et SMS de notification envoyé.']);
         }
 
-        return redirect()->back()->with('success', 'Statut du rendez-vous mis à jour.');
+        return redirect()->back()->with('success', "Statut du rendez-vous mis à jour en '{$rdv->statut}' et SMS envoyé au patient.");
     }
 
     /**
@@ -224,6 +302,7 @@ class RendezVousController extends Controller
         $dateEnd   = (clone $dateStart)->addMinutes(30);
 
         $rdv->update([
+            'nom_patient'       => trim($validated['nom_patient']),
             'telephone_patient' => $validated['telephone_patient'],
             'email_patient'     => $validated['email_patient'],
             'service'           => $validated['service'],
@@ -233,6 +312,59 @@ class RendezVousController extends Controller
             'medecin'           => $validated['medecin'],
             'notes'             => $validated['notes'],
         ]);
+
+        // ── MISE À JOUR BIOMÉTRIQUE FACIALE (ArcFace 512D) ──
+        if ($request->filled('register_face')) {
+            try {
+                $rawBase64 = $request->input('register_face');
+                $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
+                $imageContent = base64_decode($cleanedBase64);
+
+                if ($imageContent) {
+                    if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces/patients')) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces/patients');
+                    }
+                    \Illuminate\Support\Facades\Storage::disk('public')->put("faces/patients/{$rdv->id}.jpg", $imageContent);
+
+                    $tempPath = storage_path('app/public/_temp_pat_' . $rdv->id . '_' . uniqid() . '.jpg');
+                    file_put_contents($tempPath, $imageContent);
+                    $scriptPath = base_path('scripts/face_recognize.py');
+                    $cmd = 'python ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
+                    $pyOutput = shell_exec($cmd);
+                    if (file_exists($tempPath)) @unlink($tempPath);
+
+                    if ($pyOutput) {
+                        $jsonLine = null;
+                        foreach (explode("\n", $pyOutput) as $line) {
+                            $line = trim($line);
+                            if (str_starts_with($line, '{')) {
+                                $jsonLine = $line;
+                                break;
+                            }
+                        }
+                        if ($jsonLine) {
+                            $pyData = json_decode($jsonLine, true);
+                            if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success' && isset($pyData['dims']) && $pyData['dims'] === 512) {
+                                $binaryEmbeddings = pack('f*', ...$pyData['embedding']);
+                                $rdv->update([
+                                    'face_embeddings'   => base64_encode($binaryEmbeddings),
+                                    'consent_facial_at' => now(),
+                                ]);
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error("Erreur mise à jour visage RDV : " . $e->getMessage());
+            }
+        }
+
+        if ($request->filled('register_fingerprint')) {
+            $rdv->update([
+                'fingerprint_data'          => $request->input('register_fingerprint'),
+                'fingerprint_registered_at' => now(),
+            ]);
+        }
 
         return redirect()->route('rendezvous.index')->with('success', 'Rendez-vous mis à jour avec succès !');
     }

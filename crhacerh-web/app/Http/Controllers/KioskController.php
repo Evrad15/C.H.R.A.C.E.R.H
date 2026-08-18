@@ -202,6 +202,14 @@ class KioskController extends Controller
                     'pointage_at' => now()
                 ]);
 
+                try {
+                    if (!empty($rdv->telephone_patient)) {
+                        \App\Services\SmsService::sendCheckIn($rdv);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('Erreur SMS Kiosk Patient Check-in : ' . $e->getMessage());
+                }
+
                 return response()->json([
                     'status' => 'success',
                     'category' => 'PATIENT',

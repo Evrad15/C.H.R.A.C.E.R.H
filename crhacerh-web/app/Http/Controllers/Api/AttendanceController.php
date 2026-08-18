@@ -25,7 +25,6 @@ class AttendanceController extends Controller
             // 2. Recherche dans la table 'employés'
             $employee = DB::table('employés')
                 ->where(DB::raw('LOWER(matricule)'), $matriculeSaisi)
-                ->whereNull('deleted_at') // Ignore les employés supprimés (SoftDeletes)
                 ->first();
 
             // 3. Si aucun employé ne correspond

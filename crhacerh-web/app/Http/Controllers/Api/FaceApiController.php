@@ -325,6 +325,14 @@ class FaceApiController extends Controller
 
                     $rdv->update(['statut' => 'Présent', 'pointage_at' => now()]);
 
+                    try {
+                        if (!empty($rdv->telephone_patient)) {
+                            \App\Services\SmsService::sendCheckIn($rdv);
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('Erreur SMS Face Patient Check-in : ' . $e->getMessage());
+                    }
+
                     return response()->json([
                         'status'   => 'success',
                         'category' => 'PATIENT',
@@ -341,53 +349,55 @@ class FaceApiController extends Controller
                 }
             }
 
-            // Recherche automatique des candidats enregistrés avec leur propre fichier photo
-            $employees = Employe::whereNotNull('consent_facial_at')->get()->filter(function ($emp) {
-                return Storage::disk('public')->exists("faces/{$emp->id}.jpg");
-            });
-
-            $patients = \App\Models\RendezVous::whereDate('date_rendez_vous', Carbon::today())
-                ->where(function ($q) {
-                    $q->whereNotNull('consent_facial_at')->orWhereNotNull('fingerprint_data');
-                })->get();
+            // Recherche automatique des candidats (Employés et Patients avec embeddings ArcFace)
+            $employees = Employe::whereNotNull('face_embeddings')->get(['id', 'first_name', 'last_name', 'department_id', 'face_embeddings']);
+            $patients  = \App\Models\RendezVous::whereNotNull('face_embeddings')->get(['id', 'nom_patient', 'service', 'medecin', 'face_embeddings', 'date_rendez_vous']);
 
             if ($employees->isEmpty() && $patients->isEmpty()) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Aucun profil facial enregistré pour aujourd\'hui. Veuillez sélectionner votre profil.'
+                    'message' => 'Aucun profil facial enregistré en base. Veuillez enregistrer un visage au préalable.'
                 ], 400);
             }
 
             $matchedEmployeeId = null;
-            $matchedPatientId = null;
-            $confidence = 0.0;
-            $usedGemini = false;
+            $matchedPatientId  = null;
+            $confidence        = 0.0;
+            $usedGemini        = false;
 
             // --- Moteur InsightFace ArcFace : comparaison 1:N via vecteurs DB ---
-            // ArcFace produit des embeddings 512D, nettement plus discriminants que
-            // SFace 128D. Seuil cosinus ArcFace : >= 0.40 pour une correspondance.
-            $ARCFACE_THRESHOLD = 0.40;
+            // ArcFace produit des embeddings 512D ultra-discriminants.
             try {
-                // Fichier temp unique par requête pour éviter les race conditions
                 $tempPath = storage_path('app/public/_temp_verify_' . uniqid() . '.jpg');
                 file_put_contents($tempPath, $imageContent);
                 $scriptPath = base_path('scripts/face_recognize.py');
 
-                // Construire la liste JSON des candidats avec leurs embeddings DB
+                // Construire la liste JSON des candidats (Employés + Patients RDV)
                 $candidatesForPy = [];
                 foreach ($employees as $emp) {
                     $embeddings = $emp->face_embeddings;
-                    if (is_resource($embeddings)) {
-                        $embeddings = stream_get_contents($embeddings);
-                    }
+                    if (is_resource($embeddings)) $embeddings = stream_get_contents($embeddings);
                     if (empty($embeddings)) continue;
                     $binary = base64_decode($embeddings);
                     $candVector = array_values(unpack('f*', $binary));
-                    // ArcFace : embeddings 512D uniquement
                     if (count($candVector) === 512) {
                         $candidatesForPy[] = [
                             'id'        => $emp->id,
                             'type'      => 'EMPLOYE',
+                            'embedding' => $candVector,
+                        ];
+                    }
+                }
+                foreach ($patients as $pt) {
+                    $embeddings = $pt->face_embeddings;
+                    if (is_resource($embeddings)) $embeddings = stream_get_contents($embeddings);
+                    if (empty($embeddings)) continue;
+                    $binary = base64_decode($embeddings);
+                    $candVector = array_values(unpack('f*', $binary));
+                    if (count($candVector) === 512) {
+                        $candidatesForPy[] = [
+                            'id'        => $pt->id,
+                            'type'      => 'PATIENT',
                             'embedding' => $candVector,
                         ];
                     }
@@ -405,7 +415,7 @@ class FaceApiController extends Controller
                     }
 
                     if ($pyOutput) {
-                        // Extraire la ligne JSON depuis stdout mixte (InsightFace écrit ses logs avant)
+                        // Extraire la ligne JSON depuis stdout mixte
                         $jsonLine = null;
                         foreach (explode("\n", $pyOutput) as $line) {
                             $line = trim($line);
@@ -418,7 +428,7 @@ class FaceApiController extends Controller
 
                         if ($pyData && isset($pyData['status'])) {
 
-                            // Cas : ambiguïté biométrique (delta < 0.05 entre Top-2)
+                            // Cas : ambiguïté biométrique
                             if ($pyData['status'] === 'ambiguous') {
                                 Log::info('verifyFace: Ambiguïté biométrique détectée', [
                                     'candidates' => $pyData['candidates'],
@@ -428,11 +438,17 @@ class FaceApiController extends Controller
                                     'status'     => 'ambiguous',
                                     'message'    => 'Ambiguïté biométrique détectée. Veuillez confirmer votre identité.',
                                     'candidates' => array_map(function ($c) {
-                                        $emp = Employe::find($c['id']);
+                                        if (($c['type'] ?? '') === 'PATIENT') {
+                                            $pt = \App\Models\RendezVous::find($c['id']);
+                                            $name = $pt ? $pt->nom_patient : 'Patient';
+                                        } else {
+                                            $emp = Employe::find($c['id']);
+                                            $name = $emp ? $emp->first_name . ' ' . $emp->last_name : 'Employé';
+                                        }
                                         return [
                                             'id'         => $c['id'],
                                             'type'       => $c['type'] ?? 'EMPLOYE',
-                                            'name'       => $emp ? $emp->first_name . ' ' . $emp->last_name : 'Inconnu',
+                                            'name'       => $name,
                                             'similarity' => $c['similarity'],
                                         ];
                                     }, $pyData['candidates']),
@@ -441,7 +457,13 @@ class FaceApiController extends Controller
 
                             // Cas : correspondance trouvée
                             if ($pyData['status'] === 'success' && isset($pyData['matched_id'])) {
-                                $matchedEmployeeId = (int)$pyData['matched_id'];
+                                if (($pyData['matched_type'] ?? '') === 'PATIENT') {
+                                    $matchedPatientId  = (int)$pyData['matched_id'];
+                                    $matchedEmployeeId = null;
+                                } else {
+                                    $matchedEmployeeId = (int)$pyData['matched_id'];
+                                    $matchedPatientId  = null;
+                                }
                                 $confidence = (float)(($pyData['similarity'] ?? 95.0) / 100.0);
                                 $usedGemini = true;
                             }
@@ -555,6 +577,14 @@ class FaceApiController extends Controller
                 if (!$rdv) return response()->json(['status' => 'error', 'message' => 'Rendez-vous introuvable.'], 404);
 
                 $rdv->update(['statut' => 'Présent', 'pointage_at' => now()]);
+
+                try {
+                    if (!empty($rdv->telephone_patient)) {
+                        \App\Services\SmsService::sendCheckIn($rdv);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('Erreur SMS Face 1:N Patient Check-in : ' . $e->getMessage());
+                }
 
                 return response()->json([
                     'status' => 'success',

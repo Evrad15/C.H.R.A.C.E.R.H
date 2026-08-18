@@ -619,15 +619,36 @@
         </thead>
         <tbody>
             @forelse($rendezvous as $rdv)
-            <tr onclick="openRdvDetails({{ json_encode($rdv) }})">
+            @php
+                $patientName = $rdv->patient ? $rdv->patient->nom_complet : ($rdv->nom_patient ?? 'Patient Inconnu');
+                $patientDossier = $rdv->patient->numero_dossier ?? 'N/A';
+                $rdvPayload = [
+                    'id' => $rdv->id,
+                    'nom_patient' => $patientName,
+                    'telephone_patient' => $rdv->telephone_patient ?? ($rdv->patient->telephone ?? ''),
+                    'email_patient' => $rdv->email_patient ?? '',
+                    'service' => $rdv->service ?? 'Général',
+                    'motif' => $rdv->motif ?? '',
+                    'date_rendez_vous' => $rdv->date_rendez_vous ? \Carbon\Carbon::parse($rdv->date_rendez_vous)->toIso8601String() : '',
+                    'medecin' => $rdv->medecin ?? 'Généraliste',
+                    'statut' => $rdv->statut ?? 'Planifié',
+                    'pointage_at' => $rdv->pointage_at ? \Carbon\Carbon::parse($rdv->pointage_at)->toIso8601String() : null,
+                    'notes' => $rdv->notes ?? '',
+                    'patient' => [
+                        'nom_complet' => $patientName,
+                        'numero_dossier' => $patientDossier,
+                    ],
+                ];
+            @endphp
+            <tr class="rdv-clickable-row" data-rdv="{{ base64_encode(json_encode($rdvPayload)) }}" style="cursor: pointer;">
                 <td>
                     <div class="patient-info">
                         <div class="patient-avatar">
-                            {{ strtoupper(substr($rdv->patient->nom_complet ?? 'P', 0, 1)) }}
+                            {{ strtoupper(substr($patientName, 0, 1)) }}
                         </div>
                         <div>
-                            <div class="patient-name">{{ $rdv->patient->nom_complet ?? 'Patient Inconnu' }}</div>
-                            <div class="patient-dossier">{{ $rdv->patient->numero_dossier ?? 'N/A' }} | {{ $rdv->telephone_patient ?? '—' }}</div>
+                            <div class="patient-name">{{ $patientName }}</div>
+                            <div class="patient-dossier">{{ $patientDossier }} | {{ $rdv->telephone_patient ?? '—' }}</div>
                         </div>
                     </div>
                 </td>
@@ -841,7 +862,7 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Nouveau Rendez-vous Sliding Drawer Handlers
+        // ── Nouveau Rendez-vous Sliding Drawer ──
         const btnOpenRdvDrawer   = document.getElementById('btnOpenModal');
         const createRdvOverlay   = document.getElementById('createRdvDrawerOverlay');
         const createRdvPanel     = document.getElementById('createRdvDrawerPanel');
@@ -867,29 +888,64 @@
         if (btnCancelRdvDrawer) btnCancelRdvDrawer.addEventListener('click', closeCreateRdvDrawer);
         if (createRdvOverlay) createRdvOverlay.addEventListener('click', closeCreateRdvDrawer);
 
-        // Drawer Close Handlers
+        // ── Biométrie Nouveau Rendez-vous Handlers ──
+        const btnCreateRdvFp = document.getElementById('btnToggleRdvFp');
+        if (btnCreateRdvFp) {
+            btnCreateRdvFp.addEventListener('click', function () {
+                window.openFingerprintScanner('inputRdvFp', 'badgeRdvFp', 'btnToggleRdvFp');
+            });
+        }
+
+        const btnCreateRdvFace = document.getElementById('btnToggleRdvFace');
+        if (btnCreateRdvFace) {
+            btnCreateRdvFace.addEventListener('click', function () {
+                window.openFaceCameraScanner('inputRdvFace', 'badgeRdvFace', 'btnToggleRdvFace');
+            });
+        }
+
+        // ── Drawer Détails Rendez-vous Handlers ──
         const overlay = document.getElementById('drawerOverlay');
         const panel   = document.getElementById('drawerPanel');
         const drawerClose = document.getElementById('drawerCloseBtn');
 
         function closeDrawer() {
-            overlay.classList.remove('open');
-            panel.classList.remove('open');
+            if (overlay && panel) {
+                overlay.classList.remove('open');
+                panel.classList.remove('open');
+            }
         }
-        if (overlay && panel) {
-            overlay.addEventListener('click', closeDrawer);
-            drawerClose.addEventListener('click', closeDrawer);
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closeDrawer();
+
+        if (overlay) overlay.addEventListener('click', closeDrawer);
+        if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDrawer();
+                closeCreateRdvDrawer();
+            }
+        });
+
+        // ── Click Handlers sur les lignes du tableau ──
+        document.querySelectorAll('.rdv-clickable-row').forEach(row => {
+            row.addEventListener('click', function () {
+                try {
+                    const rawB64 = this.getAttribute('data-rdv');
+                    if (!rawB64) return;
+                    const decoded = decodeURIComponent(escape(window.atob(rawB64)));
+                    const rdv = JSON.parse(decoded);
+                    openRdvDetails(rdv);
+                } catch (e) {
+                    console.error('Erreur ouverture détails RDV :', e);
+                }
             });
-        }
+        });
     });
 
     function applyFilters() {
         const statut  = document.getElementById('filterStatut').value;
         const service = document.getElementById('filterService').value;
         const periode = document.getElementById('filterPeriode').value;
-        const search  = document.querySelector('.inpage-search-box input[name="search"]').value;
+        const searchInput = document.querySelector('.inpage-search-box input[name="search"]');
+        const search  = searchInput ? searchInput.value : '';
 
         const params = new URLSearchParams();
         if (statut)  params.set('statut', statut);
@@ -902,7 +958,7 @@
 
     const allServices = @json($services);
     const allMedecins = @json($medecins);
-    const csrfToken = "{{ csrf_token() }}";
+    const csrfToken   = "{{ csrf_token() }}";
     let currentRdvData = null;
 
     function openRdvDetails(rdv) {
@@ -911,22 +967,30 @@
         const panel   = document.getElementById('drawerPanel');
         const content = document.getElementById('drawerContent');
 
-        overlay.classList.add('open');
-        panel.classList.add('open');
-        content.innerHTML = buildRdvDrawerHTML(rdv);
+        if (content) {
+            content.innerHTML = buildRdvDrawerHTML(rdv);
+        }
+        if (overlay && panel) {
+            overlay.classList.add('open');
+            panel.classList.add('open');
+        }
     }
 
     function showEditRdvForm() {
         if (!currentRdvData) return;
         const content = document.getElementById('drawerContent');
-        content.innerHTML = buildEditRdvHTML(currentRdvData);
-        initEditRdvBiometricToggles(currentRdvData);
+        if (content) {
+            content.innerHTML = buildEditRdvHTML(currentRdvData);
+            initEditRdvBiometricToggles(currentRdvData);
+        }
     }
 
     function cancelEditRdvForm() {
         if (!currentRdvData) return;
         const content = document.getElementById('drawerContent');
-        content.innerHTML = buildRdvDrawerHTML(currentRdvData);
+        if (content) {
+            content.innerHTML = buildRdvDrawerHTML(currentRdvData);
+        }
     }
 
     function initEditRdvBiometricToggles(rdv) {
@@ -947,9 +1011,18 @@
 
     function buildEditRdvHTML(rdv) {
         const patientName = rdv.patient ? rdv.patient.nom_complet : (rdv.nom_patient || '');
-        const rdvDateObj = new Date(rdv.date_rendez_vous);
-        const dateStr = rdvDateObj.toISOString().split('T')[0];
-        const hoursStr = String(rdvDateObj.getHours()).padStart(2, '0') + ':' + String(rdvDateObj.getMinutes()).padStart(2, '0');
+        let dateStr = '';
+        let hoursStr = '';
+        try {
+            const rdvDateObj = new Date(rdv.date_rendez_vous);
+            if (!isNaN(rdvDateObj.getTime())) {
+                const year = rdvDateObj.getFullYear();
+                const month = String(rdvDateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(rdvDateObj.getDate()).padStart(2, '0');
+                dateStr = `${year}-${month}-${day}`;
+                hoursStr = String(rdvDateObj.getHours()).padStart(2, '0') + ':' + String(rdvDateObj.getMinutes()).padStart(2, '0');
+            }
+        } catch (e) {}
 
         const serviceOptions = allServices.map(s =>
             `<option value="${s}" ${s === rdv.service ? 'selected' : ''}>${s}</option>`
@@ -1069,9 +1142,102 @@
     }
 
     function buildRdvDrawerHTML(rdv) {
-        const dateFormatted = new Date(rdv.date_rendez_vous).toLocaleDateString('fr-FR', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
+        let dateFormatted = 'Date non définie';
+        try {
+            const dateObj = new Date(rdv.date_rendez_vous);
+            if (!isNaN(dateObj.getTime())) {
+                dateFormatted = dateObj.toLocaleDateString('fr-FR', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+            }
+        } catch (e) {}
+
+        const patientName = rdv.patient ? rdv.patient.nom_complet : (rdv.nom_patient || 'Patient Inconnu');
+        const patientInitial = (patientName.charAt(0) || 'P').toUpperCase();
+        const dossierNum = rdv.patient && rdv.patient.numero_dossier ? rdv.patient.numero_dossier : 'Dossier en cours';
+
+        let statusActionsHTML = '';
+        const currentStatut = rdv.statut || 'Planifié';
+        const isTerminal = currentStatut === 'Réalisé' || currentStatut === 'Annulé';
+        const hasPointage = Boolean(rdv.pointage_at) || currentStatut === 'Présent';
+
+        if (isTerminal) {
+            const isCompleted = currentStatut === 'Réalisé';
+            statusActionsHTML = `
+                <div style="background:${isCompleted ? '#EBF9EE' : '#FDE8E8'}; border:1px solid ${isCompleted ? '#10B981' : '#F87171'}; border-radius:10px; padding:0.75rem 1rem; color:${isCompleted ? '#065F46' : '#991B1B'}; font-size:0.84rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i class="bi bi-shield-lock-fill" style="font-size:1.1rem;"></i>
+                    <span>Ce rendez-vous est <strong>${currentStatut}</strong> (clôturé). Aucun changement de statut ultérieur n'est possible.</span>
+                </div>
+            `;
+        } else if (hasPointage) {
+            // Patient arrivé / présent : On ne peut plus revenir en arrière vers "Confirmé" ou "Reporté"
+            statusActionsHTML = `
+                <div style="margin-bottom:0.6rem; font-size:0.78rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:0.35rem;">
+                    <i class="bi bi-geo-alt-fill"></i> Présence validée à la borne interactive
+                </div>
+                <form action="/rendez-vous/${rdv.id}/status" method="POST" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <input type="hidden" name="_token" value="${csrfToken}">
+                    <input type="hidden" name="_method" value="PATCH">
+                    <button type="submit" name="statut" value="Réalisé" class="btn-cancel" style="background:#EBF9EE; color:#07691C; font-weight:700; border:1px solid #10B981; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-check2-circle"></i> Marquer Réalisé (Fin Consultation)
+                    </button>
+                    <button type="submit" name="statut" value="Annulé" class="btn-cancel" style="background:#FDE8E8; color:var(--accent-red); font-weight:700; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-x-circle"></i> Annuler
+                    </button>
+                </form>
+            `;
+        } else if (currentStatut === 'Reporté') {
+            // Reporté : impossible de revenir à Confirmé sans reprogrammer
+            statusActionsHTML = `
+                <div style="margin-bottom:0.6rem; font-size:0.78rem; color:#D97300; font-weight:700; display:flex; align-items:center; gap:0.35rem;">
+                    <i class="bi bi-clock-history"></i> Statut actuel : Reporté
+                </div>
+                <form action="/rendez-vous/${rdv.id}/status" method="POST" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <input type="hidden" name="_token" value="${csrfToken}">
+                    <input type="hidden" name="_method" value="PATCH">
+                    <button type="submit" name="statut" value="Annulé" class="btn-cancel" style="background:#FDE8E8; color:var(--accent-red); font-weight:700; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-x-circle"></i> Annuler
+                    </button>
+                </form>
+            `;
+        } else if (currentStatut === 'Confirmé') {
+            // Confirmé -> Réalisé, Reporté, Annulé (pas de re-confirmation)
+            statusActionsHTML = `
+                <form action="/rendez-vous/${rdv.id}/status" method="POST" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <input type="hidden" name="_token" value="${csrfToken}">
+                    <input type="hidden" name="_method" value="PATCH">
+                    <button type="submit" name="statut" value="Réalisé" class="btn-cancel" style="background:#EBF9EE; color:#07691C; font-weight:700; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-check2-circle"></i> Réalisé
+                    </button>
+                    <button type="submit" name="statut" value="Reporté" class="btn-cancel" style="background:#FFF6EB; color:#D97300; font-weight:700; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-calendar-range"></i> Reporter
+                    </button>
+                    <button type="submit" name="statut" value="Annulé" class="btn-cancel" style="background:#FDE8E8; color:var(--accent-red); font-weight:700; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-x-circle"></i> Annuler
+                    </button>
+                </form>
+            `;
+        } else {
+            // Planifié (Initial) -> Confirmé, Réalisé, Reporté, Annulé
+            statusActionsHTML = `
+                <form action="/rendez-vous/${rdv.id}/status" method="POST" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <input type="hidden" name="_token" value="${csrfToken}">
+                    <input type="hidden" name="_method" value="PATCH">
+                    <button type="submit" name="statut" value="Confirmé" class="btn-cancel" style="background:#EBF3FF; color:var(--primary); font-weight:700; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-check-lg"></i> Confirmer
+                    </button>
+                    <button type="submit" name="statut" value="Réalisé" class="btn-cancel" style="background:#EBF9EE; color:#07691C; font-weight:700; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-check2-circle"></i> Réalisé
+                    </button>
+                    <button type="submit" name="statut" value="Reporté" class="btn-cancel" style="background:#FFF6EB; color:#D97300; font-weight:700; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-calendar-range"></i> Reporter
+                    </button>
+                    <button type="submit" name="statut" value="Annulé" class="btn-cancel" style="background:#FDE8E8; color:var(--accent-red); font-weight:700; padding:0.5rem 0.9rem; border-radius:8px; cursor:pointer;">
+                        <i class="bi bi-x-circle"></i> Annuler
+                    </button>
+                </form>
+            `;
+        }
 
         return `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; background:#F8FAFC; padding:0.75rem 1rem; border-radius:12px; border:1px solid #E2E8F0;">
@@ -1090,17 +1256,18 @@
 
             <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
                 <div style="width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg, #3A5BF0, #6C88FF); color:#FFF; font-weight:800; font-size:1.2rem; display:flex; align-items:center; justify-content:center;">
-                    ${rdv.patient ? rdv.patient.nom_complet.charAt(0).toUpperCase() : 'P'}
+                    ${patientInitial}
                 </div>
                 <div>
-                    <div style="font-size:1.15rem; font-weight:700; color:var(--text-dark);">${rdv.patient ? rdv.patient.nom_complet : 'Patient'}</div>
-                    <div style="font-size:0.82rem; color:var(--text-muted); font-weight:500;">${rdv.patient ? rdv.patient.numero_dossier : ''}</div>
+                    <div style="font-size:1.15rem; font-weight:700; color:var(--text-dark);">${patientName}</div>
+                    <div style="font-size:0.82rem; color:var(--text-muted); font-weight:500;">${dossierNum}</div>
                 </div>
             </div>
 
             <div style="background:#F6F7FB; border-radius:12px; padding:1rem; margin-bottom:1.25rem;">
                 <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Statut Actuel</div>
                 <div style="font-size:1.1rem; font-weight:800; color:var(--primary); margin-top:0.2rem;">${rdv.statut}</div>
+                ${rdv.pointage_at ? `<div style="font-size:0.76rem; color:#059669; font-weight:600; margin-top:0.25rem;"><i class="bi bi-check-circle-fill"></i> Heure d'arrivée  : ${new Date(rdv.pointage_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</div>` : ''}
             </div>
 
             <div style="display:flex; flex-direction:column; gap:0.85rem; font-size:0.88rem; margin-bottom:1.5rem;">
@@ -1115,31 +1282,9 @@
 
             <div style="border-top:1px solid #E8EBF2; padding-top:1rem;">
                 <div style="font-size:0.82rem; font-weight:700; color:var(--text-dark); margin-bottom:0.5rem;">Changer le Statut :</div>
-                <form action="/rendez-vous/${rdv.id}/status" method="POST" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                    <input type="hidden" name="_token" value="${csrfToken}">
-                    <input type="hidden" name="_method" value="PATCH">
-                    <button type="submit" name="statut" value="Confirmé" class="btn-cancel" style="background:#EBF9EE; color:#0E9F2D;">Confirmé</button>
-                    <button type="submit" name="statut" value="Réalisé" class="btn-cancel" style="background:#EBF9EE; color:#07691C;">Réalisé</button>
-                    <button type="submit" name="statut" value="Reporté" class="btn-cancel" style="background:#FFF6EB; color:#D97300;">Reporté</button>
-                    <button type="submit" name="statut" value="Annulé" class="btn-cancel" style="background:#FDE8E8; color:var(--accent-red);">Annulé</button>
-                </form>
+                ${statusActionsHTML}
             </div>
         `;
-    }
-
-    // Toggle RDV Biometric buttons for creation drawer
-    const btnRdvFp = document.getElementById('btnToggleRdvFp');
-    if (btnRdvFp) {
-        btnRdvFp.addEventListener('click', function () {
-            window.openFingerprintScanner('inputRdvFp', 'badgeRdvFp', 'btnToggleRdvFp');
-        });
-    }
-
-    const btnRdvFace = document.getElementById('btnToggleRdvFace');
-    if (btnRdvFace) {
-        btnRdvFace.addEventListener('click', function () {
-            window.openFaceCameraScanner('inputRdvFace', 'badgeRdvFace', 'btnToggleRdvFace');
-        });
     }
 </script>
 @endsection

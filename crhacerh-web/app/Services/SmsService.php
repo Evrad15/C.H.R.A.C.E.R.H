@@ -19,7 +19,8 @@ class SmsService
         $date    = Carbon::parse($rdv->date_rendez_vous)->format('d/m/Y');
         $heure   = Carbon::parse($rdv->date_rendez_vous)->format('H:i');
         $service = $rdv->service ?? 'Consultation';
-        $medecin = $rdv->medecin ? " (Dr {$rdv->medecin})" : '';
+        $docName = preg_replace('/^Dr\.?\s*/i', '', $rdv->medecin ?? '');
+        $medecin = !empty($docName) ? " (Dr {$docName})" : '';
 
         $message = "Bonjour {$nom}, votre RDV au C.H.R.A.C.E.R.H est bien confirmé pour le {$date} à {$heure} en {$service}{$medecin}. Merci d'arriver 10 min en avance.";
 
@@ -27,19 +28,40 @@ class SmsService
     }
 
     /**
-     * Envoie un SMS de rappel J-1 (automatisé via Cron / Scheduler).
+     * Envoie un SMS de rappel J-1 (par défaut la veille).
      */
     public static function sendReminder(RendezVous $rdv): SmsLog
+    {
+        return self::sendPeriodicReminder($rdv, 1);
+    }
+
+    /**
+     * Envoie un SMS de rappel périodique (Cycle de 3 rappels tous les 3 jours : J-6, J-3, J-1).
+     */
+    public static function sendPeriodicReminder(RendezVous $rdv, int $daysBefore = 1): SmsLog
     {
         $nom     = self::getPatientName($rdv);
         $date    = Carbon::parse($rdv->date_rendez_vous)->format('d/m/Y');
         $heure   = Carbon::parse($rdv->date_rendez_vous)->format('H:i');
         $service = $rdv->service ?? 'Consultation';
-        $medecin = $rdv->medecin ? " - Dr {$rdv->medecin}" : '';
+        $docName = preg_replace('/^Dr\.?\s*/i', '', $rdv->medecin ?? '');
+        $medecin = !empty($docName) ? " (Dr {$docName})" : '';
 
-        $message = "Rappel C.H.R.A.C.E.R.H : Bonjour {$nom}, nous vous rappelons votre RDV DEMAIN le {$date} à {$heure} en {$service}{$medecin}. Info/Annulation : +237 222 00 00 00.";
+        if ($daysBefore === 1) {
+            $type = 'RAPPEL_J1';
+            $message = "Rappel C.H.R.A.C.E.R.H (3/3) : Bonjour {$nom}, votre RDV a lieu DEMAIN le {$date} à {$heure} en {$service}{$medecin}. Merci d'arriver 10 min en avance avec votre pièce d'identité.";
+        } elseif ($daysBefore === 3) {
+            $type = 'RAPPEL_J3';
+            $message = "Rappel C.H.R.A.C.E.R.H (2/3) : Bonjour {$nom}, votre RDV aura lieu dans 3 jours (le {$date} à {$heure}) en {$service}{$medecin}. Merci de préparer votre dossier médical.";
+        } elseif ($daysBefore === 6) {
+            $type = 'RAPPEL_J6';
+            $message = "Rappel C.H.R.A.C.E.R.H (1/3) : Bonjour {$nom}, nous vous rappelons votre RDV dans 6 jours, le {$date} à {$heure} en {$service}{$medecin}. Pour toute modification : +237 222 00 00 00.";
+        } else {
+            $type = 'RAPPEL_J' . $daysBefore;
+            $message = "Rappel C.H.R.A.C.E.R.H : Bonjour {$nom}, nous vous rappelons votre RDV dans {$daysBefore} jours, le {$date} à {$heure} en {$service}{$medecin}. Contact : +237 222 00 00 00.";
+        }
 
-        return self::dispatch($rdv->telephone_patient, $message, 'RAPPEL_J1', $rdv, $nom);
+        return self::dispatch($rdv->telephone_patient, $message, $type, $rdv, $nom);
     }
 
     /**
@@ -66,11 +88,40 @@ class SmsService
         $date    = Carbon::parse($rdv->date_rendez_vous)->format('d/m/Y');
         $heure   = Carbon::parse($rdv->date_rendez_vous)->format('H:i');
         $service = $rdv->service ?? 'Consultation';
-        $medecin = $rdv->medecin ? " (Dr {$rdv->medecin})" : '';
+        $docName = preg_replace('/^Dr\.?\s*/i', '', $rdv->medecin ?? '');
+        $medecin = !empty($docName) ? " (Dr {$docName})" : '';
 
         $message = "C.H.R.A.C.E.R.H : Bonjour {$nom}, votre rendez-vous a été reporté au {$date} à {$heure} en {$service}{$medecin}. En cas d'indisponibilité, appelez le +237 222 00 00 00.";
 
         return self::dispatch($rdv->telephone_patient, $message, 'REPORTE', $rdv, $nom);
+    }
+
+    /**
+     * Envoie un SMS lorsque la consultation est honorée / terminée (Statut Réalisé).
+     */
+    public static function sendCompleted(RendezVous $rdv): SmsLog
+    {
+        $nom     = self::getPatientName($rdv);
+        $date    = Carbon::parse($rdv->date_rendez_vous)->format('d/m/Y');
+        $service = $rdv->service ?? 'Consultation';
+
+        $message = "C.H.R.A.C.E.R.H : Bonjour {$nom}, votre consultation du {$date} en {$service} a bien été effectuée. Nous vous remercions pour votre confiance et restons à votre disposition.";
+
+        return self::dispatch($rdv->telephone_patient, $message, 'REALISE', $rdv, $nom);
+    }
+
+    /**
+     * Envoie un SMS lors du pointage d'arrivée à la Borne Kiosque (Statut Présent).
+     */
+    public static function sendCheckIn(RendezVous $rdv): SmsLog
+    {
+        $nom     = self::getPatientName($rdv);
+        $heure   = now()->format('H:i');
+        $service = $rdv->service ?? 'Consultation';
+
+        $message = "C.H.R.A.C.E.R.H : Bonjour {$nom}, votre arrivée a bien été enregistrée à la borne interactive à {$heure} pour le service {$service}. Vous serez reçu(e) sous peu.";
+
+        return self::dispatch($rdv->telephone_patient, $message, 'ARRIVEE', $rdv, $nom);
     }
 
     /**
@@ -171,48 +222,61 @@ class SmsService
         $username = config('services.africastalking.username', env('AFRICASTALKING_USERNAME', 'sandbox'));
         $senderId = config('services.africastalking.sender_id', env('AFRICASTALKING_SENDER_ID', 'CHRACERH'));
 
-        // Mode Sandbox ou sans clé API configurée : simulation locale fiable
-        if (empty($apiKey) || $username === 'sandbox') {
-            Log::info("[SMS AUTO SANDBOX] To: {$formattedPhone} | Type: Automated | Msg: {$message}");
+        // 1. Si aucune clé API n'est configurée : simulation locale sans crash
+        if (empty($apiKey)) {
+            Log::info("[SMS SIMULATION LOCALE] To: {$formattedPhone} | Msg: {$message}");
             return [
                 'success' => true,
                 'status'  => 'SIMULATED',
-                'details' => 'Envoyé avec succès (Mode Sandbox / Simulation locale).',
+                'details' => 'Simulation locale réussie (aucune clé API configurée dans .env).',
             ];
         }
 
+        // 2. Déterminer l'URL (Sandbox AT ou Production AT)
+        $isSandbox = ($username === 'sandbox');
+        $endpoint  = $isSandbox
+            ? 'https://api.sandbox.africastalking.com/version1/messaging'
+            : 'https://api.africastalking.com/version1/messaging';
+
         try {
-            $response = Http::withHeaders([
+            $postData = [
+                'username' => $username,
+                'to'       => $formattedPhone,
+                'message'  => $message,
+            ];
+
+            // Le Sender ID n'est envoyé qu'en production (non supporté en Sandbox AT)
+            if (!$isSandbox && !empty($senderId)) {
+                $postData['from'] = $senderId;
+            }
+
+            $response = Http::withoutVerifying()->withHeaders([
                 'apiKey' => $apiKey,
                 'Accept' => 'application/json',
-            ])->asForm()->timeout(8)->post(
-                'https://api.africastalking.com/version1/messaging',
-                [
-                    'username' => $username,
-                    'to'       => $formattedPhone,
-                    'message'  => $message,
-                    'from'     => $senderId,
-                ]
-            );
+            ])->asForm()->timeout(10)->post($endpoint, $postData);
 
             $data = $response->json();
-            $recipientStatus = $data['SMSMessageData']['Recipients'][0]['status'] ?? null;
+            $recipients = $data['SMSMessageData']['Recipients'] ?? [];
+            $recipientStatus = $recipients[0]['status'] ?? null;
 
             if ($recipientStatus === 'Success') {
+                $msgId = $recipients[0]['messageId'] ?? 'N/A';
+                $cost  = $recipients[0]['cost'] ?? '0';
                 return [
                     'success' => true,
                     'status'  => 'SENT',
-                    'details' => 'Délivré avec succès via Africa\'s Talking (ID: ' . ($data['SMSMessageData']['Recipients'][0]['messageId'] ?? 'N/A') . ')',
+                    'details' => "Délivré via Africa's Talking ({$username}) | ID: {$msgId} | Coût: {$cost}",
                 ];
             }
 
+            $errorMessage = $data['SMSMessageData']['Message'] ?? ($data ? json_encode($data) : ('HTTP ' . $response->status() . ' - ' . $response->body()));
             return [
                 'success' => false,
                 'status'  => 'FAILED',
-                'details' => 'Réponse opérateur : ' . json_encode($data),
+                'details' => "Réponse Africa's Talking : {$errorMessage}",
             ];
         } catch (\Throwable $e) {
-            Log::error("[SmsService] Erreur appel API : " . $e->getMessage());
+            Log::error("[SmsService] Erreur appel Africa's Talking : " . $e->getMessage());
             return [
                 'success' => false,
                 'status'  => 'FAILED',

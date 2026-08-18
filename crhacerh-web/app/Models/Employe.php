@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +11,7 @@ use Cmgmyr\Messenger\Traits\Messagable;
 
 class Employe extends Authenticatable
 {
-    use HasFactory, SoftDeletes, Notifiable, Messagable;
+    use HasFactory, Notifiable, Messagable;
 
     // On force la table sur 'employés' avec son accent
     protected $table = 'employés';

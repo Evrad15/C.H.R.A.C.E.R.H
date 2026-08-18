@@ -21,7 +21,7 @@ class CheckDailyAbsences extends Command
         }
 
         // 1. Récupérer tous les employés actifs
-        $employes = DB::table('employés')->whereNull('deleted_at')->get();
+        $employes = DB::table('employés')->get();
 
         foreach ($employes as $e) {
             // 2. Vérifier si l'employé a au moins un pointage aujourd'hui

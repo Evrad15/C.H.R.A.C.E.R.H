@@ -30,7 +30,7 @@ class GenerateDailyPointages extends Command
 
     public function handle()
     {
-        $employes = DB::table('employés')->whereNull('deleted_at')->get();
+        $employes = DB::table('employés')->get();
 
         if ($employes->isEmpty()) {
             $this->warn("Aucun employé trouvé dans la base de données.");

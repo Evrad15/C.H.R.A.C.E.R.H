@@ -4,6 +4,14 @@
 
 @section('custom_styles')
 <style>
+    /* ── Masquer la 1ère barre de recherche (du header global) ── */
+    .top-header .search-box {
+        display: none !important;
+    }
+    .top-header {
+        justify-content: flex-end !important;
+    }
+
     /* ── Header ── */
     .page-header-flex {
         display: flex;
