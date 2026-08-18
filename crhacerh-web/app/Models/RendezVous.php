@@ -14,6 +14,7 @@ class RendezVous extends Model
 
     protected $fillable = [
         'patient_id',
+        'nom_patient',
         'telephone_patient',
         'email_patient',
         'service',
@@ -28,6 +29,8 @@ class RendezVous extends Model
         'fingerprint_data',
         'fingerprint_registered_at',
         'pointage_at',
+        'sms_sent_at',
+        'sms_count',
     ];
 
     protected $casts = [
@@ -36,11 +39,18 @@ class RendezVous extends Model
         'consent_facial_at' => 'datetime',
         'fingerprint_registered_at' => 'datetime',
         'pointage_at' => 'datetime',
+        'sms_sent_at' => 'datetime',
+        'sms_count' => 'integer',
     ];
 
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function smsLogs()
+    {
+        return $this->hasMany(SmsLog::class, 'rendez_vous_id');
     }
 
     public function getServicesList(): array

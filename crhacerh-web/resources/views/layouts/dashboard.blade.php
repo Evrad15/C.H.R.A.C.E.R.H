@@ -327,6 +327,12 @@
                     <span>Rendez-vous</span>
                 </a>
             </li>
+            <li class="nav-item {{ request()->routeIs('sms.*') ? 'active' : '' }}">
+                <a href="{{ route('sms.index') }}">
+                    <i class="bi bi-chat-square-text-fill"></i>
+                    <span>Journal des SMS</span>
+                </a>
+            </li>
             <li class="nav-item {{ request()->routeIs('conges.*') ? 'active' : '' }}">
                 <a href="{{ route('conges.index') }}">
                     <i class="bi bi-file-earmark-check-fill"></i>

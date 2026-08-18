@@ -8,6 +8,7 @@ use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\RendezVousController;
 use App\Http\Controllers\CongeController;
 use App\Http\Controllers\RapportController;
+use App\Http\Controllers\SmsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +64,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/download/{filename}',       [RapportController::class, 'downloadFile'])->where('filename', '.*')->name('rapports.download');
     Route::get('/reports/legacy-open/{filename}',    [RapportController::class, 'openFile'])->where('filename', '.*')->name('report.open');
     Route::get('/reports/legacy-download/{filename}',[RapportController::class, 'downloadFile'])->where('filename', '.*')->name('report.download');
+
+    // Journal & Suivi des SMS envoyés automatiquement
+    Route::get('/sms',               [SmsController::class, 'index'])->name('sms.index');
+    Route::post('/sms/{id}/retry',   [SmsController::class, 'retry'])->name('sms.retry');
 
 });
 

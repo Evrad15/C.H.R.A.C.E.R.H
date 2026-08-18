@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\RendezVous;
 use App\Models\Patient;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RendezVousController extends Controller
 {
@@ -131,8 +133,9 @@ class RendezVousController extends Controller
         $dateStart = Carbon::parse($dateTimeStr);
         $dateEnd   = (clone $dateStart)->addMinutes(30);
 
-        RendezVous::create([
+        $rdv = RendezVous::create([
             'patient_id'        => $patient->id,
+            'nom_patient'       => trim($validated['nom_patient']),
             'telephone_patient' => $validated['telephone_patient'] ?? $patient->telephone,
             'email_patient'     => $validated['email_patient'] ?? null,
             'service'           => $validated['service'],
@@ -144,7 +147,16 @@ class RendezVousController extends Controller
             'notes'             => $validated['notes'] ?? null,
         ]);
 
-        return redirect()->route('rendezvous.index')->with('success', 'Rendez-vous créé avec succès !');
+        // ── DÉCLENCHEUR SMS AUTOMATIQUE : Confirmation immédiate ──
+        try {
+            if (!empty($rdv->telephone_patient)) {
+                SmsService::sendConfirmation($rdv);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Erreur envoi SMS confirmation auto : ' . $e->getMessage());
+        }
+
+        return redirect()->route('rendezvous.index')->with('success', 'Rendez-vous créé avec succès et SMS de confirmation envoyé !');
     }
 
     /**
@@ -153,12 +165,26 @@ class RendezVousController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $rdv = RendezVous::findOrFail($id);
+        $oldStatus = $rdv->statut;
         
         $request->validate([
             'statut' => 'required|in:Planifié,Confirmé,Réalisé,Annulé,Reporté',
         ]);
 
         $rdv->update(['statut' => $request->statut]);
+
+        // ── DÉCLENCHEURS SMS AUTOMATIQUES : Changement de Statut ──
+        try {
+            if (!empty($rdv->telephone_patient) && $oldStatus !== $request->statut) {
+                if ($request->statut === 'Annulé') {
+                    SmsService::sendCancellation($rdv);
+                } elseif ($request->statut === 'Reporté') {
+                    SmsService::sendRescheduled($rdv);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::error('Erreur envoi SMS statut auto : ' . $e->getMessage());
+        }
 
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'statut' => $rdv->statut]);
