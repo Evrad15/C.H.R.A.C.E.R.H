@@ -109,14 +109,32 @@
         outline: none;
         transition: border 0.2s;
     }
-    .filter-select:focus { border-color: var(--primary); }
-    .search-box {
-        display: flex; align-items: center; gap: 0.5rem;
-        background: #fff; border: 1px solid var(--border-color);
-        border-radius: 10px; padding: 0.45rem 0.85rem;
-        font-size: 0.85rem; color: var(--text-muted);
+    /* ── Search Box identique aux autres pages ── */
+    .inpage-search-box {
+        position: relative;
+        display: flex;
+        align-items: center;
     }
-    .search-box input { border: none; outline: none; font-size: 0.85rem; color: var(--text-dark); background: transparent; width: 220px; }
+    .inpage-search-box input {
+        width: 280px;
+        padding: 0.55rem 1rem 0.55rem 2.4rem;
+        border-radius: 10px;
+        border: 1px solid #E2E7E7;
+        background: #FFFFFF;
+        font-size: 0.88rem;
+        outline: none;
+        transition: border 0.2s ease, width 0.2s ease;
+    }
+    .inpage-search-box input:focus {
+        border-color: var(--primary);
+        width: 320px;
+    }
+    .inpage-search-box i.bi-search {
+        position: absolute;
+        left: 0.85rem;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+    }
 
     /* ── Table ── */
     .table-container {
@@ -157,19 +175,20 @@
     }
     .patient-info { display: flex; align-items: center; gap: 0.75rem; }
     .patient-name { font-weight: 600; color: var(--text-dark); }
-    .patient-sub  { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.1rem; }
-
-    /* ── Type Badges ── */
+    /* ── Type Badges (100% Automatiques) ── */
     .badge-type {
         display: inline-flex; align-items: center; gap: 0.35rem;
-        padding: 0.25rem 0.65rem; border-radius: 6px;
-        font-size: 0.74rem; font-weight: 700;
+        padding: 0.28rem 0.75rem; border-radius: 8px;
+        font-size: 0.75rem; font-weight: 700;
+        white-space: nowrap;
     }
-    .type-confirmation { background: #EBF9EE; color: #0E9F2D; }
-    .type-rappel_j1    { background: #FFF6EB; color: #D97300; }
-    .type-annulation   { background: #FDE8E8; color: var(--accent-red); }
-    .type-reporte      { background: #F3E8FF; color: #7C3AED; }
-    .type-manuel       { background: #EBF3FF; color: var(--primary); }
+    .type-confirmation { background: #EBF9EE; color: #0E9F2D; border: 1px solid rgba(14,159,45,0.2); }
+    .type-arrivee      { background: #ECFDF5; color: #059669; border: 1px solid rgba(5,150,105,0.2); }
+    .type-realise      { background: #EFF6FF; color: #2563EB; border: 1px solid rgba(37,99,235,0.2); }
+    .type-rappel       { background: #FFFBEB; color: #D97706; border: 1px solid rgba(217,119,6,0.2); }
+    .type-annulation   { background: #FEF2F2; color: #DC2626; border: 1px solid rgba(220,38,38,0.2); }
+    .type-reporte      { background: #FAF5FF; color: #9333EA; border: 1px solid rgba(147,51,234,0.2); }
+    .type-auto         { background: #F1F5F9; color: #475569; border: 1px solid rgba(71,85,105,0.2); }
 
     /* ── Status Badges ── */
     .badge-status {
@@ -220,9 +239,9 @@
     /* ── Modal Détails ── */
     .modal-overlay {
         position: fixed; inset: 0;
-        background: rgba(31,56,76,0.4); backdrop-filter: blur(3px);
-        z-index: 1200; opacity: 0; pointer-events: none;
-        transition: opacity 0.3s ease; display: flex;
+        background: rgba(31,56,76,0.6); backdrop-filter: blur(4px);
+        z-index: 99999; opacity: 0; pointer-events: none;
+        transition: opacity 0.25s ease; display: flex;
         align-items: center; justify-content: center;
     }
     .modal-overlay.open { opacity: 1; pointer-events: auto; }
@@ -322,7 +341,7 @@
 {{-- Header --}}
 <div class="page-header-flex">
     <div>
-        <h1 class="page-title">📱 Journal des Notifications SMS</h1>
+        <h1 class="page-title">Journal des Notifications SMS</h1>
         <p class="page-subtitle">
             Suivi et audit en temps réel des SMS envoyés automatiquement aux patientes (Confirmations, Rappels J-1, Annulations, Reports).
         </p>
@@ -346,14 +365,14 @@
         <div class="stat-icon-wrap icon-conf"><i class="bi bi-calendar-check-fill"></i></div>
         <div>
             <div class="stat-value" style="color:#0E9F2D;">{{ $stats['confirmations'] }}</div>
-            <div class="stat-label">Confirmations auto</div>
+            <div class="stat-label">Confirmations</div>
         </div>
     </div>
     <div class="sms-stat-card">
-        <div class="stat-icon-wrap icon-reminder"><i class="bi bi-alarm-fill"></i></div>
+        <div class="stat-icon-wrap" style="background:#EFF6FF; color:#2563EB;"><i class="bi bi-clock-history"></i></div>
         <div>
-            <div class="stat-value" style="color:#D97300;">{{ $stats['rappels_j1'] }}</div>
-            <div class="stat-label">Rappels J-1 (Cron 18h)</div>
+            <div class="stat-value" style="color:#2563EB;">{{ ($stats['arrivees'] ?? 0) + ($stats['realises'] ?? 0) }}</div>
+            <div class="stat-label">Arrivées & Fins de soins</div>
         </div>
     </div>
     <div class="sms-stat-card">
@@ -379,10 +398,11 @@
         <select class="filter-select" id="filterType" onchange="applyFilters()">
             <option value="">Tous les types</option>
             <option value="CONFIRMATION" {{ request('type') == 'CONFIRMATION' ? 'selected' : '' }}>Confirmation</option>
-            <option value="RAPPEL_J1"    {{ request('type') == 'RAPPEL_J1' ? 'selected' : '' }}>Rappel J-1</option>
+            <option value="ARRIVEE"      {{ request('type') == 'ARRIVEE' ? 'selected' : '' }}>Arrivée Borne</option>
+            <option value="REALISE"      {{ request('type') == 'REALISE' ? 'selected' : '' }}>Fin Consultation</option>
+            <option value="RAPPEL"       {{ request('type') == 'RAPPEL' ? 'selected' : '' }}>Rappels (J-6, J-3, J-1)</option>
+            <option value="REPORTE"      {{ request('type') == 'REPORTE' ? 'selected' : '' }}>Report RDV</option>
             <option value="ANNULATION"   {{ request('type') == 'ANNULATION' ? 'selected' : '' }}>Annulation</option>
-            <option value="REPORTE"      {{ request('type') == 'REPORTE' ? 'selected' : '' }}>Reporté</option>
-            <option value="MANUEL"       {{ request('type') == 'MANUEL' ? 'selected' : '' }}>Manuel</option>
         </select>
 
         <select class="filter-select" id="filterStatus" onchange="applyFilters()">
@@ -393,7 +413,7 @@
         </select>
     </div>
 
-    <form method="GET" action="{{ route('sms.index') }}" class="search-box">
+    <form method="GET" action="{{ route('sms.index') }}" class="inpage-search-box" id="searchForm">
         @if(request('periode')) <input type="hidden" name="periode" value="{{ request('periode') }}"> @endif
         @if(request('type'))    <input type="hidden" name="type" value="{{ request('type') }}"> @endif
         @if(request('status'))  <input type="hidden" name="status" value="{{ request('status') }}"> @endif
@@ -408,11 +428,11 @@
         <thead>
             <tr>
                 <th style="width:14%;">Date &amp; Heure</th>
-                <th style="width:13%;">Type</th>
-                <th style="width:23%;">Patiente</th>
-                <th style="width:30%;">Message Envoyé</th>
-                <th style="width:12%;">Statut</th>
-                <th style="width:8%; text-align:center;">Action</th>
+                <th style="width:15%;">Type</th>
+                <th style="width:22%;">Patiente</th>
+                <th style="width:29%;">Message Envoyé</th>
+                <th style="width:11%;">Statut</th>
+                <th style="width:9%; text-align:center;">Action</th>
             </tr>
         </thead>
         <tbody>
@@ -420,17 +440,25 @@
             @php
                 $typeClass = match($log->type) {
                     'CONFIRMATION' => 'type-confirmation',
-                    'RAPPEL_J1'    => 'type-rappel_j1',
-                    'ANNULATION'   => 'type-annulation',
+                    'ARRIVEE'      => 'type-arrivee',
+                    'REALISE'      => 'type-realise',
+                    'RAPPEL_J1',
+                    'RAPPEL_J3',
+                    'RAPPEL_J6'    => 'type-rappel',
                     'REPORTE'      => 'type-reporte',
-                    default        => 'type-manuel',
+                    'ANNULATION'   => 'type-annulation',
+                    default        => 'type-auto',
                 };
                 $typeLabel = match($log->type) {
                     'CONFIRMATION' => 'Confirmation',
+                    'ARRIVEE'      => 'Arrivée Borne',
+                    'REALISE'      => 'Fin Consultation',
                     'RAPPEL_J1'    => 'Rappel J-1',
+                    'RAPPEL_J3'    => 'Rappel J-3',
+                    'RAPPEL_J6'    => 'Rappel J-6',
+                    'REPORTE'      => 'Report RDV',
                     'ANNULATION'   => 'Annulation',
-                    'REPORTE'      => 'Reporté',
-                    default        => 'Manuel',
+                    default        => 'Notification',
                 };
 
                 $statusClass = match($log->status) {
@@ -445,8 +473,22 @@
                     'FAILED'    => 'Échec',
                     default     => $log->status,
                 };
+
+                $logPayload = [
+                    'id'               => $log->id,
+                    'patient_name'     => $log->patient_name ?? 'Patient',
+                    'phone'            => $log->phone,
+                    'type'             => $typeLabel,
+                    'raw_type'         => $log->type,
+                    'message'          => $log->message,
+                    'status'           => $log->status,
+                    'status_label'     => $statusLabel,
+                    'response_details' => $log->response_details ?? 'Aucun détail technique disponible.',
+                    'created_at'       => $log->created_at ? \Carbon\Carbon::parse($log->created_at)->toIso8601String() : '',
+                    'created_at_fmt'   => $log->created_at ? \Carbon\Carbon::parse($log->created_at)->format('d/m/Y H:i:s') : '',
+                ];
             @endphp
-            <tr onclick="openLogDetails({{ json_encode($log) }})">
+            <tr class="sms-clickable-row" data-log="{{ base64_encode(json_encode($logPayload)) }}" style="cursor: pointer;">
                 <td>
                     <div style="font-weight:600;">
                         {{ \Carbon\Carbon::parse($log->created_at)->format('d/m/Y') }}
@@ -497,16 +539,17 @@
                         {{ $statusLabel }}
                     </span>
                 </td>
-                <td onclick="event.stopPropagation()" style="text-align:center;">
-                    @if($log->status === 'FAILED')
-                    <button class="btn-retry-sms" onclick="retrySms({{ $log->id }})" title="Réessayer l'envoi">
-                        <i class="bi bi-arrow-clockwise"></i> Réessayer
-                    </button>
-                    @else
-                    <button class="btn-action-icon" onclick="openLogDetails({{ json_encode($log) }})" title="Voir détails">
-                        <i class="bi bi-eye-fill"></i>
-                    </button>
-                    @endif
+                <td style="text-align:center; white-space:nowrap;">
+                    <div style="display:inline-flex; align-items:center; gap:0.35rem;">
+                        <button type="button" class="btn-action-icon btn-open-log-details" title="Voir tous les détails">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                        @if($log->status === 'FAILED')
+                        <button type="button" class="btn-retry-sms" onclick="event.stopPropagation(); retrySms({{ $log->id }});" title="Réessayer l'envoi">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        @endif
+                    </div>
                 </td>
             </tr>
             @empty
@@ -515,7 +558,7 @@
                     <i class="bi bi-inbox" style="font-size:2.5rem; display:block; margin-bottom:0.75rem; opacity:0.35;"></i>
                     Aucun SMS enregistré dans le journal pour cette période.
                     <div style="font-size:0.8rem; margin-top:0.35rem; color:var(--text-muted);">
-                        Les SMS seront automatiquement consignés ici dès qu'un rendez-vous est créé ou rappelé.
+                        Les SMS seront automatiquement consignés ici dès qu'un rendez-vous est créé, pointé ou rappelé.
                     </div>
                 </td>
             </tr>
@@ -582,7 +625,7 @@
                 <span class="log-meta-val" id="modalPhone"></span>
             </div>
             <div class="log-meta-row">
-                <span class="log-meta-label">Type d'automatisme</span>
+                <span class="log-meta-label">Type de message</span>
                 <span class="log-meta-val" id="modalType"></span>
             </div>
             <div class="log-meta-row">
@@ -611,16 +654,41 @@
 
 @section('scripts')
 <script>
-const CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+function decodeBase64Utf8(base64) {
+    try {
+        const binaryString = atob(base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return new TextDecoder('utf-8').decode(bytes);
+    } catch (e) {
+        try {
+            return decodeURIComponent(escape(atob(base64)));
+        } catch (e2) {
+            return atob(base64);
+        }
+    }
+}
 
 function openLogDetails(log) {
-    document.getElementById('modalMsgBody').textContent = log.message;
+    if (!log) return;
+    document.getElementById('modalMsgBody').textContent = log.message || 'Aucun message.';
     document.getElementById('modalPatient').textContent = log.patient_name || 'Patient Inconnu';
     document.getElementById('modalPhone').textContent   = log.phone || 'N/A';
-    document.getElementById('modalType').textContent    = log.type;
-    document.getElementById('modalDate').textContent    = new Date(log.created_at).toLocaleString('fr-FR');
-    document.getElementById('modalStatus').textContent  = log.status === 'SENT' ? '✅ Délivré' : log.status === 'SIMULATED' ? '🔵 Sandbox' : '❌ Échec';
-    document.getElementById('modalDetails').textContent = log.response_details || 'Aucun détail supplémentaire.';
+    document.getElementById('modalType').textContent    = log.type || log.raw_type || 'Notification';
+    document.getElementById('modalDate').textContent    = log.created_at_fmt || (log.created_at ? new Date(log.created_at).toLocaleString('fr-FR') : '—');
+    
+    let statusText = '🔵 Sandbox';
+    if (log.status === 'SENT') {
+        statusText = '✅ Délivré avec succès';
+    } else if (log.status === 'FAILED') {
+        statusText = '❌ Échec de transmission';
+    }
+    document.getElementById('modalStatus').textContent  = statusText;
+    document.getElementById('modalDetails').textContent = log.response_details || 'Aucun détail technique supplémentaire.';
 
     document.getElementById('logModalOverlay').classList.add('open');
 }
@@ -628,6 +696,31 @@ function openLogDetails(log) {
 function closeLogModal() {
     document.getElementById('logModalOverlay').classList.remove('open');
 }
+
+window.openLogDetails = openLogDetails;
+window.closeLogModal  = closeLogModal;
+
+// ── Initialisation sécurisée des clics sur lignes et boutons ──
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.sms-clickable-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-retry-sms')) return;
+            const encoded = this.getAttribute('data-log');
+            if (!encoded) return;
+            try {
+                const jsonStr = decodeBase64Utf8(encoded);
+                const log = JSON.parse(jsonStr);
+                openLogDetails(log);
+            } catch (err) {
+                console.error('Erreur décodage log SMS :', err);
+            }
+        });
+    });
+
+    document.getElementById('logModalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeLogModal();
+    });
+});
 
 // ── Réessayer un SMS en échec ──────────────────────────
 async function retrySms(logId) {
@@ -672,9 +765,5 @@ function showToast(type, msg) {
     toast.className = `toast ${type} show`;
     setTimeout(() => { toast.classList.remove('show'); }, 4000);
 }
-
-document.getElementById('logModalOverlay').addEventListener('click', function(e) {
-    if (e.target === this) closeLogModal();
-});
 </script>
 @endsection

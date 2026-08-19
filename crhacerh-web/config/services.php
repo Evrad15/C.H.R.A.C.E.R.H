@@ -50,4 +50,19 @@ return [
         'api_key'   => env('AFRICASTALKING_API_KEY'),
         'sender_id' => env('AFRICASTALKING_SENDER_ID', 'CHRACERH'),
     ],
+
+    'camoo' => [
+        'api_key'    => env('CAMOO_API_KEY'),
+        'api_secret' => env('CAMOO_API_SECRET'),
+        'sender_id'  => env('CAMOO_SENDER_ID', 'CHRACERH'),
+    ],
+
+    'orange' => [
+        'client_id'      => env('ORANGE_CLIENT_ID'),
+        'client_secret'  => env('ORANGE_CLIENT_SECRET'),
+        'auth_header'    => env('ORANGE_AUTH_HEADER'),
+        'sender_address' => env('ORANGE_SENDER_ADDRESS', 'tel:+2370000'),
+        'sender_name'    => env('ORANGE_SENDER_NAME', 'CHRACERH'),
+    ],
+
 ];

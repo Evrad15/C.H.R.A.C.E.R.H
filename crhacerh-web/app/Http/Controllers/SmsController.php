@@ -33,7 +33,11 @@ class SmsController extends Controller
 
         // ── Filtre par Type de SMS ──────────────────────────
         if ($type = $request->get('type')) {
-            $query->where('type', $type);
+            if ($type === 'RAPPEL') {
+                $query->where('type', 'like', 'RAPPEL%');
+            } else {
+                $query->where('type', $type);
+            }
         }
 
         // ── Filtre par Statut ───────────────────────────────
@@ -56,7 +60,9 @@ class SmsController extends Controller
         $stats = [
             'total_today'    => SmsLog::whereDate('created_at', Carbon::today())->count(),
             'confirmations'  => SmsLog::where('type', 'CONFIRMATION')->count(),
-            'rappels_j1'     => SmsLog::where('type', 'RAPPEL_J1')->count(),
+            'arrivees'       => SmsLog::where('type', 'ARRIVEE')->count(),
+            'realises'       => SmsLog::where('type', 'REALISE')->count(),
+            'rappels'        => SmsLog::where('type', 'like', 'RAPPEL%')->count(),
             'echecs'         => SmsLog::where('status', 'FAILED')->count(),
         ];
 

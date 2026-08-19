@@ -13,23 +13,19 @@ use Illuminate\Support\Facades\DB;
 class DashboardController extends Controller
 {
     /**
-     * Affiche le Tableau de bord Figma réaligné horizontalement, connecté aux données du 20 juillet au 16 août.
+     * Affiche le Tableau de bord en temps réel pour la journée en cours.
      */
     public function index()
     {
         $today = Carbon::today();
 
         // 1. Total des employés dans la base
-        $totalEmployes = Employe::count() ?: 1;
+        $totalEmployes = Employe::count();
 
-        // 2. Détermination de la date cible pour le pointage du jour (Aujourd'hui ou dernière date dans l'intervalle)
-        $latestPointageTimestamp = Pointage::max('created_at');
-        $latestDbDate = $latestPointageTimestamp ? Carbon::parse($latestPointageTimestamp)->startOfDay() : $today;
-        
-        $hasPointagesToday = Pointage::whereDate('created_at', $today)->exists();
-        $targetDate = $hasPointagesToday ? $today : $latestDbDate;
+        // 2. Date d'analyse = Toujours la date du jour en cours
+        $targetDate = $today;
 
-        // 3. Calculs des 3 compteurs d'entrée du jour
+        // 3. Calculs des 3 compteurs d'entrée du jour (aujourd'hui uniquement)
         $presentsCount = Pointage::whereDate('created_at', $targetDate)
             ->where('type', 'ENTREE')
             ->where('status', 'Present')
@@ -40,40 +36,27 @@ class DashboardController extends Controller
             ->where('status', 'Retard')
             ->count();
 
-        $absentsCount = Pointage::whereDate('created_at', $targetDate)
-            ->where('type', 'ENTREE')
-            ->where('status', 'Absent')
-            ->count();
-
-        if ($absentsCount === 0 && ($presentsCount + $retardsCount) < $totalEmployes) {
-            $absentsCount = max(0, $totalEmployes - ($presentsCount + $retardsCount));
-        }
+        // Les absents du jour = Total employés - (Présents + Retards du jour)
+        $absentsCount = max(0, $totalEmployes - ($presentsCount + $retardsCount));
 
         // Le chiffre central du Donut est le total des employés
         $donutTotal = $totalEmployes;
 
-        // 4. Liste des pointages du jour pour la table défilable
+        // 4. Liste stricte des pointages du jour pour la table défilable (aucun fallback sur les anciens jours)
         $recentPointages = Pointage::with(['employee', 'employee.department'])
             ->whereDate('created_at', $targetDate)
             ->orderBy('created_at', 'desc')
             ->take(30)
             ->get();
 
-        if ($recentPointages->isEmpty()) {
-            $recentPointages = Pointage::with(['employee', 'employee.department'])
-                ->orderBy('created_at', 'desc')
-                ->take(30)
-                ->get();
-        }
-
-        // 5. Calcul de la semaine actuelle (du Lundi au Dimanche - 7 jours)
-        $startOfWeek = (clone $targetDate)->startOfWeek(Carbon::MONDAY);
+        // 5. Calcul de la semaine en cours (du Lundi au Dimanche de la semaine actuelle)
+        $startOfWeek = (clone $today)->startOfWeek(Carbon::MONDAY);
         $endOfWeek = (clone $startOfWeek)->endOfWeek(Carbon::SUNDAY);
 
         $startOfPrevWeek = (clone $startOfWeek)->subWeek();
         $endOfPrevWeek = (clone $startOfWeek)->subDays(1)->endOfDay();
 
-        $currWeekPresents = Pointage::whereBetween('created_at', [$startOfWeek, $endOfWeek])
+        $currWeekPresents = Pointage::whereBetween('created_at', [$startOfWeek, (clone $today)->endOfDay()])
             ->where('type', 'ENTREE')
             ->whereIn('status', ['Present', 'Retard'])
             ->count();
@@ -91,30 +74,33 @@ class DashboardController extends Controller
 
         $isTrendPositive = $trendPercent >= 0;
 
-        // 6. Données du graphique hebdomadaire sur 7 jours (Lundi à Dimanche incluant les week-ends)
+        // 6. Données du graphique hebdomadaire pour la semaine réelle en cours (7 jours : Lundi à Dimanche)
         $weeklyData = [];
         $dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
         for ($i = 0; $i < 7; $i++) {
             $currentDay = (clone $startOfWeek)->addDays($i);
+            $isPastOrToday = $currentDay->lte($today);
 
-            $dayPresents = Pointage::whereDate('created_at', $currentDay)
-                ->where('type', 'ENTREE')
-                ->where('status', 'Present')
-                ->count();
+            if ($isPastOrToday) {
+                $dayPresents = Pointage::whereDate('created_at', $currentDay)
+                    ->where('type', 'ENTREE')
+                    ->where('status', 'Present')
+                    ->count();
 
-            $dayRetards = Pointage::whereDate('created_at', $currentDay)
-                ->where('type', 'ENTREE')
-                ->where('status', 'Retard')
-                ->count();
+                $dayRetards = Pointage::whereDate('created_at', $currentDay)
+                    ->where('type', 'ENTREE')
+                    ->where('status', 'Retard')
+                    ->count();
 
-            $dayAbsents = Pointage::whereDate('created_at', $currentDay)
-                ->where('type', 'ENTREE')
-                ->where('status', 'Absent')
-                ->count();
-
-            if ($dayAbsents === 0 && ($dayPresents + $dayRetards) > 0) {
-                $dayAbsents = max(0, $totalEmployes - ($dayPresents + $dayRetards));
+                $dayAbsents = ($dayPresents + $dayRetards > 0 || $currentDay->lt($today))
+                    ? max(0, $totalEmployes - ($dayPresents + $dayRetards))
+                    : 0;
+            } else {
+                // Jours futurs de la semaine en cours
+                $dayPresents = 0;
+                $dayRetards = 0;
+                $dayAbsents = 0;
             }
 
             $weeklyData[] = [
@@ -127,7 +113,7 @@ class DashboardController extends Controller
             ];
         }
 
-        $analysisDate = $targetDate;
+        $analysisDate = $today;
 
         return view('dashboard.index', compact(
             'totalEmployes',

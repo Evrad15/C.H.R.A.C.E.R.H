@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Tableau de bord | C.H.R.A.C.E.R.H')</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo_chracerh-removebg-preview.png') }}">
     <link rel="stylesheet" href="/vendor/fonts/outfit.css">
@@ -129,16 +130,20 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            width: calc(100% - 260px);
+            min-width: 0;
+            box-sizing: border-box;
         }
 
         /* Top Header */
         .top-header {
-            height: 70px;
+            height: 72px;
             background: transparent;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 2.5rem;
+            padding: 0 3.5rem 0 2.5rem;
+            box-sizing: border-box;
         }
 
         .search-box {
@@ -252,8 +257,10 @@
 
         /* Content Container */
         .content-body {
-            padding: 1.5rem 2.5rem 2.5rem 2.5rem;
+            padding: 1.5rem 3.5rem 3rem 2.5rem;
             flex: 1;
+            box-sizing: border-box;
+            min-width: 0;
         }
 
         /* Biometric Scanner Modals */

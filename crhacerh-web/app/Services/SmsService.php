@@ -214,15 +214,201 @@ class SmsService
     }
 
     /**
-     * Envoie vers Africa's Talking ou simule en mode local/sandbox.
+     * Envoie vers la passerelle configurée (Orange SMS Cameroon, Camoo SMS, ou Africa's Talking).
      */
     private static function sendToProvider(string $formattedPhone, string $message): array
+    {
+        $provider = config('services.sms_provider', env('SMS_PROVIDER', 'orange'));
+
+        if ($provider === 'orange' || (!empty(env('ORANGE_AUTH_HEADER')) && $provider !== 'camoo' && $provider !== 'africastalking')) {
+            return self::sendViaOrange($formattedPhone, $message);
+        }
+
+        if ($provider === 'camoo') {
+            return self::sendViaCamoo($formattedPhone, $message);
+        }
+
+        return self::sendViaAfricasTalking($formattedPhone, $message);
+    }
+
+    /**
+     * Passerelle Orange Developer SMS (Cameroun).
+     */
+    private static function sendViaOrange(string $formattedPhone, string $message): array
+    {
+        $authHeader    = config('services.orange.auth_header', env('ORANGE_AUTH_HEADER'));
+        $senderAddress = config('services.orange.sender_address', env('ORANGE_SENDER_ADDRESS', 'tel:+2370000'));
+        $senderName    = config('services.orange.sender_name', env('ORANGE_SENDER_NAME', 'CHRACERH'));
+
+        if (empty($authHeader)) {
+            Log::info("[ORANGE SIMULATION LOCALE] To: {$formattedPhone} | Msg: {$message}");
+            return [
+                'success' => true,
+                'status'  => 'SIMULATED',
+                'details' => 'Simulation locale réussie (clés Orange non configurées).',
+            ];
+        }
+
+        try {
+            // 1. Obtenir le Token OAuth
+            $tokenRes = Http::withoutVerifying()->withHeaders([
+                'Authorization' => $authHeader,
+                'Content-Type'  => 'application/x-www-form-urlencoded',
+                'Accept'        => 'application/json',
+            ])->asForm()->timeout(15)->post('https://api.orange.com/oauth/v3/token', [
+                'grant_type' => 'client_credentials'
+            ]);
+
+            $tokenData = $tokenRes->json();
+            $accessToken = $tokenData['access_token'] ?? null;
+
+            if (!$accessToken) {
+                return [
+                    'success' => false,
+                    'status'  => 'FAILED',
+                    'details' => 'Erreur obtention token Orange : ' . ($tokenData['error_description'] ?? 'Auth failed'),
+                ];
+            }
+
+            // 2. Envoyer le SMS
+            $cleanPhone = preg_replace('/[^0-9]/', '', $formattedPhone);
+            if (!str_starts_with($cleanPhone, '237')) {
+                $cleanPhone = '237' . $cleanPhone;
+            }
+            $recipientAddress = 'tel:+' . $cleanPhone;
+
+            $endpoint = 'https://api.orange.com/smsmessaging/v1/outbound/' . urlencode($senderAddress) . '/requests';
+
+            $sendRes = Http::withoutVerifying()->withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type'  => 'application/json',
+                'Accept'        => 'application/json',
+            ])->timeout(15)->post($endpoint, [
+                'outboundSMSMessageRequest' => [
+                    'address'       => $recipientAddress,
+                    'senderAddress' => $senderAddress,
+                    'senderName'    => $senderName ?: 'CHRACERH',
+                    'outboundSMSTextMessage' => [
+                        'message' => $message
+                    ]
+                ]
+            ]);
+
+            $status = $sendRes->status();
+            $data = $sendRes->json();
+
+            if ($status === 201 || $status === 200) {
+                return [
+                    'success' => true,
+                    'status'  => 'SENT',
+                    'details' => "Délivré via Orange SMS Cameroon | Dest: {$recipientAddress} | Émetteur: {$senderName}",
+                ];
+            }
+
+            $errorMsg = $data['requestError']['policyException']['variables'][0] ??
+                        ($data['requestError']['serviceException']['variables'][0] ??
+                        ($data['message'] ?? ($sendRes->body() ?: "Erreur Orange (HTTP {$status})")));
+
+            return [
+                'success' => false,
+                'status'  => 'FAILED',
+                'details' => "Réponse Orange SMS : {$errorMsg}",
+            ];
+        } catch (\Throwable $e) {
+            Log::error("[SmsService] Erreur appel Orange SMS : " . $e->getMessage());
+            return [
+                'success' => false,
+                'status'  => 'FAILED',
+                'details' => 'Erreur de connexion Orange : ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Passerelle Nationale Camoo SMS (Cameroun).
+     */
+    private static function sendViaCamoo(string $formattedPhone, string $message): array
+    {
+        $apiKey    = config('services.camoo.api_key', env('CAMOO_API_KEY'));
+        $apiSecret = config('services.camoo.api_secret', env('CAMOO_API_SECRET'));
+        $senderId  = config('services.camoo.sender_id', env('CAMOO_SENDER_ID', 'CHRACERH'));
+
+        if (empty($apiKey) || empty($apiSecret)) {
+            Log::info("[CAMOO SIMULATION LOCALE] To: {$formattedPhone} | Msg: {$message}");
+            return [
+                'success' => true,
+                'status'  => 'SIMULATED',
+                'details' => 'Simulation locale réussie (clés Camoo non configurées).',
+            ];
+        }
+
+        // Format national camerounais attendu par Camoo : 9 chiffres (ex: 681964798)
+        $cleanPhone = preg_replace('/[^0-9]/', '', $formattedPhone);
+        if (str_starts_with($cleanPhone, '237') && strlen($cleanPhone) === 12) {
+            $cleanPhone = substr($cleanPhone, 3);
+        }
+
+        try {
+            $response = Http::withoutVerifying()->withHeaders([
+                'X-Api-Key'    => $apiKey,
+                'X-Api-Secret' => $apiSecret,
+                'Accept'       => 'application/json',
+            ])->asForm()->timeout(15)->post('https://api.camoo.cm/v1/sms/send.json', [
+                'from'    => $senderId ?: 'CHRACERH',
+                'to'      => $cleanPhone,
+                'message' => $message,
+            ]);
+
+            $statusCode = $response->status();
+            $data = $response->json();
+
+            if ($statusCode === 200) {
+                $msgCount = $data['sms']['message-count'] ?? null;
+                $msgDetails = $data['sms']['messages'][0] ?? ($data['sms']['messages'] ?? []);
+                $msgStatus = $msgDetails['status'] ?? null;
+
+                if ($msgStatus === '201' || (isset($data['_message']) && is_string($data['_message']) && str_contains(strtolower($data['_message']), 'low'))) {
+                    $errorMsg = $data['_message'] ?? ($msgDetails['error-text'] ?? 'Solde insuffisant');
+                    return [
+                        'success' => false,
+                        'status'  => 'FAILED',
+                        'details' => "Réponse Camoo SMS : {$errorMsg}",
+                    ];
+                }
+
+                $msgId = $msgDetails['message-id'] ?? ('CAMOO_' . uniqid());
+                return [
+                    'success' => true,
+                    'status'  => 'SENT',
+                    'details' => "Délivré via Camoo SMS (National) | Dest: {$cleanPhone} | Émetteur: {$senderId}",
+                ];
+            }
+
+            $errorMsg = $data['_message'] ?? ($data['message'] ?? ($response->body() ?: 'Erreur Camoo'));
+            return [
+                'success' => false,
+                'status'  => 'FAILED',
+                'details' => "Réponse Camoo SMS (HTTP {$statusCode}) : {$errorMsg}",
+            ];
+        } catch (\Throwable $e) {
+            Log::error("[SmsService] Erreur appel Camoo SMS : " . $e->getMessage());
+            return [
+                'success' => false,
+                'status'  => 'FAILED',
+                'details' => 'Erreur de connexion Camoo : ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Passerelle Africa's Talking.
+     */
+    private static function sendViaAfricasTalking(string $formattedPhone, string $message): array
     {
         $apiKey   = config('services.africastalking.api_key', env('AFRICASTALKING_API_KEY'));
         $username = config('services.africastalking.username', env('AFRICASTALKING_USERNAME', 'sandbox'));
         $senderId = config('services.africastalking.sender_id', env('AFRICASTALKING_SENDER_ID', 'CHRACERH'));
 
-        // 1. Si aucune clé API n'est configurée : simulation locale sans crash
         if (empty($apiKey)) {
             Log::info("[SMS SIMULATION LOCALE] To: {$formattedPhone} | Msg: {$message}");
             return [
@@ -232,7 +418,6 @@ class SmsService
             ];
         }
 
-        // 2. Déterminer l'URL (Sandbox AT ou Production AT)
         $isSandbox = ($username === 'sandbox');
         $endpoint  = $isSandbox
             ? 'https://api.sandbox.africastalking.com/version1/messaging'
@@ -245,15 +430,15 @@ class SmsService
                 'message'  => $message,
             ];
 
-            // Le Sender ID n'est envoyé qu'en production (non supporté en Sandbox AT)
             if (!$isSandbox && !empty($senderId)) {
                 $postData['from'] = $senderId;
             }
 
             $response = Http::withoutVerifying()->withHeaders([
                 'apiKey' => $apiKey,
+                'apikey' => $apiKey,
                 'Accept' => 'application/json',
-            ])->asForm()->timeout(10)->post($endpoint, $postData);
+            ])->asForm()->timeout(15)->post($endpoint, $postData);
 
             $data = $response->json();
             $recipients = $data['SMSMessageData']['Recipients'] ?? [];
