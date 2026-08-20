@@ -348,7 +348,95 @@
         gap: 0.75rem;
     }
     .btn-cancel { background: #F1F2F7; color: var(--text-dark); padding: 0.6rem 1.25rem; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }
-    .btn-submit { background: var(--primary); color: #FFFFFF; padding: 0.6rem 1.25rem; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }
+    .btn-submit {
+        background: var(--primary);
+        color: #FFFFFF;
+        padding: 0.6rem 1.35rem;
+        border-radius: 10px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(58, 91, 240, 0.28);
+        transition: background 0.2s ease, transform 0.15s ease;
+    }
+    .btn-submit:hover { background: #2a48d8; transform: translateY(-1px); }
+
+    /* Searchable Employee Autocomplete */
+    .emp-search-wrapper { position: relative; }
+    .emp-search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #FFFFFF;
+        border: 1px solid #CBD5E1;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+        max-height: 220px;
+        overflow-y: auto;
+        z-index: 1060;
+        margin-top: 4px;
+        display: none;
+    }
+    .emp-search-item {
+        padding: 0.65rem 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        border-bottom: 1px solid #F1F5F9;
+    }
+    .emp-search-item:last-child { border-bottom: none; }
+    .emp-search-item:hover { background: #F8FAFC; }
+    .emp-search-item .item-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.78rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .emp-search-item .item-name {
+        font-weight: 700;
+        font-size: 0.86rem;
+        color: var(--text-dark);
+    }
+    .emp-search-item .item-dept {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    .selected-emp-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #F8FAFC;
+        border: 1.5px solid var(--primary);
+        padding: 0.65rem 0.85rem;
+        border-radius: 12px;
+    }
+    .selected-emp-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .btn-change-emp {
+        background: #EBF3FF;
+        color: var(--primary);
+        border: none;
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-change-emp:hover { background: var(--primary); color: #FFF; }
 </style>
 @endsection
 
@@ -510,13 +598,29 @@
 
                 <div class="form-group">
                     <label class="form-label">Employé spécifique (Optionnel)</label>
-                    <select name="employee_id" class="form-select">
-                        <option value="">Tous les employés</option>
-                        @foreach($employees as $employee)
-                            <option value="{{ $employee->id }}">{{ $employee->getFullNameAttribute() }}@if($employee->department) - {{ $employee->department->name }}@endif</option>
-                        @endforeach
-                    </select>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Sélectionnez un employé pour générer un rapport ciblé.</div>
+                    <input type="hidden" name="employee_id" id="rapportSelectedEmpId" value="">
+
+                    <div id="rapportEmpSearchContainer" class="emp-search-wrapper">
+                        <div style="position:relative;">
+                            <input type="text" id="rapportEmpSearchInput" class="form-input" placeholder="🔍 Taper un nom, prénom ou département..." autocomplete="off">
+                        </div>
+                        <div id="rapportEmpSearchResults" class="emp-search-results"></div>
+                    </div>
+
+                    <div id="rapportSelectedEmpCard" class="selected-emp-card" style="display:none; margin-top:0.35rem;">
+                        <div class="selected-emp-info">
+                            <div class="emp-avatar" id="rapportSelectedEmpAvatar" style="width:34px; height:34px; border-radius:50%; background:var(--primary); color:#fff; font-weight:700; font-size:0.8rem; display:flex; align-items:center; justify-content:center;">EM</div>
+                            <div>
+                                <div class="emp-name" id="rapportSelectedEmpName" style="font-weight:700; font-size:0.88rem; color:var(--text-dark);">NOM Prénom</div>
+                                <div class="emp-dept" id="rapportSelectedEmpDept" style="font-size:0.75rem; color:var(--text-muted);">Département</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-change-emp" id="btnRapportChangeEmp">
+                            <i class="bi bi-arrow-repeat"></i> Changer
+                        </button>
+                    </div>
+
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.35rem;">Laissez vide pour générer un rapport global sur tous les employés.</div>
                 </div>
 
                 <div class="form-group">
@@ -655,6 +759,106 @@
                         </div>
                     `;
                 });
+        }
+    }
+
+    // ── GESTIONNAIRE DE RECHERCHE D'EMPLOYÉ POUR RAPPORT SUR-MESURE ──
+    const rapportEmployesData = @json($employees);
+    const rSearchInput     = document.getElementById('rapportEmpSearchInput');
+    const rResultsBox      = document.getElementById('rapportEmpSearchResults');
+    const rHiddenId        = document.getElementById('rapportSelectedEmpId');
+    const rSearchContainer = document.getElementById('rapportEmpSearchContainer');
+    const rSelectedCard    = document.getElementById('rapportSelectedEmpCard');
+    const rBtnChange       = document.getElementById('btnRapportChangeEmp');
+    const rAvatarBox       = document.getElementById('rapportSelectedEmpAvatar');
+    const rNameBox         = document.getElementById('rapportSelectedEmpName');
+    const rDeptBox         = document.getElementById('rapportSelectedEmpDept');
+
+    function renderRapportEmpResults(query = '') {
+        const cleanQuery = query.toLowerCase().trim();
+        const filtered = rapportEmployesData.filter(emp => {
+            const fullName = `${emp.last_name || ''} ${emp.first_name || ''}`.toLowerCase();
+            const deptName = emp.department ? emp.department.name.toLowerCase() : '';
+            return fullName.includes(cleanQuery) || deptName.includes(cleanQuery);
+        });
+
+        let html = '';
+        if (!cleanQuery) {
+            html += `
+                <div class="emp-search-item" data-id="" data-name="Tous les employés" data-dept="Rapport d'ensemble" data-initials="ALL" style="background:#F8FAFC; border-bottom:1.5px solid #E2E8F0;">
+                    <div class="item-avatar" style="background:var(--text-muted);"><i class="bi bi-people-fill"></i></div>
+                    <div>
+                        <div class="item-name" style="color:var(--primary);">Tous les employés</div>
+                        <div class="item-dept">Générer un rapport global sur l'ensemble du personnel</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (filtered.length === 0) {
+            html += '<div style="padding:0.85rem; text-align:center; color:var(--text-muted); font-size:0.82rem;">Aucun employé trouvé.</div>';
+        } else {
+            html += filtered.map(emp => {
+                const initials = ((emp.last_name ? emp.last_name[0] : 'E') + (emp.first_name ? emp.first_name[0] : 'M')).toUpperCase();
+                const dept = emp.department ? emp.department.name : 'Général';
+                const fullName = `${(emp.last_name || '').toUpperCase()} ${emp.first_name || ''}`;
+                return `
+                    <div class="emp-search-item" data-id="${emp.id}" data-name="${fullName}" data-dept="${dept}" data-initials="${initials}">
+                        <div class="item-avatar">${initials}</div>
+                        <div>
+                            <div class="item-name">${fullName}</div>
+                            <div class="item-dept">${dept}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        rResultsBox.innerHTML = html;
+        rResultsBox.style.display = 'block';
+    }
+
+    if (rSearchInput) {
+        rSearchInput.addEventListener('focus', () => renderRapportEmpResults(rSearchInput.value));
+        rSearchInput.addEventListener('input', () => renderRapportEmpResults(rSearchInput.value));
+
+        document.addEventListener('click', (e) => {
+            if (rSearchContainer && !rSearchContainer.contains(e.target)) {
+                rResultsBox.style.display = 'none';
+            }
+        });
+
+        rResultsBox.addEventListener('click', (e) => {
+            const item = e.target.closest('.emp-search-item');
+            if (item) {
+                const id = item.getAttribute('data-id');
+                const name = item.getAttribute('data-name');
+                const dept = item.getAttribute('data-dept');
+                const initials = item.getAttribute('data-initials');
+
+                rHiddenId.value = id;
+
+                if (id) {
+                    rNameBox.textContent = name;
+                    rDeptBox.textContent = dept;
+                    rAvatarBox.textContent = initials;
+                    rSearchContainer.style.display = 'none';
+                    rSelectedCard.style.display = 'flex';
+                } else {
+                    rSearchInput.value = '';
+                }
+                rResultsBox.style.display = 'none';
+            }
+        });
+
+        if (rBtnChange) {
+            rBtnChange.addEventListener('click', () => {
+                rHiddenId.value = '';
+                rSearchInput.value = '';
+                rSelectedCard.style.display = 'none';
+                rSearchContainer.style.display = 'block';
+                rSearchInput.focus();
+            });
         }
     }
 </script>

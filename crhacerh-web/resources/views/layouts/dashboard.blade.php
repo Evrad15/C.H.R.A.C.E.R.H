@@ -365,22 +365,33 @@
                     <input type="hidden" name="department_id" value="{{ request('department_id') }}">
                 @endif
             </form>
-            <div class="user-profile-container">
-                <div class="user-profile" id="adminProfileBtn">
-                    <div class="avatar-icon">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
-                    <span class="user-name">{{ Auth::check() ? Auth::user()->first_name . ' ' . Auth::user()->last_name : 'Admin' }}</span>
-                    <i class="bi bi-chevron-down" style="font-size: 0.75rem; color: var(--text-muted);"></i>
+            <div style="display:flex; align-items:center; gap:1.25rem;">
+                <!-- Indicateur Live & Auto-Refresh -->
+                <div id="liveRefreshIndicator" style="display:inline-flex; align-items:center; gap:0.55rem; background:#FFFFFF; border:1px solid #E2E8F0; padding:0.35rem 0.85rem; border-radius:20px; font-size:0.78rem; font-weight:700; color:var(--text-dark); box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#10B981; box-shadow:0 0 8px #10B981; display:inline-block; animation:pulseLive 2s infinite;"></span>
+                    <span id="liveRefreshText">En direct (30s)</span>
+                    <button type="button" id="btnManualRefresh" title="Actualiser maintenant" style="background:none; border:none; color:var(--primary); cursor:pointer; padding:0; font-size:0.95rem; display:inline-flex; align-items:center; margin-left:0.15rem;">
+                        <i class="bi bi-arrow-clockwise" id="iconManualRefresh"></i>
+                    </button>
                 </div>
-                <div class="admin-dropdown-menu" id="adminDropdownMenu">
-                    <form method="POST" action="{{ route('logout') }}" id="logoutForm">
-                        @csrf
-                        <div class="admin-dropdown-item" onclick="document.getElementById('logoutForm').submit()">
-                            <i class="bi bi-box-arrow-right" style="font-size:1.05rem;"></i>
-                            <span>Déconnexion</span>
+
+                <div class="user-profile-container">
+                    <div class="user-profile" id="adminProfileBtn">
+                        <div class="avatar-icon">
+                            <i class="bi bi-person-fill"></i>
                         </div>
-                    </form>
+                        <span class="user-name">{{ Auth::check() ? Auth::user()->first_name . ' ' . Auth::user()->last_name : 'Admin' }}</span>
+                        <i class="bi bi-chevron-down" style="font-size: 0.75rem; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="admin-dropdown-menu" id="adminDropdownMenu">
+                        <form method="POST" action="{{ route('logout') }}" id="logoutForm">
+                            @csrf
+                            <div class="admin-dropdown-item" onclick="document.getElementById('logoutForm').submit()">
+                                <i class="bi bi-box-arrow-right" style="font-size:1.05rem;"></i>
+                                <span>Déconnexion</span>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </header>
@@ -643,7 +654,62 @@
             btnClose.onclick = stopWebcam;
             btnCancel.onclick = stopWebcam;
         };
+
+        // ── MOTEUR D'ACTUALISATION AUTOMATIQUE INTELLIGENT (30s) ──
+        (function() {
+            let countdown = 30;
+            const liveText = document.getElementById('liveRefreshText');
+            const btnManual = document.getElementById('btnManualRefresh');
+            const iconManual = document.getElementById('iconManualRefresh');
+
+            function canRefresh() {
+                // Ne pas actualiser si un modal est ouvert, si un tiroir est ouvert ou si l'utilisateur est en train de taper
+                const hasOpenModal = document.querySelector('.modal-backdrop.show, .modal-overlay.open, .bio-modal-backdrop.show, .drawer-overlay.active, #kiosk-toast-overlay[style*="display: flex"]');
+                const activeEl = document.activeElement;
+                const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+                return !hasOpenModal && !isTyping;
+            }
+
+            function doRefresh() {
+                if (iconManual) iconManual.style.animation = 'spinIcon 0.8s linear infinite';
+                if (liveText) liveText.textContent = 'Actualisation...';
+                window.location.reload();
+            }
+
+            if (btnManual) {
+                btnManual.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    doRefresh();
+                });
+            }
+
+            setInterval(() => {
+                if (!canRefresh()) {
+                    // Si l'utilisateur tape ou interagit dans un formulaire/modal, suspendre pour ne pas le gêner
+                    countdown = 30;
+                    if (liveText) liveText.textContent = 'En pause (saisie)';
+                    return;
+                }
+
+                countdown--;
+                if (liveText) liveText.textContent = `En direct (${countdown}s)`;
+
+                if (countdown <= 0) {
+                    doRefresh();
+                }
+            }, 1000);
+        })();
     </script>
+    <style>
+        @keyframes pulseLive {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+        @keyframes spinIcon {
+            100% { transform: rotate(360deg); }
+        }
+    </style>
     @yield('scripts')
 </body>
 </html>

@@ -16,9 +16,19 @@ class SmsController extends Controller
     public function index(Request $request)
     {
         $query = SmsLog::with('rendezVous')->orderBy('created_at', 'desc');
+        $basePeriodQuery = SmsLog::query();
 
         // ── Filtre par Période ──────────────────────────────
         $periode = $request->get('periode', 'today');
+
+        $periodeLabel = match ($periode) {
+            'today'      => "Aujourd'hui",
+            'yesterday'  => "Hier",
+            'week'       => "Cette semaine",
+            'month'      => "Ce mois",
+            default      => "Tout l'historique",
+        };
+
         match ($periode) {
             'today'      => $query->whereDate('created_at', Carbon::today()),
             'yesterday'  => $query->whereDate('created_at', Carbon::yesterday()),
@@ -29,6 +39,19 @@ class SmsController extends Controller
             'month'      => $query->whereMonth('created_at', Carbon::now()->month)
                                   ->whereYear('created_at', Carbon::now()->year),
             default      => null, // 'all'
+        };
+
+        // Appliquer la même période pour le calcul des statistiques des cartes
+        match ($periode) {
+            'today'      => $basePeriodQuery->whereDate('created_at', Carbon::today()),
+            'yesterday'  => $basePeriodQuery->whereDate('created_at', Carbon::yesterday()),
+            'week'       => $basePeriodQuery->whereBetween('created_at', [
+                                Carbon::now()->startOfWeek(),
+                                Carbon::now()->endOfWeek(),
+                            ]),
+            'month'      => $basePeriodQuery->whereMonth('created_at', Carbon::now()->month)
+                                  ->whereYear('created_at', Carbon::now()->year),
+            default      => null,
         };
 
         // ── Filtre par Type de SMS ──────────────────────────
@@ -56,14 +79,15 @@ class SmsController extends Controller
 
         $logs = $query->paginate(25)->withQueryString();
 
-        // ── Statistiques Globales du Journal ─────────────────
+        // ── Statistiques Dynamiques Calculées sur la Période Sélectionnée ──
         $stats = [
-            'total_today'    => SmsLog::whereDate('created_at', Carbon::today())->count(),
-            'confirmations'  => SmsLog::where('type', 'CONFIRMATION')->count(),
-            'arrivees'       => SmsLog::where('type', 'ARRIVEE')->count(),
-            'realises'       => SmsLog::where('type', 'REALISE')->count(),
-            'rappels'        => SmsLog::where('type', 'like', 'RAPPEL%')->count(),
-            'echecs'         => SmsLog::where('status', 'FAILED')->count(),
+            'total_period'   => (clone $basePeriodQuery)->count(),
+            'period_label'   => $periodeLabel,
+            'confirmations'  => (clone $basePeriodQuery)->where('type', 'CONFIRMATION')->count(),
+            'arrivees'       => (clone $basePeriodQuery)->where('type', 'ARRIVEE')->count(),
+            'realises'       => (clone $basePeriodQuery)->where('type', 'REALISE')->count(),
+            'rappels'        => (clone $basePeriodQuery)->where('type', 'like', 'RAPPEL%')->count(),
+            'echecs'         => (clone $basePeriodQuery)->where('status', 'FAILED')->count(),
         ];
 
         return view('sms.index', compact('logs', 'stats'));

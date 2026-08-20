@@ -624,6 +624,9 @@
             @php
                 $patientName = $rdv->patient ? $rdv->patient->nom_complet : ($rdv->nom_patient ?? 'Patient Inconnu');
                 $patientDossier = $rdv->patient->numero_dossier ?? 'N/A';
+                $hasFace = !empty($rdv->consent_facial_at) || !empty($rdv->face_embeddings) || \Illuminate\Support\Facades\Storage::disk('public')->exists("faces/patients/{$rdv->id}.jpg");
+                $hasFp = !empty($rdv->fingerprint_data) || !empty($rdv->fingerprint_registered_at);
+                $faceUrl = \Illuminate\Support\Facades\Storage::disk('public')->exists("faces/patients/{$rdv->id}.jpg") ? asset("storage/faces/patients/{$rdv->id}.jpg") : null;
                 $rdvPayload = [
                     'id' => $rdv->id,
                     'nom_patient' => $patientName,
@@ -636,6 +639,9 @@
                     'statut' => $rdv->statut ?? 'Planifié',
                     'pointage_at' => $rdv->pointage_at ? \Carbon\Carbon::parse($rdv->pointage_at)->toIso8601String() : null,
                     'notes' => $rdv->notes ?? '',
+                    'has_face' => $hasFace,
+                    'has_fingerprint' => $hasFp,
+                    'face_image_url' => $faceUrl,
                     'patient' => [
                         'nom_complet' => $patientName,
                         'numero_dossier' => $patientDossier,
@@ -1106,7 +1112,7 @@
                                     <i class="bi bi-fingerprint" style="color:var(--primary); font-size:1.1rem;"></i>
                                     <span>Mode 1 : Empreinte Digitale</span>
                                 </div>
-                                <span id="badgeEditRdvFp" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);">Non enregistrée</span>
+                                <span id="badgeEditRdvFp" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:${rdv.has_fingerprint ? '#EBF9EE' : '#F1F2F7'}; color:${rdv.has_fingerprint ? '#0E9F2D' : 'var(--text-muted)'};">${rdv.has_fingerprint ? 'Enregistrée ✓' : 'Non enregistrée'}</span>
                             </div>
                             <input type="hidden" name="register_fingerprint" id="inputEditRdvFp" value="">
                             <button type="button" id="btnToggleEditRdvFp" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid var(--primary); background:#EBF3FF; color:var(--primary); font-weight:700; font-size:0.8rem; cursor:pointer;">
@@ -1121,11 +1127,11 @@
                                     <i class="bi bi-person-bounding-box" style="color:#0E9F2D; font-size:1.1rem;"></i>
                                     <span>Mode 2 : Reconnaissance Faciale</span>
                                 </div>
-                                <span id="badgeEditRdvFace" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);">Non enregistrée</span>
+                                <span id="badgeEditRdvFace" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:6px; background:${rdv.has_face ? '#EBF9EE' : '#F1F2F7'}; color:${rdv.has_face ? '#0E9F2D' : 'var(--text-muted)'};">${rdv.has_face ? 'Enregistrée ✓' : 'Non enregistrée'}</span>
                             </div>
                             <input type="hidden" name="register_face" id="inputEditRdvFace" value="">
                             <button type="button" id="btnToggleEditRdvFace" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid #0E9F2D; background:#EBF9EE; color:#0E9F2D; font-weight:700; font-size:0.8rem; cursor:pointer;">
-                                <i class="bi bi-camera-video"></i> Capturer le Visage (Caméra HD)
+                                <i class="bi bi-camera-video"></i> ${rdv.has_face ? 'Mettre à jour le Visage (Caméra HD)' : "Capturer le Visage (Caméra HD)"}
                             </button>
                         </div>
                     </div>
@@ -1271,6 +1277,36 @@
                 <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Statut Actuel</div>
                 <div style="font-size:1.1rem; font-weight:800; color:var(--primary); margin-top:0.2rem;">${rdv.statut}</div>
                 ${rdv.pointage_at ? `<div style="font-size:0.76rem; color:#059669; font-weight:600; margin-top:0.25rem;"><i class="bi bi-check-circle-fill"></i> Heure d'arrivée  : ${new Date(rdv.pointage_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</div>` : ''}
+            </div>
+
+            <!-- BLOC STATUT BIOMÉTRIQUE PATIENT -->
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:1rem; margin-bottom:1.25rem;">
+                <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;">
+                    <i class="bi bi-shield-check" style="color:var(--primary);"></i> Enrôlement Biométrique
+                </div>
+                <div style="display:flex; flex-direction:column; gap:0.6rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.84rem; font-weight:600; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                            <i class="bi bi-person-bounding-box" style="color:#0E9F2D;"></i> Visage (ArcFace 512D) :
+                        </span>
+                        ${rdv.has_face ? `<span style="font-size:0.75rem; font-weight:700; padding:0.25rem 0.6rem; border-radius:6px; background:#EBF9EE; color:#0E9F2D;"><i class="bi bi-check-circle-fill"></i> Enregistré ✓</span>` : `<span style="font-size:0.75rem; font-weight:700; padding:0.25rem 0.6rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);"><i class="bi bi-x-circle"></i> Non enregistré</span>`}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.84rem; font-weight:600; color:var(--text-dark); display:flex; align-items:center; gap:0.4rem;">
+                            <i class="bi bi-fingerprint" style="color:var(--primary);"></i> Empreinte Digitale :
+                        </span>
+                        ${rdv.has_fingerprint ? `<span style="font-size:0.75rem; font-weight:700; padding:0.25rem 0.6rem; border-radius:6px; background:#EBF9EE; color:#0E9F2D;"><i class="bi bi-check-circle-fill"></i> Enregistrée ✓</span>` : `<span style="font-size:0.75rem; font-weight:700; padding:0.25rem 0.6rem; border-radius:6px; background:#F1F2F7; color:var(--text-muted);"><i class="bi bi-x-circle"></i> Non enregistrée</span>`}
+                    </div>
+                </div>
+                ${rdv.face_image_url ? `
+                    <div style="margin-top:0.75rem; padding-top:0.75rem; border-top:1px dashed #E2E8F0; display:flex; align-items:center; gap:0.75rem;">
+                        <img src="${rdv.face_image_url}" alt="Profil Facial" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:2px solid #0E9F2D;">
+                        <div>
+                            <div style="font-size:0.78rem; color:#0E9F2D; font-weight:700;">Profil Facial Synchronisé</div>
+                            <div style="font-size:0.72rem; color:var(--text-muted);">Prêt pour reconnaissance sur la borne Kiosque</div>
+                        </div>
+                    </div>
+                ` : ''}
             </div>
 
             <div style="display:flex; flex-direction:column; gap:0.85rem; font-size:0.88rem; margin-bottom:1.5rem;">

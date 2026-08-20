@@ -904,12 +904,15 @@
         }
 
         let toastTimer = null;
-        function showKioskToast(title, msg, isSuccess = true) {
+        function showKioskToast(title, msg, isSuccess = true, customDuration = null) {
             const overlay = document.getElementById('kiosk-toast-overlay');
             const box = document.getElementById('kiosk-toast-box');
             const icon = document.getElementById('kiosk-toast-icon');
             const titleEl = document.getElementById('kiosk-toast-title');
             const msgEl = document.getElementById('kiosk-toast-msg');
+
+            // Durée d'affichage confortable : 4.0 secondes par défaut pour succès, 4.5 secondes pour alertes/erreurs
+            const duration = customDuration || (isSuccess ? 4000 : 4500);
 
             if (isSuccess) {
                 icon.textContent = '✅';
@@ -930,14 +933,19 @@
                 box.style.transform = 'scale(1)';
             }, 20);
 
-            if (toastTimer) clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => {
+            function hideToast() {
                 overlay.style.opacity = '0';
                 box.style.transform = 'scale(0.8)';
                 setTimeout(() => {
                     overlay.style.display = 'none';
                 }, 300);
-            }, 3000);
+            }
+
+            // Permettre la fermeture immédiate au toucher/clic
+            overlay.onclick = hideToast;
+
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(hideToast, duration);
         }
 
         // HORLOGE

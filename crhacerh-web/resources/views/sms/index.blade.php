@@ -352,27 +352,27 @@
     </div>
 </div>
 
-{{-- Stats Grid --}}
+{{-- Stats Grid (Dynamique selon la période sélectionnée) --}}
 <div class="sms-stats-grid">
     <div class="sms-stat-card">
         <div class="stat-icon-wrap icon-today"><i class="bi bi-send-check-fill"></i></div>
         <div>
-            <div class="stat-value">{{ $stats['total_today'] }}</div>
-            <div class="stat-label">SMS envoyés aujourd'hui</div>
+            <div class="stat-value">{{ $stats['total_period'] }}</div>
+            <div class="stat-label">Total SMS ({{ $stats['period_label'] }})</div>
         </div>
     </div>
     <div class="sms-stat-card">
         <div class="stat-icon-wrap icon-conf"><i class="bi bi-calendar-check-fill"></i></div>
         <div>
             <div class="stat-value" style="color:#0E9F2D;">{{ $stats['confirmations'] }}</div>
-            <div class="stat-label">Confirmations</div>
+            <div class="stat-label">Confirmations ({{ $stats['period_label'] }})</div>
         </div>
     </div>
     <div class="sms-stat-card">
         <div class="stat-icon-wrap" style="background:#EFF6FF; color:#2563EB;"><i class="bi bi-clock-history"></i></div>
         <div>
             <div class="stat-value" style="color:#2563EB;">{{ ($stats['arrivees'] ?? 0) + ($stats['realises'] ?? 0) }}</div>
-            <div class="stat-label">Arrivées & Fins de soins</div>
+            <div class="stat-label">Arrivées & Soins ({{ $stats['period_label'] }})</div>
         </div>
     </div>
     <div class="sms-stat-card">
@@ -427,12 +427,11 @@
     <table class="sms-table">
         <thead>
             <tr>
-                <th style="width:14%;">Date &amp; Heure</th>
-                <th style="width:15%;">Type</th>
-                <th style="width:22%;">Patiente</th>
-                <th style="width:29%;">Message Envoyé</th>
-                <th style="width:11%;">Statut</th>
-                <th style="width:9%; text-align:center;">Action</th>
+                <th style="width:15%;">Date &amp; Heure</th>
+                <th style="width:16%;">Type</th>
+                <th style="width:24%;">Patiente</th>
+                <th style="width:33%;">Message Envoyé</th>
+                <th style="width:12%;">Statut</th>
             </tr>
         </thead>
         <tbody>
@@ -539,22 +538,10 @@
                         {{ $statusLabel }}
                     </span>
                 </td>
-                <td style="text-align:center; white-space:nowrap;">
-                    <div style="display:inline-flex; align-items:center; gap:0.35rem;">
-                        <button type="button" class="btn-action-icon btn-open-log-details" title="Voir tous les détails">
-                            <i class="bi bi-eye-fill"></i>
-                        </button>
-                        @if($log->status === 'FAILED')
-                        <button type="button" class="btn-retry-sms" onclick="event.stopPropagation(); retrySms({{ $log->id }});" title="Réessayer l'envoi">
-                            <i class="bi bi-arrow-clockwise"></i>
-                        </button>
-                        @endif
-                    </div>
-                </td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" style="text-align:center; padding:3.5rem; color:var(--text-muted);">
+                <td colspan="5" style="text-align:center; padding:3.5rem; color:var(--text-muted);">
                     <i class="bi bi-inbox" style="font-size:2.5rem; display:block; margin-bottom:0.75rem; opacity:0.35;"></i>
                     Aucun SMS enregistré dans le journal pour cette période.
                     <div style="font-size:0.8rem; margin-top:0.35rem; color:var(--text-muted);">
