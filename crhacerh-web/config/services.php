@@ -65,4 +65,15 @@ return [
         'sender_name'    => env('ORANGE_SENDER_NAME', 'CHRACERH'),
     ],
 
+    'brevo' => [
+        'api_key' => env('BREVO_API_KEY'),
+        'sender'  => env('BREVO_SENDER', 'CHRACERH'),
+    ],
+
+    'twilio' => [
+        'sid'   => env('TWILIO_SID'),
+        'token' => env('TWILIO_AUTH_TOKEN'),
+        'from'  => env('TWILIO_FROM'),
+    ],
+
 ];

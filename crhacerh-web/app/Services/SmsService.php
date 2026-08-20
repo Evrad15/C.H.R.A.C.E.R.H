@@ -214,13 +214,21 @@ class SmsService
     }
 
     /**
-     * Envoie vers la passerelle configurée (Orange SMS Cameroon, Camoo SMS, ou Africa's Talking).
+     * Envoie vers la passerelle configurée (Twilio SMS, Brevo SMS, Orange SMS, Camoo SMS, ou Africa's Talking).
      */
     private static function sendToProvider(string $formattedPhone, string $message): array
     {
-        $provider = config('services.sms_provider', env('SMS_PROVIDER', 'orange'));
+        $provider = config('services.sms_provider', env('SMS_PROVIDER', 'twilio'));
 
-        if ($provider === 'orange' || (!empty(env('ORANGE_AUTH_HEADER')) && $provider !== 'camoo' && $provider !== 'africastalking')) {
+        if ($provider === 'twilio' || (!empty(env('TWILIO_SID')) && $provider !== 'brevo' && $provider !== 'orange' && $provider !== 'camoo' && $provider !== 'africastalking')) {
+            return self::sendViaTwilio($formattedPhone, $message);
+        }
+
+        if ($provider === 'brevo') {
+            return self::sendViaBrevo($formattedPhone, $message);
+        }
+
+        if ($provider === 'orange') {
             return self::sendViaOrange($formattedPhone, $message);
         }
 
@@ -229,6 +237,154 @@ class SmsService
         }
 
         return self::sendViaAfricasTalking($formattedPhone, $message);
+    }
+
+    /**
+     * Passerelle Twilio SMS (Trial gratuit $15 USD).
+     */
+    private static function sendViaTwilio(string $formattedPhone, string $message): array
+    {
+        $sid   = config('services.twilio.sid', env('TWILIO_SID'));
+        $token = config('services.twilio.token', env('TWILIO_AUTH_TOKEN'));
+        $from  = config('services.twilio.from', env('TWILIO_FROM'));
+
+        if (empty($sid) || empty($token) || empty($from)) {
+            Log::info("[TWILIO SIMULATION LOCALE] To: {$formattedPhone} | Msg: {$message}");
+            return [
+                'success' => true,
+                'status'  => 'SIMULATED',
+                'details' => 'Simulation locale réussie (clés Twilio en attente).',
+            ];
+        }
+
+        // Format international E.164 (+237681964798)
+        $cleanPhone = preg_replace('/[^0-9]/', '', $formattedPhone);
+        if (!str_starts_with($cleanPhone, '237') && strlen($cleanPhone) === 9) {
+            $cleanPhone = '237' . $cleanPhone;
+        }
+        $to = '+' . $cleanPhone;
+
+        try {
+            $endpoint = "https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json";
+
+            // Essai d'envoi avec le message personnalisé
+            $response = Http::withoutVerifying()->withBasicAuth($sid, $token)
+                ->asForm()
+                ->timeout(15)
+                ->post($endpoint, [
+                    'To'   => $to,
+                    'From' => $from,
+                    'Body' => $message,
+                ]);
+
+            $statusCode = $response->status();
+            $data = $response->json();
+
+            // Si Twilio Trial impose le template prédéfini (Code 572006)
+            if ($statusCode === 400 && ($data['code'] ?? 0) === 572006) {
+                $response = Http::withoutVerifying()->withBasicAuth($sid, $token)
+                    ->asForm()
+                    ->timeout(15)
+                    ->post($endpoint, [
+                        'To'   => $to,
+                        'From' => $from,
+                        'Body' => 'sms_appointment_reminders',
+                    ]);
+                $statusCode = $response->status();
+                $data = $response->json();
+            }
+
+            if ($statusCode === 201 || $statusCode === 200) {
+                $sidMsg = $data['sid'] ?? ('SM' . uniqid());
+                $statusTwilio = $data['status'] ?? 'queued';
+
+                return [
+                    'success' => true,
+                    'status'  => 'SENT',
+                    'details' => "Délivré via Twilio SMS ($15 Trial) | SID: {$sidMsg} | Dest: {$to} | Statut: {$statusTwilio}",
+                ];
+            }
+
+            $errorMsg = $data['message'] ?? ($response->body() ?: "Erreur Twilio (HTTP {$statusCode})");
+            return [
+                'success' => false,
+                'status'  => 'FAILED',
+                'details' => "Réponse Twilio SMS : {$errorMsg}",
+            ];
+        } catch (\Throwable $e) {
+            Log::error("[SmsService] Erreur appel Twilio SMS : " . $e->getMessage());
+            return [
+                'success' => false,
+                'status'  => 'FAILED',
+                'details' => 'Erreur de connexion Twilio : ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Passerelle Brevo (Sendinblue) Transactional SMS.
+     */
+    private static function sendViaBrevo(string $formattedPhone, string $message): array
+    {
+        $apiKey = config('services.brevo.api_key', env('BREVO_API_KEY'));
+        $sender = config('services.brevo.sender', env('BREVO_SENDER', 'CHRACERH'));
+
+        if (empty($apiKey)) {
+            Log::info("[BREVO SIMULATION LOCALE] To: {$formattedPhone} | Msg: {$message}");
+            return [
+                'success' => true,
+                'status'  => 'SIMULATED',
+                'details' => 'Simulation locale réussie (clé Brevo non configurée).',
+            ];
+        }
+
+        // Brevo attend le numéro international sans le '+' (ex: 237681964798)
+        $cleanPhone = preg_replace('/[^0-9]/', '', $formattedPhone);
+        if (!str_starts_with($cleanPhone, '237') && strlen($cleanPhone) === 9) {
+            $cleanPhone = '237' . $cleanPhone;
+        }
+
+        $senderName = substr(preg_replace('/[^A-Za-z0-9]/', '', $sender ?: 'CHRACERH'), 0, 11);
+
+        try {
+            $response = Http::withoutVerifying()->withHeaders([
+                'api-key'      => $apiKey,
+                'Content-Type' => 'application/json',
+                'Accept'       => 'application/json',
+            ])->timeout(15)->post('https://api.brevo.com/v3/transactionalSMS/send', [
+                'type'      => 'transactional',
+                'sender'    => $senderName,
+                'recipient' => $cleanPhone,
+                'content'   => $message,
+            ]);
+
+            $statusCode = $response->status();
+            $data = $response->json();
+
+            if ($statusCode === 201 || $statusCode === 200) {
+                $msgId = $data['messageId'] ?? ('BREVO_' . uniqid());
+
+                return [
+                    'success' => true,
+                    'status'  => 'SENT',
+                    'details' => "Délivré via Brevo SMS | ID: {$msgId} | Dest: {$cleanPhone} | Émetteur: {$senderName}",
+                ];
+            }
+
+            $errorMsg = $data['message'] ?? ($response->body() ?: "Erreur Brevo (HTTP {$statusCode})");
+            return [
+                'success' => false,
+                'status'  => 'FAILED',
+                'details' => "Réponse Brevo SMS : {$errorMsg}",
+            ];
+        } catch (\Throwable $e) {
+            Log::error("[SmsService] Erreur appel Brevo SMS : " . $e->getMessage());
+            return [
+                'success' => false,
+                'status'  => 'FAILED',
+                'details' => 'Erreur de connexion Brevo : ' . $e->getMessage(),
+            ];
+        }
     }
 
     /**

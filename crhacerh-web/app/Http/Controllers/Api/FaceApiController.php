@@ -275,6 +275,17 @@ class FaceApiController extends Controller
                         return response()->json(['status' => 'error', 'message' => 'Rendez-vous introuvable.'], 404);
                     }
 
+                    // ── RÈGLE MÉTIER DE SÉCURITÉ : Contrôle d'accès biométrique Patient (Statut + Fenêtre horaire) ──
+                    $accessCheck = $rdv->isBiometricAccessAllowed();
+                    if (!$accessCheck['allowed']) {
+                        if (file_exists($tempPath)) @unlink($tempPath);
+                        return response()->json([
+                            'status'  => 'error',
+                            'code'    => $accessCheck['code'],
+                            'message' => $accessCheck['message']
+                        ], $accessCheck['status_code']);
+                    }
+
                     // Comparer contre la photo stockée sur disque (patients n'ont pas forcément d'embedding DB)
                     $patientFacePath = Storage::disk('public')->path("faces/patients/{$rdv->id}.jpg");
                     $similarityPercent = 0.0;
@@ -575,6 +586,16 @@ class FaceApiController extends Controller
             if ($matchedPatientId) {
                 $rdv = \App\Models\RendezVous::find($matchedPatientId);
                 if (!$rdv) return response()->json(['status' => 'error', 'message' => 'Rendez-vous introuvable.'], 404);
+
+                // ── RÈGLE MÉTIER DE SÉCURITÉ : Contrôle d'accès biométrique Patient (Statut + Fenêtre horaire) ──
+                $accessCheck = $rdv->isBiometricAccessAllowed();
+                if (!$accessCheck['allowed']) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'code'    => $accessCheck['code'],
+                        'message' => $accessCheck['message']
+                    ], $accessCheck['status_code']);
+                }
 
                 $rdv->update(['statut' => 'Présent', 'pointage_at' => now()]);
 

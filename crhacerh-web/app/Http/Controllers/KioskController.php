@@ -88,11 +88,14 @@ class KioskController extends Controller
         });
 
         $patients = RendezVous::whereDate('date_rendez_vous', $today)->get()->map(function ($rdv) {
+            $isBlocked = in_array($rdv->statut, ['Réalisé', 'Annulé', 'Reporté']);
             return [
                 'id' => $rdv->id,
                 'name' => $rdv->nom_patient,
-                'role_info' => 'RDV : ' . ($rdv->service ?? 'Consultation') . ' (' . Carbon::parse($rdv->date_rendez_vous)->format('H:i') . ')',
+                'role_info' => 'RDV : ' . ($rdv->service ?? 'Consultation') . ' (' . Carbon::parse($rdv->date_rendez_vous)->format('H:i') . ')' . ($isBlocked ? " - [{$rdv->statut} : Accès Bloqué]" : ''),
                 'category' => 'PATIENT',
+                'statut' => $rdv->statut,
+                'is_biometric_blocked' => $isBlocked,
                 'has_fingerprint' => !empty($rdv->fingerprint_data),
                 'has_face' => !empty($rdv->consent_facial_at)
             ];
@@ -178,6 +181,16 @@ class KioskController extends Controller
                 $rdv = RendezVous::find($request->id);
                 if (!$rdv) {
                     return response()->json(['status' => 'error', 'message' => 'Rendez-vous introuvable.'], 404);
+                }
+
+                // ── RÈGLE MÉTIER DE SÉCURITÉ : Contrôle d'accès biométrique Patient (Statut + Fenêtre horaire) ──
+                $accessCheck = $rdv->isBiometricAccessAllowed();
+                if (!$accessCheck['allowed']) {
+                    return response()->json([
+                        'status' => 'error',
+                        'code'   => $accessCheck['code'],
+                        'message' => $accessCheck['message']
+                    ], $accessCheck['status_code']);
                 }
 
                 if (empty($rdv->fingerprint_data)) {

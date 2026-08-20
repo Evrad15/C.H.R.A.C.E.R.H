@@ -251,6 +251,7 @@
     .statut-realise  { background: rgba(14, 159, 45, 0.2); color: #07691C; }
     .statut-annule   { background: rgba(242, 56, 58, 0.12); color: var(--accent-red); }
     .statut-reporte  { background: rgba(255, 155, 67, 0.15); color: #D97300; }
+    .statut-non-honore { background: rgba(108, 117, 125, 0.15); color: #495057; }
 
     /* Actions buttons */
     .action-btn-group {
@@ -573,6 +574,7 @@
             <option value="Planifié" {{ request('statut') == 'Planifié' ? 'selected' : '' }}>Planifié</option>
             <option value="Confirmé" {{ request('statut') == 'Confirmé' ? 'selected' : '' }}>Confirmé</option>
             <option value="Réalisé" {{ request('statut') == 'Réalisé' ? 'selected' : '' }}>Réalisé</option>
+            <option value="Non honoré" {{ request('statut') == 'Non honoré' ? 'selected' : '' }}>Non honoré</option>
             <option value="Annulé" {{ request('statut') == 'Annulé' ? 'selected' : '' }}>Annulé</option>
             <option value="Reporté" {{ request('statut') == 'Reporté' ? 'selected' : '' }}>Reporté</option>
         </select>
@@ -675,6 +677,7 @@
                             'Planifié' => 'statut-planifie',
                             'Confirmé' => 'statut-confirme',
                             'Réalisé'  => 'statut-realise',
+                            'Non honoré' => 'statut-non-honore',
                             'Annulé'   => 'statut-annule',
                             'Reporté'  => 'statut-reporte',
                             default    => 'statut-planifie',
