@@ -750,55 +750,50 @@
 
     </div>
 
-    <!-- MODAL RECONNAISSANCE FACIALE HAUTE PRÉCISION (CYBER HUD) -->
+    <!-- MODAL RECONNAISSANCE FACIALE HAUTE PRÉCISION (DESIGN UNIFIÉ KIOSK CHRACERH) -->
     <div class="modal-overlay" id="modal-face">
-        <div class="modal-box" style="background:#0F172A; border:1px solid rgba(56, 189, 248, 0.25); border-radius:24px; padding:1.75rem; color:#FFF; box-shadow:0 25px 60px rgba(0,0,0,0.6); max-width:540px;">
-            <button class="modal-close" onclick="closeFaceModal()" style="color:#94A3B8; background:rgba(255,255,255,0.08); border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer;">✕</button>
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeFaceModal()">✕</button>
             
             <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.3rem;">
-                <div style="width:10px; height:10px; border-radius:50%; background:#38BDF8; box-shadow:0 0 10px #38BDF8; animation:pulseGlow 1.5s infinite;"></div>
-                <h3 style="font-size:1.35rem; font-weight:800; color:#F8FAFC; letter-spacing:-0.02em;">Scanner Facial Biométrique IA</h3>
+                <div style="width:10px; height:10px; border-radius:50%; background:var(--primary); box-shadow:0 0 10px var(--primary); animation:pulseGlow 1.5s infinite;"></div>
+                <h3 style="font-size:1.35rem; font-weight:800; color:var(--text-main); letter-spacing:-0.02em;">Scanner Facial Biométrique</h3>
             </div>
-            <p style="font-size:0.85rem; color:#94A3B8; margin-bottom:1.25rem;">
-                Positionnez votre visage au centre du viseur holographique pour la comparaison biométrique (≥ 95%).
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.15rem;">
+                Positionnez votre visage au centre du viseur holographique
             </p>
 
-            <div class="video-container" style="position:relative; width:100%; height:330px; background:#020617; border-radius:18px; overflow:hidden; border:1px solid rgba(56,189,248,0.2);">
+            <div class="video-container" style="position:relative; width:100%; height:320px; background:#2D251E; border-radius:20px; overflow:hidden; border:2px solid var(--card-border); margin:0 0 1.1rem 0;">
                 <video id="webcam-stream" autoplay playsinline style="width:100%; height:100%; object-fit:cover; transform:scaleX(-1);"></video>
                 
-                <!-- HUD Corner Brackets -->
-                <div style="position:absolute; top:16px; left:16px; width:20px; height:20px; border-top:3px solid #38BDF8; border-left:3px solid #38BDF8; pointer-events:none; z-index:4;"></div>
-                <div style="position:absolute; top:16px; right:16px; width:20px; height:20px; border-top:3px solid #38BDF8; border-right:3px solid #38BDF8; pointer-events:none; z-index:4;"></div>
-                <div style="position:absolute; bottom:16px; left:16px; width:20px; height:20px; border-bottom:3px solid #38BDF8; border-left:3px solid #38BDF8; pointer-events:none; z-index:4;"></div>
-                <div style="position:absolute; bottom:16px; right:16px; width:20px; height:20px; border-bottom:3px solid #38BDF8; border-right:3px solid #38BDF8; pointer-events:none; z-index:4;"></div>
+                <!-- HUD Corner Brackets Dorés -->
+                <div style="position:absolute; top:16px; left:16px; width:20px; height:20px; border-top:3px solid var(--primary); border-left:3px solid var(--primary); pointer-events:none; z-index:4;"></div>
+                <div style="position:absolute; top:16px; right:16px; width:20px; height:20px; border-top:3px solid var(--primary); border-right:3px solid var(--primary); pointer-events:none; z-index:4;"></div>
+                <div style="position:absolute; bottom:16px; left:16px; width:20px; height:20px; border-bottom:3px solid var(--primary); border-left:3px solid var(--primary); pointer-events:none; z-index:4;"></div>
+                <div style="position:absolute; bottom:16px; right:16px; width:20px; height:20px; border-bottom:3px solid var(--primary); border-right:3px solid var(--primary); pointer-events:none; z-index:4;"></div>
 
-                <!-- Réticule Ovale d'alignement avec masque assombri -->
-                <div style="position:absolute; inset:0; border:2px dashed #38BDF8; border-radius:50%; width:210px; height:255px; margin:auto; pointer-events:none; box-shadow:0 0 0 9999px rgba(2, 6, 23, 0.65); z-index:3;">
-                    <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(56, 189, 248, 0.4); transform:translateY(-50%);"></div>
-                    <div style="position:absolute; left:50%; height:100%; width:1px; background:rgba(56, 189, 248, 0.4); transform:translateX(-50%);"></div>
+                <!-- Réticule Ovale d'alignement avec masque assombri doux -->
+                <div style="position:absolute; inset:0; border:2.5px dashed var(--primary); border-radius:50%; width:200px; height:245px; margin:auto; pointer-events:none; box-shadow:0 0 0 9999px rgba(45, 37, 30, 0.55); z-index:3;">
+                    <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(212, 184, 149, 0.4); transform:translateY(-50%);"></div>
+                    <div style="position:absolute; left:50%; height:100%; width:1px; background:rgba(212, 184, 149, 0.4); transform:translateX(-50%);"></div>
 
-                    <!-- Landmark Keypoint Dots -->
-                    <div style="position:absolute; top:35%; left:30%; width:6px; height:6px; border-radius:50%; background:#38BDF8; box-shadow:0 0 8px #38BDF8; animation:pulseGlow 1.2s infinite alternate;"></div>
-                    <div style="position:absolute; top:35%; right:30%; width:6px; height:6px; border-radius:50%; background:#38BDF8; box-shadow:0 0 8px #38BDF8; animation:pulseGlow 1.2s infinite alternate 0.2s;"></div>
-                    <div style="position:absolute; top:52%; left:50%; transform:translateX(-50%); width:6px; height:6px; border-radius:50%; background:#38BDF8; box-shadow:0 0 8px #38BDF8; animation:pulseGlow 1.2s infinite alternate 0.4s;"></div>
-                    <div style="position:absolute; top:70%; left:50%; transform:translateX(-50%); width:14px; height:4px; border-radius:4px; border-bottom:2px solid #38BDF8;"></div>
+                    <!-- Landmark Keypoint Dots Dorés -->
+                    <div style="position:absolute; top:35%; left:30%; width:6px; height:6px; border-radius:50%; background:var(--primary); box-shadow:0 0 8px var(--primary); animation:pulseGlow 1.2s infinite alternate;"></div>
+                    <div style="position:absolute; top:35%; right:30%; width:6px; height:6px; border-radius:50%; background:var(--primary); box-shadow:0 0 8px var(--primary); animation:pulseGlow 1.2s infinite alternate 0.2s;"></div>
+                    <div style="position:absolute; top:52%; left:50%; transform:translateX(-50%); width:6px; height:6px; border-radius:50%; background:var(--primary); box-shadow:0 0 8px var(--primary); animation:pulseGlow 1.2s infinite alternate 0.4s;"></div>
+                    <div style="position:absolute; top:70%; left:50%; transform:translateX(-50%); width:14px; height:4px; border-radius:4px; border-bottom:2px solid var(--primary);"></div>
                 </div>
 
-                <!-- Ligne de balayage Laser -->
-                <div id="face-scan-line" style="position:absolute; top:0; left:0; width:100%; height:3px; background:linear-gradient(90deg, transparent, #38BDF8, #818CF8, transparent); box-shadow:0 0 15px #38BDF8; animation:scanLine 2.2s infinite linear; display:none; z-index:5;"></div>
-
-                <div style="position:absolute; bottom:14px; left:0; right:0; text-align:center; color:#E2E8F0; font-size:0.82rem; font-weight:700; text-shadow:0 2px 6px rgba(0,0,0,0.9); z-index:5; display:flex; align-items:center; justify-content:center; gap:0.4rem;">
-                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981; box-shadow:0 0 8px #10B981;"></span>
-                    <span>Alignement automatique • Détection 128D</span>
-                </div>
+                <!-- Ligne de balayage Laser Doré / Émeraude -->
+                <div id="face-scan-line" style="position:absolute; top:0; left:0; width:100%; height:3px; background:linear-gradient(90deg, transparent, #D4B895, #10B981, transparent); box-shadow:0 0 15px #D4B895; animation:scanLine 2.2s infinite linear; display:none; z-index:5;"></div>
             </div>
 
-            <button onclick="captureAndVerifyFace()" style="background:linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color:#FFFFFF; border:1px solid rgba(255,255,255,0.15); padding:0.9rem 1.75rem; border-radius:14px; font-weight:800; font-size:0.95rem; cursor:pointer; width:100%; box-shadow:0 10px 25px rgba(37,99,235,0.4); margin-top:1.1rem; display:flex; align-items:center; justify-content:center; gap:0.5rem; transition:transform 0.2s ease;">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-cpu-fill" viewBox="0 0 16 16">
-                     <path d="M6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
-                     <path d="M5.5.5A.5.5 0 0 0 5 1v1.05A2.5 2.5 0 0 0 2.05 5H1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1.05a2.5 2.5 0 0 0 0 2H1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1.05A2.5 2.5 0 0 0 5 13.95V15a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1.05a2.5 2.5 0 0 0 2 0V15a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1.05A2.5 2.5 0 0 0 13.95 11H15a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1.05a2.5 2.5 0 0 0 0-2H15a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1.05A2.5 2.5 0 0 0 11 2.05V1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.05a2.5 2.5 0 0 0-2 0V1a.5.5 0 0 0-.5-.5zM4.5 5h7a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5v-7A1.5 1.5 0 0 1 4.5 5"/>
+            <button onclick="captureAndVerifyFace()" style="background:linear-gradient(135deg, #D4B895 0%, #C4A27A 100%); color:#FFFFFF; border:none; padding:0.95rem 1.75rem; border-radius:16px; font-weight:800; font-size:1rem; cursor:pointer; width:100%; box-shadow:0 8px 20px rgba(196, 162, 122, 0.35); display:flex; align-items:center; justify-content:center; gap:0.5rem; transition:transform 0.2s ease, box-shadow 0.2s ease;">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-camera-fill" viewBox="0 0 16 16">
+                     <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                     <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
                  </svg>
-                 <span>Analyser & Valider le Pointage</span>
+                 <span>Scanner</span>
             </button>
         </div>
     </div>

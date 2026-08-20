@@ -53,8 +53,7 @@ class CongeController extends Controller
                         ->paginate(20)
                         ->withQueryString();
 
-        // Liste des employés pour le formulaire de création
-        $employesList = Employe::orderBy('last_name')->get();
+        $employesList = Employe::with('department')->orderBy('last_name')->get(['id', 'first_name', 'last_name', 'department_id']);
 
         // Types de congés
         $typesConges = [

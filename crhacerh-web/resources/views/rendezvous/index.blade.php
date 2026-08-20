@@ -325,37 +325,20 @@
         cursor: not-allowed;
     }
 
-    /* Modal Styling */
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(31, 56, 76, 0.4);
-        backdrop-filter: blur(3px);
+    /* Drawer Overlay & Panel */
+    .drawer-overlay {
+        position: fixed !important;
+        inset: 0 !important;
+        background: rgba(31, 56, 76, 0.4) !important;
+        backdrop-filter: blur(3px) !important;
         z-index: 1050;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.25s ease;
     }
-    .modal-backdrop.show {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .modal-card {
-        background: #FFFFFF;
-        border-radius: 18px;
-        width: 520px;
-        max-width: 90%;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        transform: translateY(20px);
-        transition: transform 0.25s ease;
-        overflow: hidden;
-    }
-    .modal-backdrop.show .modal-card {
-        transform: translateY(0);
+    .drawer-overlay.open {
+        opacity: 1 !important;
+        pointer-events: auto !important;
     }
 
     .modal-header {

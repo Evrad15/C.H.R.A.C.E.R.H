@@ -306,34 +306,38 @@
         opacity: 0.4;
         cursor: not-allowed;
     }
-
     /* Modal Styling */
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(31, 56, 76, 0.4);
-        backdrop-filter: blur(3px);
-        z-index: 1050;
-        display: flex;
+    .conge-modal-overlay {
+        position: fixed !important;
+        inset: 0 !important;
+        background: rgba(31, 56, 76, 0.6) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        z-index: 999999 !important;
+        display: none;
         align-items: center;
         justify-content: center;
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.25s ease;
     }
-    .modal-backdrop.show { opacity: 1; pointer-events: auto; }
+    .conge-modal-overlay.open {
+        display: flex !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
 
     .modal-card {
         background: #FFFFFF;
         border-radius: 18px;
         width: 500px;
         max-width: 90%;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        box-shadow: 0 25px 60px rgba(0,0,0,0.22);
         transform: translateY(20px);
-        transition: transform 0.25s ease;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         overflow: hidden;
     }
-    .modal-backdrop.show .modal-card { transform: translateY(0); }
+    .conge-modal-overlay.open .modal-card { transform: translateY(0); }
 
     .modal-header {
         padding: 1.25rem 1.5rem;
@@ -502,7 +506,7 @@
 <!-- Header Page -->
 <div class="page-header-flex">
     <h1 class="page-title">Congés et Permissions</h1>
-    <button class="btn-create-conge" id="btnOpenModal">
+    <button type="button" class="btn-create-conge" id="btnOpenModal" onclick="openCongeModal()">
         <i class="bi bi-plus-lg"></i>
         <span>Nouvelle Demande</span>
     </button>
@@ -683,11 +687,11 @@
 </div>
 
 <!-- Modal Nouvelle Demande -->
-<div class="modal-backdrop" id="congeModal">
+<div class="conge-modal-overlay" id="congeModal">
     <div class="modal-card">
         <div class="modal-header">
             <h3 class="modal-title">Nouvelle Demande de Congé / Permission</h3>
-            <button class="modal-close" id="btnCloseModal">
+            <button type="button" class="modal-close" id="btnCloseModal" onclick="closeCongeModal()">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
@@ -745,7 +749,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-cancel" id="btnCancelModal">Annuler</button>
+                <button type="button" class="btn-cancel" id="btnCancelModal" onclick="closeCongeModal()">Annuler</button>
                 <button type="submit" class="btn-submit">Soumettre la Demande</button>
             </div>
         </form>
@@ -757,7 +761,7 @@
 <div class="drawer-panel" id="drawerPanel">
     <div class="drawer-header" style="display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:1px solid #E8EBF2;">
         <span style="font-weight: 700; color: var(--text-dark);">Fiche de Demande</span>
-        <button class="modal-close" id="drawerCloseBtn">
+        <button type="button" class="modal-close" id="drawerCloseBtn" onclick="closeDrawer()">
             <i class="bi bi-x-lg"></i>
         </button>
     </div>
@@ -769,36 +773,45 @@
 
 @section('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Modal Handlers
+    function openCongeModal() {
         const modal = document.getElementById('congeModal');
-        const btnOpen = document.getElementById('btnOpenModal');
-        const btnClose = document.getElementById('btnCloseModal');
-        const btnCancel = document.getElementById('btnCancelModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('open'), 10);
+        }
+    }
 
-        if (btnOpen && modal) {
-            btnOpen.addEventListener('click', () => modal.classList.add('show'));
-            btnClose.addEventListener('click', () => modal.classList.remove('show'));
-            btnCancel.addEventListener('click', () => modal.classList.remove('show'));
+    function closeCongeModal() {
+        const modal = document.getElementById('congeModal');
+        if (modal) {
+            modal.classList.remove('open');
+            setTimeout(() => { modal.style.display = 'none'; }, 200);
+        }
+    }
+
+    function closeDrawer() {
+        const overlay = document.getElementById('drawerOverlay');
+        const panel   = document.getElementById('drawerPanel');
+        if (overlay) overlay.classList.remove('open');
+        if (panel) panel.classList.remove('open');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('congeModal');
+        if (modal) {
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.classList.remove('show');
+                if (e.target === modal) closeCongeModal();
             });
         }
 
-        // Drawer Close Handlers
         const overlay = document.getElementById('drawerOverlay');
-        const panel   = document.getElementById('drawerPanel');
-        const drawerClose = document.getElementById('drawerCloseBtn');
-
-        function closeDrawer() {
-            overlay.classList.remove('open');
-            panel.classList.remove('open');
-        }
-        if (overlay && panel) {
+        if (overlay) {
             overlay.addEventListener('click', closeDrawer);
-            drawerClose.addEventListener('click', closeDrawer);
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closeDrawer();
+                if (e.key === 'Escape') {
+                    closeCongeModal();
+                    closeDrawer();
+                }
             });
         }
     });

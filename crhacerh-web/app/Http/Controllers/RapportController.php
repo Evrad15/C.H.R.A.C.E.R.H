@@ -31,7 +31,7 @@ class RapportController extends Controller
             $disk->makeDirectory($baseDir);
         }
 
-        $employees = Employe::orderBy('first_name')->orderBy('last_name')->get();
+        $employees = Employe::with('department')->orderBy('last_name')->get(['id', 'first_name', 'last_name', 'department_id']);
 
         // Récupération de tous les fichiers et sous-dossiers
         $allFiles = $disk->allFiles($baseDir);
