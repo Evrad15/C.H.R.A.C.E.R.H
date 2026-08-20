@@ -1054,6 +1054,29 @@
             }).join('');
         }
 
+        function showRecognitionSuccessToast(result) {
+            const data = result.data || {};
+            const category = result.category || data.category || '';
+            const rawName = data.name || data.employee || '';
+            const timeStr = data.time || '';
+            const simText = data.similarity ? ` (Similitude: ${data.similarity})` : '';
+
+            if (category === 'PATIENT' || data.service) {
+                // Patient / Patiente : afficher impérativement "Patiente [NOM] reconnue"
+                const title = `Patiente ${rawName} reconnue`;
+                const service = data.service ? `${data.service} — ` : '';
+                const msg = `${service}Arrivée validée à ${timeStr}${simText}`;
+                showKioskToast(title, msg, true);
+            } else {
+                // Employé : pas besoin de préciser "Employé", affichage direct du nom
+                const title = 'Pointage Validé !';
+                const dept = data.department ? ` (${data.department})` : '';
+                const type = data.type ? `${data.type} à ` : 'Validé à ';
+                const msg = `${rawName}${dept} — ${type}${timeStr}${simText}`;
+                showKioskToast(title, msg, true);
+            }
+        }
+
         async function quickCheckInPatient(id) {
             try {
                 const res = await fetch('/api/kiosk/biometric-verify', {
@@ -1068,7 +1091,7 @@
                 });
                 if (res.ok) {
                     const result = await res.json();
-                    showKioskToast('Patient Arrivé !', result.data.name || result.message, true);
+                    showRecognitionSuccessToast(result);
                     fetchAllData();
                 }
             } catch (e) {
@@ -1146,8 +1169,7 @@
                     if (source === 'FACE') closeFaceModal();
                     else closeFingerModal();
 
-                    const simText = result.data && result.data.similarity ? ` — Similitude BD: ${result.data.similarity}` : '';
-                    showKioskToast('Pointage Validé (≥ 95%) !', `${result.data.name || ''} (${result.data.time || ''})${simText}`, true);
+                    showRecognitionSuccessToast(result);
                     fetchAllData();
                 } else {
                     showKioskToast('Échec Biométrique', result.message || 'Impossible de valider le pointage.', false);
@@ -1245,7 +1267,7 @@
                 const result = await res.json();
                 if (res.ok && result.status === 'success') {
                     closeFaceModal();
-                    showKioskToast('Reconnaissance Réussie !', `${result.data.name || result.data.employee} — ${result.data.time || result.message}`, true);
+                    showRecognitionSuccessToast(result);
                     fetchAllData();
                 } else {
                     showKioskToast('Visage Non Reconnu', result.message || 'Sélectionnez votre profil dans la liste ci-dessous.', false);

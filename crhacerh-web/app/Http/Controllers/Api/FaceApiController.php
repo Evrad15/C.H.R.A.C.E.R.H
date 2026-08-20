@@ -347,9 +347,11 @@ class FaceApiController extends Controller
                     return response()->json([
                         'status'   => 'success',
                         'category' => 'PATIENT',
-                        'message'  => "Arrivée patient validée par ArcFace ! (Similitude : {$similarityPercent}% ≥ 95%)",
+                        'message'  => "Patiente {$rdv->nom_patient} reconnue !",
                         'data'     => [
                             'name'       => $rdv->nom_patient,
+                            'full_title' => "Patiente {$rdv->nom_patient} reconnue",
+                            'category'   => 'PATIENT',
                             'service'    => $rdv->service  ?? 'Consultation',
                             'medecin'    => $rdv->medecin  ?? 'Médecin traitant',
                             'time'       => Carbon::now()->format('H:i:s'),
@@ -608,15 +610,17 @@ class FaceApiController extends Controller
                 }
 
                 return response()->json([
-                    'status' => 'success',
+                    'status'   => 'success',
                     'category' => 'PATIENT',
-                    'message' => 'Arrivée du patient enregistrée avec succès !',
-                    'data' => [
-                        'name' => $rdv->nom_patient,
-                        'service' => $rdv->service ?? 'Consultation',
-                        'medecin' => $rdv->medecin ?? 'Médecin traitant',
-                        'time' => Carbon::now()->format('H:i:s'),
-                        'simulated' => !$usedGemini
+                    'message'  => "Patiente {$rdv->nom_patient} reconnue !",
+                    'data'     => [
+                        'name'       => $rdv->nom_patient,
+                        'full_title' => "Patiente {$rdv->nom_patient} reconnue",
+                        'category'   => 'PATIENT',
+                        'service'    => $rdv->service ?? 'Consultation',
+                        'medecin'    => $rdv->medecin ?? 'Médecin traitant',
+                        'time'       => Carbon::now()->format('H:i:s'),
+                        'simulated'  => !$usedGemini
                     ]
                 ], 200);
             }
@@ -643,15 +647,17 @@ class FaceApiController extends Controller
             ]);
 
             return response()->json([
-                'status' => 'success',
+                'status'   => 'success',
                 'category' => 'EMPLOYE',
-                'message' => 'Pointage enregistré avec succès !',
-                'data' => [
-                    'name' => $employee->last_name . ' ' . $employee->first_name,
+                'message'  => 'Pointage enregistré avec succès !',
+                'data'     => [
+                    'name'       => $employee->last_name . ' ' . $employee->first_name,
+                    'full_title' => $employee->last_name . ' ' . $employee->first_name,
+                    'category'   => 'EMPLOYE',
                     'department' => $employee->department ? $employee->department->name : 'N/A',
-                    'type' => $pointage->type,
-                    'time' => $pointage->timestamp->format('H:i:s'),
-                    'simulated' => !$usedGemini
+                    'type'       => $pointage->type,
+                    'time'       => $pointage->timestamp->format('H:i:s'),
+                    'simulated'  => !$usedGemini
                 ]
             ], 200);
 

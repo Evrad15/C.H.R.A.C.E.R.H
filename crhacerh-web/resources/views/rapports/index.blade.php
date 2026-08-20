@@ -275,32 +275,38 @@
     .btn-del:hover { background: var(--accent-red); color: #FFFFFF; }
 
     /* Modal Styling */
-    .modal-backdrop {
+    .rapport-modal-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(31, 56, 76, 0.4);
-        backdrop-filter: blur(3px);
-        z-index: 1050;
-        display: flex;
+        background: rgba(31, 56, 76, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 999999;
+        display: none;
         align-items: center;
         justify-content: center;
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.25s ease;
     }
-    .modal-backdrop.show { opacity: 1; pointer-events: auto; }
+    .rapport-modal-overlay.open {
+        display: flex !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
 
     .modal-card {
         background: #FFFFFF;
         border-radius: 18px;
-        width: 480px;
-        max-width: 90%;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        width: 500px;
+        max-width: 92vw;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.22);
         transform: translateY(20px);
-        transition: transform 0.25s ease;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         overflow: hidden;
     }
-    .modal-backdrop.show .modal-card { transform: translateY(0); }
+    .rapport-modal-overlay.open .modal-card {
+        transform: translateY(0);
+    }
 
     .modal-header {
         padding: 1.25rem 1.5rem;
@@ -444,7 +450,7 @@
 <!-- Header Page -->
 <div class="page-header-flex">
     <h1 class="page-title">Génération & Bibliothèque des Rapports</h1>
-    <button class="btn-create-rapport" id="btnOpenModal">
+    <button type="button" class="btn-create-rapport" id="btnOpenModal" onclick="openRapportModal()">
         <i class="bi bi-file-earmark-plus-fill"></i>
         <span>Générer un Rapport</span>
     </button>
@@ -567,11 +573,11 @@
 </div>
 
 <!-- Modal Générer un Rapport Personnalisé -->
-<div class="modal-backdrop" id="rapportModal">
+<div class="rapport-modal-overlay" id="rapportModal">
     <div class="modal-card">
         <div class="modal-header">
             <h3 class="modal-title">Générer un Rapport Sur-Mesure</h3>
-            <button class="modal-close" id="btnCloseModal">
+            <button type="button" class="modal-close" id="btnCloseModal" onclick="closeRapportModal()">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
@@ -630,7 +636,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-cancel" id="btnCancelModal">Annuler</button>
+                <button type="button" class="btn-cancel" id="btnCancelModal" onclick="closeRapportModal()">Annuler</button>
                 <button type="submit" class="btn-submit">Générer & Archiver</button>
             </div>
         </form>
@@ -638,7 +644,7 @@
 </div>
 
 <!-- Modal Visionneuse de Document (Aperçu Sans Téléchargement) -->
-<div class="modal-backdrop" id="previewModal">
+<div class="rapport-modal-overlay" id="previewModal">
     <div class="modal-card" style="width: 960px; max-width: 95vw; height: 85vh; display: flex; flex-direction: column;">
         <div class="modal-header" style="background:#F8FAFC; border-bottom:1px solid #E2E8F0; padding:1rem 1.5rem;">
             <div style="display:flex; align-items:center; gap:0.6rem; overflow:hidden;">
@@ -649,7 +655,7 @@
                 <a href="#" id="previewDownloadBtn" class="btn-file-action btn-dl" download style="padding:0.4rem 0.85rem; font-size:0.8rem;">
                     <i class="bi bi-download"></i> Télécharger le Fichier
                 </a>
-                <button type="button" class="modal-close" id="btnClosePreviewModal" style="width:34px; height:34px; border-radius:8px; background:#F1F2F7; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                <button type="button" class="modal-close" id="btnClosePreviewModal" onclick="closePreviewModal()" style="width:34px; height:34px; border-radius:8px; background:#F1F2F7; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
@@ -663,27 +669,42 @@
 
 @section('scripts')
 <script>
+    function openRapportModal() {
+        const modal = document.getElementById('rapportModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('open'), 10);
+        }
+    }
+
+    function closeRapportModal() {
+        const modal = document.getElementById('rapportModal');
+        if (modal) {
+            modal.classList.remove('open');
+            setTimeout(() => { modal.style.display = 'none'; }, 250);
+        }
+    }
+
+    function closePreviewModal() {
+        const previewModal = document.getElementById('previewModal');
+        if (previewModal) {
+            previewModal.classList.remove('open');
+            setTimeout(() => { previewModal.style.display = 'none'; }, 250);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const modal = document.getElementById('rapportModal');
-        const btnOpen = document.getElementById('btnOpenModal');
-        const btnClose = document.getElementById('btnCloseModal');
-        const btnCancel = document.getElementById('btnCancelModal');
-
-        if (btnOpen && modal) {
-            btnOpen.addEventListener('click', () => modal.classList.add('show'));
-            btnClose.addEventListener('click', () => modal.classList.remove('show'));
-            btnCancel.addEventListener('click', () => modal.classList.remove('show'));
+        if (modal) {
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.classList.remove('show');
+                if (e.target === modal) closeRapportModal();
             });
         }
 
         const previewModal = document.getElementById('previewModal');
-        const btnClosePreview = document.getElementById('btnClosePreviewModal');
-        if (previewModal && btnClosePreview) {
-            btnClosePreview.addEventListener('click', () => previewModal.classList.remove('show'));
+        if (previewModal) {
             previewModal.addEventListener('click', (e) => {
-                if (e.target === previewModal) previewModal.classList.remove('show');
+                if (e.target === previewModal) closePreviewModal();
             });
         }
     });
@@ -719,7 +740,8 @@
             </div>
         `;
 
-        modal.classList.add('show');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('open'), 10);
 
         if (ext === 'pdf') {
             modalBody.innerHTML = `

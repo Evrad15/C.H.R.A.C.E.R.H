@@ -166,14 +166,16 @@ class KioskController extends Controller
                 ]);
 
                 return response()->json([
-                    'status' => 'success',
+                    'status'   => 'success',
                     'category' => 'EMPLOYE',
-                    'message' => "Pointage validé par empreinte USB ! (Similitude BD : {$similarityPercent}% ≥ 95%)",
-                    'data' => [
-                        'name' => $employee->last_name . ' ' . $employee->first_name,
+                    'message'  => "Pointage validé par empreinte USB ! (Similitude BD : {$similarityPercent}% ≥ 95%)",
+                    'data'     => [
+                        'name'       => $employee->last_name . ' ' . $employee->first_name,
+                        'full_title' => $employee->last_name . ' ' . $employee->first_name,
+                        'category'   => 'EMPLOYE',
                         'department' => $employee->department ? $employee->department->name : 'N/A',
-                        'type' => $pointage->type,
-                        'time' => $pointage->timestamp->format('H:i:s'),
+                        'type'       => $pointage->type,
+                        'time'       => $pointage->timestamp->format('H:i:s'),
                         'similarity' => "{$similarityPercent}%"
                     ]
                 ]);
@@ -224,14 +226,16 @@ class KioskController extends Controller
                 }
 
                 return response()->json([
-                    'status' => 'success',
+                    'status'   => 'success',
                     'category' => 'PATIENT',
-                    'message' => "Arrivée patient validée par empreinte ! (Similitude BD : {$similarityPercent}% ≥ 95%)",
-                    'data' => [
-                        'name' => $rdv->nom_patient,
-                        'service' => $rdv->service ?? 'Consultation',
-                        'medecin' => $rdv->medecin ?? 'Médecin traitant',
-                        'time' => Carbon::now()->format('H:i:s'),
+                    'message'  => "Patiente {$rdv->nom_patient} reconnue !",
+                    'data'     => [
+                        'name'       => $rdv->nom_patient,
+                        'full_title' => "Patiente {$rdv->nom_patient} reconnue",
+                        'category'   => 'PATIENT',
+                        'service'    => $rdv->service ?? 'Consultation',
+                        'medecin'    => $rdv->medecin ?? 'Médecin traitant',
+                        'time'       => Carbon::now()->format('H:i:s'),
                         'similarity' => "{$similarityPercent}%"
                     ]
                 ]);
