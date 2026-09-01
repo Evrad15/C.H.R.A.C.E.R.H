@@ -46,9 +46,10 @@ def get_app():
             app = FaceAnalysis(
                 name='buffalo_l',              # ArcFace R100 — le plus précis
                 root=MODELS_DIR,
+                allowed_modules=['detection', 'recognition'],
                 providers=['CPUExecutionProvider']
             )
-            app.prepare(ctx_id=0, det_size=(640, 640))
+            app.prepare(ctx_id=0, det_size=(320, 320))
         return app, None
     except Exception as e:
         return None, f"Erreur chargement InsightFace: {str(e)}"

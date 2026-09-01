@@ -74,24 +74,26 @@ class DashboardController extends Controller
 
         $isTrendPositive = $trendPercent >= 0;
 
-        // 6. Données du graphique hebdomadaire pour la semaine réelle en cours (7 jours : Lundi à Dimanche)
+        // 6. Données du graphique hebdomadaire pour la semaine réelle en cours (1 seule requête SQL groupée)
         $weeklyData = [];
         $dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
+        $weekStats = Pointage::whereBetween('created_at', [$startOfWeek, (clone $endOfWeek)->endOfDay()])
+            ->where('type', 'ENTREE')
+            ->selectRaw('DATE(created_at) as date_val, status, count(*) as count')
+            ->groupBy('date_val', 'status')
+            ->get()
+            ->groupBy('date_val');
+
         for ($i = 0; $i < 7; $i++) {
             $currentDay = (clone $startOfWeek)->addDays($i);
+            $dateKey = $currentDay->toDateString();
             $isPastOrToday = $currentDay->lte($today);
 
             if ($isPastOrToday) {
-                $dayPresents = Pointage::whereDate('created_at', $currentDay)
-                    ->where('type', 'ENTREE')
-                    ->where('status', 'Present')
-                    ->count();
-
-                $dayRetards = Pointage::whereDate('created_at', $currentDay)
-                    ->where('type', 'ENTREE')
-                    ->where('status', 'Retard')
-                    ->count();
+                $dayGroup = $weekStats->get($dateKey, collect());
+                $dayPresents = (int)($dayGroup->firstWhere('status', 'Present')->count ?? 0);
+                $dayRetards = (int)($dayGroup->firstWhere('status', 'Retard')->count ?? 0);
 
                 $dayAbsents = ($dayPresents + $dayRetards > 0 || $currentDay->lt($today))
                     ? max(0, $totalEmployes - ($dayPresents + $dayRetards))

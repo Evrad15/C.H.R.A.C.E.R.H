@@ -56,34 +56,38 @@ class FaceApiController extends Controller
             $filename = "faces/{$employee->id}.jpg";
             Storage::disk('public')->put($filename, $imageContent);
 
-            // --- Extraction de l'embedding ArcFace 512D via Python ---
+            // --- Extraction de l'embedding ArcFace 512D via Daemon ou Python CLI ---
             $realEmbedding = null;
             try {
                 $tempPath = storage_path('app/public/_temp_register_' . $employee->id . '_' . time() . '.jpg');
                 file_put_contents($tempPath, $imageContent);
-                $scriptPath = base_path('scripts/face_recognize.py');
-                $cmd = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
-                $pyOutput = shell_exec($cmd);
+
+                $pyData = $this->callBiometricDaemon('/extract', ['image_path' => $tempPath]);
+
+                if (!$pyData) {
+                    $scriptPath = base_path('scripts/face_recognize.py');
+                    $cmd = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
+                    $pyOutput = shell_exec($cmd);
+                    if ($pyOutput) {
+                        foreach (explode("\n", $pyOutput) as $line) {
+                            $line = trim($line);
+                            if (str_starts_with($line, '{')) {
+                                $pyData = json_decode($line, true);
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 if (file_exists($tempPath)) {
                     @unlink($tempPath);
                 }
-                // InsightFace écrit des logs sur stdout avant le JSON — on extrait uniquement la ligne JSON
-                if ($pyOutput) {
-                    $jsonLine = null;
-                    foreach (explode("\n", $pyOutput) as $line) {
-                        $line = trim($line);
-                        if (str_starts_with($line, '{')) {
-                            $jsonLine = $line;
-                            break;
-                        }
-                    }
-                    if ($jsonLine) {
-                        $pyData = json_decode($jsonLine, true);
-                        if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success'
-                            && isset($pyData['dims']) && $pyData['dims'] === 512) {
-                            $embedding = $pyData['embedding']; // tableau de 512 floats ArcFace
-                            $binaryEmbeddings = pack('f*', ...$embedding);
-                            $realEmbedding = base64_encode($binaryEmbeddings);
+
+                if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success'
+                    && isset($pyData['dims']) && $pyData['dims'] === 512) {
+                    $embedding = $pyData['embedding']; // tableau de 512 floats ArcFace
+                    $binaryEmbeddings = pack('f*', ...$embedding);
+                    $realEmbedding = base64_encode($binaryEmbeddings);
 
                             // --- Vérification anti-doublon biométrique ---
                             // Empêche d'enregistrer le même visage pour deux employés différents
@@ -120,11 +124,9 @@ class FaceApiController extends Controller
                                 ], 409);
                             }
                         }
+                    } catch (\Throwable $pyEx) {
+                        Log::warning('registerFace: Python ArcFace extraction failed: ' . $pyEx->getMessage());
                     }
-                }
-            } catch (\Throwable $pyEx) {
-                Log::warning('registerFace: Python ArcFace extraction failed: ' . $pyEx->getMessage());
-            }
 
             // Si Python n'est pas disponible, on log un avertissement (pas de fallback aléatoire)
             if (!$realEmbedding) {
@@ -214,26 +216,33 @@ class FaceApiController extends Controller
                         $candVector = array_values(unpack('f*', $binary));
 
                         if (count($candVector) === 512) {
-                            $tempCandPath = storage_path('app/public/_temp_cand_' . uniqid() . '.json');
-                            file_put_contents($tempCandPath, json_encode([[
+                            $candPayload = [[
                                 'id'        => $employee->id,
                                 'type'      => 'EMPLOYE',
                                 'embedding' => $candVector,
-                            ]]));
+                            ]];
+                            $pyData = $this->callBiometricDaemon('/compare_vectors', [
+                                'image_path' => $tempPath,
+                                'candidates' => $candPayload
+                            ]);
 
-                            $cmd       = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath)
-                                       . ' compare_vectors ' . escapeshellarg($tempPath)
-                                       . ' ' . escapeshellarg($tempCandPath);
-                            $pyOutput  = shell_exec($cmd);
-                            if (file_exists($tempCandPath)) @unlink($tempCandPath);
+                            if (!$pyData) {
+                                $tempCandPath = storage_path('app/public/_temp_cand_' . uniqid() . '.json');
+                                file_put_contents($tempCandPath, json_encode($candPayload));
 
-                            $pyData    = null;
-                            if ($pyOutput) {
-                                foreach (explode("\n", $pyOutput) as $line) {
-                                    $line = trim($line);
-                                    if (str_starts_with($line, '{')) {
-                                        $pyData = json_decode($line, true);
-                                        break;
+                                $cmd       = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath)
+                                           . ' compare_vectors ' . escapeshellarg($tempPath)
+                                           . ' ' . escapeshellarg($tempCandPath);
+                                $pyOutput  = shell_exec($cmd);
+                                if (file_exists($tempCandPath)) @unlink($tempCandPath);
+
+                                if ($pyOutput) {
+                                    foreach (explode("\n", $pyOutput) as $line) {
+                                        $line = trim($line);
+                                        if (str_starts_with($line, '{')) {
+                                            $pyData = json_decode($line, true);
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -315,40 +324,49 @@ class FaceApiController extends Controller
                         $similarityPercent = round(rand(965, 992) / 10.0, 1);
                         $cosSimRaw = round(rand(75, 88) / 100.0, 4);
                     } elseif (file_exists($patientFacePath)) {
-                        // Extraction de l'embedding du patient et comparaison ArcFace
-                        $cmdExtract = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($patientFacePath);
-                        $pyExtract  = shell_exec($cmdExtract);
-                        $extData    = null;
-                        if ($pyExtract) {
-                            foreach (explode("\n", $pyExtract) as $line) {
-                                $line = trim($line);
-                                if (str_starts_with($line, '{')) {
-                                    $extData = json_decode($line, true);
-                                    break;
+                        $extData = $this->callBiometricDaemon('/extract', ['image_path' => $patientFacePath]);
+                        if (!$extData) {
+                            $cmdExtract = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($patientFacePath);
+                            $pyExtract  = shell_exec($cmdExtract);
+                            if ($pyExtract) {
+                                foreach (explode("\n", $pyExtract) as $line) {
+                                    $line = trim($line);
+                                    if (str_starts_with($line, '{')) {
+                                        $extData = json_decode($line, true);
+                                        break;
+                                    }
                                 }
                             }
                         }
 
                         if ($extData && ($extData['status'] ?? '') === 'success' && count($extData['embedding'] ?? []) === 512) {
-                            $tempCandPath = storage_path('app/public/_temp_cand_' . uniqid() . '.json');
-                            file_put_contents($tempCandPath, json_encode([[
+                            $candPayload = [[
                                 'id'        => $rdv->id,
                                 'type'      => 'PATIENT',
                                 'embedding' => $extData['embedding'],
-                            ]]));
+                            ]];
+                            $pyData = $this->callBiometricDaemon('/compare_vectors', [
+                                'image_path' => $tempPath,
+                                'candidates' => $candPayload
+                            ]);
 
-                            $cmdCmp    = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath)
-                                       . ' compare_vectors ' . escapeshellarg($tempPath)
-                                       . ' ' . escapeshellarg($tempCandPath);
-                            $pyOutput  = shell_exec($cmdCmp);
-                            if (file_exists($tempCandPath)) @unlink($tempCandPath);
-                            $pyData    = null;
-                            if ($pyOutput) {
-                                foreach (explode("\n", $pyOutput) as $line) {
-                                    $line = trim($line);
-                                    if (str_starts_with($line, '{')) {
-                                        $pyData = json_decode($line, true);
-                                        break;
+                            if (!$pyData) {
+                                $tempCandPath = storage_path('app/public/_temp_cand_' . uniqid() . '.json');
+                                file_put_contents($tempCandPath, json_encode($candPayload));
+
+                                $cmdCmp    = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath)
+                                           . ' compare_vectors ' . escapeshellarg($tempPath)
+                                           . ' ' . escapeshellarg($tempCandPath);
+                                $pyOutput  = shell_exec($cmdCmp);
+                                if (file_exists($tempCandPath)) @unlink($tempCandPath);
+
+                                if ($pyOutput) {
+                                    foreach (explode("\n", $pyOutput) as $line) {
+                                        $line = trim($line);
+                                        if (str_starts_with($line, '{')) {
+                                            $pyData = json_decode($line, true);
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -368,10 +386,11 @@ class FaceApiController extends Controller
 
                     if (file_exists($tempPath)) @unlink($tempPath);
 
+                    // Seuil ArcFace 95% affiché (cosinus >= 0.40 interne)
                     if ($similarityPercent < 95.0) {
                         return response()->json([
                             'status'  => 'error',
-                            'message' => "Rejet Biométrique ArcFace : Similitude ({$similarityPercent}%) insuffisante pour le patient {$rdv->nom_patient}."
+                            'message' => "Rejet Biométrique ArcFace : Similitude ({$similarityPercent}%) insuffisante pour {$rdv->nom_patient}. Votre visage ne correspond pas au profil enregistré."
                         ], 401);
                     }
 
@@ -458,32 +477,38 @@ class FaceApiController extends Controller
                 }
 
                 if (!empty($candidatesForPy)) {
-                    $tempCandPath = storage_path('app/public/_temp_cand_1n_' . uniqid() . '.json');
-                    file_put_contents($tempCandPath, json_encode($candidatesForPy));
+                    $pyData = $this->callBiometricDaemon('/compare_vectors', [
+                        'image_path' => $tempPath,
+                        'candidates' => $candidatesForPy
+                    ]);
 
-                    $cmd = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath)
-                         . ' compare_vectors ' . escapeshellarg($tempPath)
-                         . ' ' . escapeshellarg($tempCandPath);
-                    $pyOutput = shell_exec($cmd);
+                    if (!$pyData) {
+                        $tempCandPath = storage_path('app/public/_temp_cand_1n_' . uniqid() . '.json');
+                        file_put_contents($tempCandPath, json_encode($candidatesForPy));
 
-                    if (file_exists($tempCandPath)) {
-                        @unlink($tempCandPath);
+                        $cmd = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath)
+                             . ' compare_vectors ' . escapeshellarg($tempPath)
+                             . ' ' . escapeshellarg($tempCandPath);
+                        $pyOutput = shell_exec($cmd);
+
+                        if (file_exists($tempCandPath)) {
+                            @unlink($tempCandPath);
+                        }
+
+                        if ($pyOutput) {
+                            foreach (explode("\n", $pyOutput) as $line) {
+                                $line = trim($line);
+                                if (str_starts_with($line, '{')) {
+                                    $pyData = json_decode($line, true);
+                                    break;
+                                }
+                            }
+                        }
                     }
+
                     if (file_exists($tempPath)) {
                         @unlink($tempPath);
                     }
-
-                    if ($pyOutput) {
-                        // Extraire la ligne JSON depuis stdout mixte
-                        $jsonLine = null;
-                        foreach (explode("\n", $pyOutput) as $line) {
-                            $line = trim($line);
-                            if (str_starts_with($line, '{')) {
-                                $jsonLine = $line;
-                                break;
-                            }
-                        }
-                        $pyData = $jsonLine ? json_decode($jsonLine, true) : null;
 
                         if ($pyData && isset($pyData['status'])) {
 
@@ -527,7 +552,6 @@ class FaceApiController extends Controller
                                 $usedGemini = true;
                             }
                         }
-                    }
                 } else {
                     if (file_exists($tempPath)) {
                         @unlink($tempPath);
@@ -849,6 +873,38 @@ class FaceApiController extends Controller
         if ($norm1 <= 0 || $norm2 <= 0) return 0.0;
         $cosine = $dot / (sqrt($norm1) * sqrt($norm2));
         return max(0.0, ($cosine + 1.0) / 2.0);
+    }
+
+    private function callBiometricDaemon(string $endpoint, array $payload): ?array
+    {
+        try {
+            $url = 'http://127.0.0.1:5001' . $endpoint;
+            $json = json_encode($payload);
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($json)
+            ]);
+            curl_setopt($ch, CURLOPT_TIMEOUT_MS, 4000);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, 300);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $response) {
+                $data = json_decode($response, true);
+                if (is_array($data)) {
+                    return $data;
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        return null;
     }
 
     private function getPythonBinary(): string

@@ -18,7 +18,11 @@ class EmployeController extends Controller
     {
         $departments = Department::orderBy('name')->get();
 
-        $query = Employe::with('department');
+        $query = Employe::with('department')->select([
+            'id', 'first_name', 'last_name', 'email', 'phone', 
+            'matricule', 'role', 'department_id', 'created_at',
+            'consent_facial_at', 'fingerprint_registered_at'
+        ]);
 
         // Filtre par recherche textuelle (Nom ou Prénom)
         if ($request->filled('search')) {
@@ -228,24 +232,7 @@ class EmployeController extends Controller
                 $filePath = storage_path("app/public/faces/{$emp->id}.jpg");
                 file_put_contents($filePath, $imageContent);
 
-                $floats = [];
-                try {
-                    $scriptPath = base_path('scripts/face_recognize.py');
-                    $cmd = $this->getPythonBinary() . " " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
-                    $pyOutput = shell_exec($cmd);
-                    if ($pyOutput) {
-                        foreach (explode("\n", $pyOutput) as $line) {
-                            $line = trim($line);
-                            if (str_starts_with($line, '{')) {
-                                $pyData = json_decode($line, true);
-                                if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success' && isset($pyData['embedding']) && count($pyData['embedding']) === 512) {
-                                    $floats = $pyData['embedding'];
-                                }
-                                break;
-                            }
-                        }
-                    }
-                } catch (\Throwable $th) {}
+                $floats = $this->extractFaceEmbedding($filePath);
 
                 if (!empty($floats) && count($floats) === 512) {
                     $emp->update([
@@ -307,24 +294,7 @@ class EmployeController extends Controller
                 $filePath = storage_path("app/public/faces/{$emp->id}.jpg");
                 file_put_contents($filePath, $imageContent);
 
-                $floats = [];
-                try {
-                    $scriptPath = base_path('scripts/face_recognize.py');
-                    $cmd = $this->getPythonBinary() . " " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
-                    $pyOutput = shell_exec($cmd);
-                    if ($pyOutput) {
-                        foreach (explode("\n", $pyOutput) as $line) {
-                            $line = trim($line);
-                            if (str_starts_with($line, '{')) {
-                                $pyData = json_decode($line, true);
-                                if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success' && isset($pyData['embedding']) && count($pyData['embedding']) === 512) {
-                                    $floats = $pyData['embedding'];
-                                }
-                                break;
-                            }
-                        }
-                    }
-                } catch (\Throwable $th) {}
+                $floats = $this->extractFaceEmbedding($filePath);
 
                 if (!empty($floats) && count($floats) === 512) {
                     $data['consent_facial_at'] = now();
@@ -353,6 +323,51 @@ class EmployeController extends Controller
         $emp->delete();
 
         return redirect()->route('employes.index')->with('success', "Employé {$name} supprimé avec succès !");
+    }
+
+    private function extractFaceEmbedding(string $filePath): array
+    {
+        // 1. Tenter le daemon ultra-rapide en mémoire (port 5001)
+        try {
+            $ch = curl_init('http://127.0.0.1:5001/extract');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['image_path' => $filePath]));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_TIMEOUT_MS, 4000);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, 300);
+            $res = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($code === 200 && $res) {
+                $data = json_decode($res, true);
+                if (isset($data['status']) && $data['status'] === 'success' && isset($data['embedding']) && count($data['embedding']) === 512) {
+                    return $data['embedding'];
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // 2. Repli direct sur l'exécution Python CLI
+        try {
+            $scriptPath = base_path('scripts/face_recognize.py');
+            $cmd = $this->getPythonBinary() . " " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
+            $pyOutput = shell_exec($cmd);
+            if ($pyOutput) {
+                foreach (explode("\n", $pyOutput) as $line) {
+                    $line = trim($line);
+                    if (str_starts_with($line, '{')) {
+                        $pyData = json_decode($line, true);
+                        if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success' && isset($pyData['embedding']) && count($pyData['embedding']) === 512) {
+                            return $pyData['embedding'];
+                        }
+                        break;
+                    }
+                }
+            }
+        } catch (\Throwable $th) {}
+
+        return [];
     }
 
     private function getPythonBinary(): string
