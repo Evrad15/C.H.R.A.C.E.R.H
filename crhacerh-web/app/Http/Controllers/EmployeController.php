@@ -216,9 +216,9 @@ class EmployeController extends Controller
             'consent_facial_at' => $request->filled('register_face') ? now() : null,
         ]);
 
-        // Sauvegarde de l'image faciale de référence et du descripteur face_embeddings
-        if ($request->filled('face_image_base64')) {
-            $rawBase64 = $request->input('face_image_base64');
+        // Sauvegarde de l'image faciale de référence et extraction ArcFace 512D
+        $rawBase64 = $request->input('face_image_base64') ?: $request->input('register_face');
+        if ($rawBase64 && str_starts_with($rawBase64, 'data:image')) {
             $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
             $imageContent = base64_decode($cleanedBase64);
             if ($imageContent) {
@@ -231,52 +231,29 @@ class EmployeController extends Controller
                 $floats = [];
                 try {
                     $scriptPath = base_path('scripts/face_recognize.py');
-                    $cmd = "python " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
+                    $cmd = $this->getPythonBinary() . " " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
                     $pyOutput = shell_exec($cmd);
                     if ($pyOutput) {
-                        $pyData = json_decode(trim($pyOutput), true);
-                        if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
-                            $floats = $pyData['embedding'];
+                        foreach (explode("\n", $pyOutput) as $line) {
+                            $line = trim($line);
+                            if (str_starts_with($line, '{')) {
+                                $pyData = json_decode($line, true);
+                                if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success' && isset($pyData['embedding']) && count($pyData['embedding']) === 512) {
+                                    $floats = $pyData['embedding'];
+                                }
+                                break;
+                            }
                         }
                     }
                 } catch (\Throwable $th) {}
 
-                if (empty($floats)) {
-                    for ($i = 0; $i < 128; $i++) {
-                        $floats[] = (float) rand() / (float) getrandmax();
-                    }
-                }
-
-                $emp->update([
-                    'consent_facial_at' => now(),
-                    'face_embeddings' => base64_encode(pack('f*', ...$floats)),
-                ]);
-            }
-        } elseif ($request->filled('register_face') && \Illuminate\Support\Facades\Storage::disk('public')->exists("faces/{$emp->id}.jpg")) {
-            $floats = [];
-            $filePath = storage_path("app/public/faces/{$emp->id}.jpg");
-            try {
-                $scriptPath = base_path('scripts/face_recognize.py');
-                $cmd = "python " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
-                $pyOutput = shell_exec($cmd);
-                if ($pyOutput) {
-                    $pyData = json_decode(trim($pyOutput), true);
-                    if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
-                        $floats = $pyData['embedding'];
-                    }
-                }
-            } catch (\Throwable $th) {}
-
-            if (empty($floats)) {
-                for ($i = 0; $i < 128; $i++) {
-                    $floats[] = (float) rand() / (float) getrandmax();
+                if (!empty($floats) && count($floats) === 512) {
+                    $emp->update([
+                        'consent_facial_at' => now(),
+                        'face_embeddings' => base64_encode(pack('f*', ...$floats)),
+                    ]);
                 }
             }
-
-            $emp->update([
-                'consent_facial_at' => now(),
-                'face_embeddings' => base64_encode(pack('f*', ...$floats)),
-            ]);
         }
 
         return redirect()->route('employes.index')->with('success', "Employé {$emp->full_name} ({$emp->matricule}) créé avec succès !");
@@ -318,49 +295,47 @@ class EmployeController extends Controller
             $data['fingerprint_registered_at'] = $request->filled('register_fingerprint') ? now() : null;
         }
 
-        if ($request->filled('face_image_base64')) {
-            $rawBase64 = $request->input('face_image_base64');
+        // Sauvegarde et extraction faciale ArcFace 512D
+        $rawBase64 = $request->input('face_image_base64') ?: $request->input('register_face');
+        if ($rawBase64 && str_starts_with($rawBase64, 'data:image')) {
             $cleanedBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $rawBase64);
             $imageContent = base64_decode($cleanedBase64);
             if ($imageContent) {
                 if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('faces')) {
                     \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('faces');
                 }
-                \Illuminate\Support\Facades\Storage::disk('public')->put("faces/{$emp->id}.jpg", $imageContent);
-            }
-        }
-
-        if ($request->has('register_face')) {
-            if ($request->filled('register_face')) {
-                $data['consent_facial_at'] = now();
-                
-                $floats = [];
                 $filePath = storage_path("app/public/faces/{$emp->id}.jpg");
-                if (file_exists($filePath)) {
-                    try {
-                        $scriptPath = base_path('scripts/face_recognize.py');
-                        $cmd = "python " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
-                        $pyOutput = shell_exec($cmd);
-                        if ($pyOutput) {
-                            $pyData = json_decode(trim($pyOutput), true);
-                            if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success') {
-                                $floats = $pyData['embedding'];
+                file_put_contents($filePath, $imageContent);
+
+                $floats = [];
+                try {
+                    $scriptPath = base_path('scripts/face_recognize.py');
+                    $cmd = $this->getPythonBinary() . " " . escapeshellarg($scriptPath) . " extract " . escapeshellarg($filePath);
+                    $pyOutput = shell_exec($cmd);
+                    if ($pyOutput) {
+                        foreach (explode("\n", $pyOutput) as $line) {
+                            $line = trim($line);
+                            if (str_starts_with($line, '{')) {
+                                $pyData = json_decode($line, true);
+                                if ($pyData && isset($pyData['status']) && $pyData['status'] === 'success' && isset($pyData['embedding']) && count($pyData['embedding']) === 512) {
+                                    $floats = $pyData['embedding'];
+                                }
+                                break;
                             }
                         }
-                    } catch (\Throwable $th) {}
-                }
-
-                if (empty($floats)) {
-                    for ($i = 0; $i < 128; $i++) {
-                        $floats[] = (float) rand() / (float) getrandmax();
                     }
+                } catch (\Throwable $th) {}
+
+                if (!empty($floats) && count($floats) === 512) {
+                    $data['consent_facial_at'] = now();
+                    $data['face_embeddings'] = base64_encode(pack('f*', ...$floats));
                 }
-                $data['face_embeddings'] = base64_encode(pack('f*', ...$floats));
-            } else {
-                $data['consent_facial_at'] = null;
-                $data['face_embeddings'] = null;
-                \Illuminate\Support\Facades\Storage::disk('public')->delete("faces/{$emp->id}.jpg");
             }
+        } elseif ($request->has('register_face') && !$request->filled('register_face')) {
+            // Suppression explicite du visage
+            $data['consent_facial_at'] = null;
+            $data['face_embeddings'] = null;
+            \Illuminate\Support\Facades\Storage::disk('public')->delete("faces/{$emp->id}.jpg");
         }
 
         $emp->update($data);
@@ -378,5 +353,18 @@ class EmployeController extends Controller
         $emp->delete();
 
         return redirect()->route('employes.index')->with('success', "Employé {$name} supprimé avec succès !");
+    }
+
+    private function getPythonBinary(): string
+    {
+        $envPy = env('PYTHON_BINARY');
+        if ($envPy && file_exists($envPy)) {
+            return $envPy;
+        }
+        $localPy = 'C:\Users\EVRAD\tools\python\python.exe';
+        if (file_exists($localPy)) {
+            return $localPy;
+        }
+        return 'python';
     }
 }

@@ -163,7 +163,7 @@ class RendezVousController extends Controller
                     $tempPath = storage_path('app/public/_temp_pat_' . $rdv->id . '_' . uniqid() . '.jpg');
                     file_put_contents($tempPath, $imageContent);
                     $scriptPath = base_path('scripts/face_recognize.py');
-                    $cmd = 'python ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
+                    $cmd = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
                     $pyOutput = shell_exec($cmd);
                     if (file_exists($tempPath)) @unlink($tempPath);
 
@@ -329,7 +329,7 @@ class RendezVousController extends Controller
                     $tempPath = storage_path('app/public/_temp_pat_' . $rdv->id . '_' . uniqid() . '.jpg');
                     file_put_contents($tempPath, $imageContent);
                     $scriptPath = base_path('scripts/face_recognize.py');
-                    $cmd = 'python ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
+                    $cmd = $this->getPythonBinary() . ' ' . escapeshellarg($scriptPath) . ' extract ' . escapeshellarg($tempPath);
                     $pyOutput = shell_exec($cmd);
                     if (file_exists($tempPath)) @unlink($tempPath);
 
@@ -378,5 +378,18 @@ class RendezVousController extends Controller
         $rdv->delete();
 
         return redirect()->route('rendezvous.index')->with('success', 'Rendez-vous supprimé avec succès !');
+    }
+
+    private function getPythonBinary(): string
+    {
+        $envPy = env('PYTHON_BINARY');
+        if ($envPy && file_exists($envPy)) {
+            return $envPy;
+        }
+        $localPy = 'C:\Users\EVRAD\tools\python\python.exe';
+        if (file_exists($localPy)) {
+            return $localPy;
+        }
+        return 'python';
     }
 }

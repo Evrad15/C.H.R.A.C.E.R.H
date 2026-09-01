@@ -9,8 +9,16 @@ class EmployeBiometricSeeder extends Seeder
 {
     public function run(): void
     {
-        // Supprimer les contraintes ou vider la table en préservant l'intégrité
-        DB::statement('TRUNCATE TABLE "employés" RESTART IDENTITY CASCADE');
+        // Supprimer les données existantes en respectant le moteur de base de données
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('TRUNCATE TABLE "employés" RESTART IDENTITY CASCADE');
+        } elseif (DB::getDriverName() === 'sqlite') {
+            DB::statement('DELETE FROM "employés"');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            DB::table('employés')->truncate();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
 
         $employees = array (
   0 => 

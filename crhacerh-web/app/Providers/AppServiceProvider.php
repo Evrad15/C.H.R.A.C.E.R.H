@@ -144,15 +144,18 @@ namespace App\Providers {
                         $cacheKey = 'daily_pointages_generated_' . $today;
 
                         if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->endOfDay());
                             $exists = \Illuminate\Support\Facades\DB::table('pointages')
                                 ->whereDate('created_at', $today)
                                 ->exists();
 
                             if (!$exists) {
-                                \Illuminate\Support\Facades\Artisan::call('pointages:generate-daily');
+                                try {
+                                    \Illuminate\Support\Facades\Artisan::call('pointages:generate-daily');
+                                } catch (\Throwable $t) {
+                                    // Ignorer si la commande console n'est pas instanciable dans ce contexte HTTP
+                                }
                             }
-
-                            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->endOfDay());
                         }
                     }
                 }

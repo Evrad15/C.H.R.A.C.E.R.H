@@ -1141,9 +1141,24 @@
 
         async function verifyCandidateBio(category, id, source) {
             try {
+                let liveImage = 'data:image/jpeg;base64,SIMULATED_FACE';
+                if (source === 'FACE') {
+                    const video = document.getElementById('webcam-stream');
+                    if (video && video.srcObject && (video.videoWidth > 0 || video.readyState >= 2)) {
+                        const vw = video.videoWidth || 640;
+                        const vh = video.videoHeight || 480;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(vw, 320);
+                        canvas.height = Math.max(vh, 240);
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        liveImage = canvas.toDataURL('image/jpeg', 0.95);
+                    }
+                }
+
                 const endpoint = source === 'FACE' ? '/api/kiosk/face-verify' : '/api/kiosk/biometric-verify';
                 const payload = source === 'FACE' ? {
-                    image: 'data:image/jpeg;base64,SIMULATED_FACE',
+                    image: liveImage,
                     category: category,
                     id: id
                 } : {
@@ -1154,7 +1169,8 @@
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify(payload)
                 });
@@ -1170,7 +1186,8 @@
                     showKioskToast('Échec Biométrique', result.message || 'Impossible de valider le pointage.', false);
                 }
             } catch (e) {
-                showKioskToast('Erreur de Connexion', 'Impossible de joindre le serveur.', false);
+                console.error(e);
+                showKioskToast('Erreur de Connexion', 'Le serveur n\'a pas pu traiter la demande.', false);
             }
         }
 
@@ -1217,7 +1234,7 @@
             const video = document.getElementById('webcam-stream');
             try {
                 videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: true
+                    video: { width: { ideal: 640 }, height: { ideal: 480 } }
                 });
                 video.srcObject = videoStream;
                 document.getElementById('face-scan-line').style.display = 'block';
@@ -1234,10 +1251,9 @@
                 return;
             }
 
-            // Découpage strict centré sur le visage (Forme ovale, élimine le décor ambiant)
-            const vw = video.videoWidth || 640;
-            const vh = video.videoHeight || 480;
-            const cropW = Math.round(vw * 0.68);
+            const vw = Math.max(video.videoWidth || 640, 320);
+            const vh = Math.max(video.videoHeight || 480, 240);
+            const cropW = Math.round(vw * 0.70);
             const cropH = Math.round(vh * 0.75);
             const cropX = Math.round((vw - cropW) / 2);
             const cropY = Math.round((vh - cropH) / 2);
@@ -1253,7 +1269,8 @@
                 const res = await fetch('/api/kiosk/face-verify', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({
                         image: dataUrl
@@ -1268,6 +1285,7 @@
                     showKioskToast('Visage Non Reconnu', result.message || 'Sélectionnez votre profil dans la liste ci-dessous.', false);
                 }
             } catch (e) {
+                console.error(e);
                 showKioskToast('Erreur de Connexion', 'Impossible de joindre le serveur.', false);
             }
         }

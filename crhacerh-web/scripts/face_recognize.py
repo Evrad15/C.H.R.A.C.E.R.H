@@ -30,6 +30,10 @@ TEMP_DIR    = os.path.join(BASE_DIR, 'temp_faces')
 def get_app():
     """Charge et retourne l'instance InsightFace FaceAnalysis (ArcFace buffalo_l)."""
     try:
+        import io
+        import contextlib
+        import logging
+        logging.getLogger('insightface').setLevel(logging.ERROR)
         import insightface
         from insightface.app import FaceAnalysis
     except ImportError:
@@ -37,12 +41,13 @@ def get_app():
 
     os.makedirs(MODELS_DIR, exist_ok=True)
     try:
-        app = FaceAnalysis(
-            name='buffalo_l',              # ArcFace R100 — le plus précis
-            root=MODELS_DIR,
-            providers=['CPUExecutionProvider']
-        )
-        app.prepare(ctx_id=0, det_size=(640, 640))
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            app = FaceAnalysis(
+                name='buffalo_l',              # ArcFace R100 — le plus précis
+                root=MODELS_DIR,
+                providers=['CPUExecutionProvider']
+            )
+            app.prepare(ctx_id=0, det_size=(640, 640))
         return app, None
     except Exception as e:
         return None, f"Erreur chargement InsightFace: {str(e)}"
@@ -264,10 +269,9 @@ def run_recognition():
     elif action == 'compare_vectors':
         import numpy as np
 
-        captured_input  = sys.argv[2]
-        candidates_json = sys.argv[3]
-        is_temp         = False
-        captured_path   = captured_input
+        candidates_input = sys.argv[3]
+        is_temp          = False
+        captured_path    = captured_input
 
         if captured_input.startswith('data:image') or len(captured_input) > 255:
             captured_path = decode_b64_to_temp(captured_input)
@@ -289,9 +293,13 @@ def run_recognition():
             sys.exit(0)
 
         try:
-            candidates_data = json.loads(candidates_json)
-        except Exception:
-            print(json.dumps({"status": "error", "message": "JSON candidats invalide."}))
+            if os.path.isfile(candidates_input):
+                with open(candidates_input, 'r', encoding='utf-8') as f:
+                    candidates_data = json.load(f)
+            else:
+                candidates_data = json.loads(candidates_input)
+        except Exception as ex:
+            print(json.dumps({"status": "error", "message": f"JSON candidats invalide: {str(ex)}"}))
             sys.exit(1)
 
         results = []

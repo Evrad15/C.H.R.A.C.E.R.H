@@ -16,12 +16,7 @@ class GenerateDailyPointages extends Command
      * ex: php artisan pointages:generate-daily --from=2026-08-01 --to=2026-08-05 --force
      * ex: php artisan pointages:generate-daily --days=7 --force
      */
-    protected $signature = 'pointages:generate-daily 
-                            {--date= : La date cible (format YYYY-MM-DD)} 
-                            {--from= : Date de début (format YYYY-MM-DD)} 
-                            {--to= : Date de fin (format YYYY-MM-DD)} 
-                            {--days= : Nombre de jours en arrière à générer jusqu\'à aujourd\'hui} 
-                            {--force : Force la régénération même si des pointages existent déjà}';
+    protected $signature = 'pointages:generate-daily {--date= : La date cible (format YYYY-MM-DD)} {--from= : Date de début (format YYYY-MM-DD)} {--to= : Date de fin (format YYYY-MM-DD)} {--days= : Nombre de jours en arrière à générer jusqu\'à aujourd\'hui} {--force : Force la régénération même si des pointages existent déjà}';
 
     /**
      * La description de la commande console.
