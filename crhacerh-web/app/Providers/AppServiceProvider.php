@@ -1,83 +1,14 @@
 <?php
 
-namespace Illuminate\Support {
-    if (!function_exists('Illuminate\Support\extension_loaded')) {
-        function extension_loaded($name) {
-            if ($name === 'intl') {
-                return true;
-            }
-            return \extension_loaded($name);
-        }
-    }
-}
+namespace App\Providers;
 
-namespace {
-    if (!class_exists('NumberFormatter')) {
-        class NumberFormatter
-        {
-            const DECIMAL = 1;
-            const PERCENT = 2;
-            const CURRENCY = 3;
-            const SPELLOUT = 4;
-            const ORDINAL = 5;
-            const MAX_FRACTION_DIGITS = 6;
-            const FRACTION_DIGITS = 7;
-            const DEFAULT_RULESET = 8;
+use Illuminate\Support\ServiceProvider;
+use Filament\GlobalSearch\Contracts\GlobalSearchProvider;
+use Filament\GlobalSearch\Models\SearchResult;
+use Filament\GlobalSearch\Models\SearchResults;
+use Carbon\Carbon;
 
-            private $locale;
-            private $style;
-            private $attributes = [];
-            private $textAttributes = [];
-
-            public function __construct($locale, $style)
-            {
-                $this->locale = $locale;
-                $this->style = $style;
-            }
-
-            public function setAttribute($attribute, $value)
-            {
-                $this->attributes[$attribute] = $value;
-                return true;
-            }
-
-            public function setTextAttribute($attribute, $value)
-            {
-                $this->textAttributes[$attribute] = $value;
-                return true;
-            }
-
-            public function format($number)
-            {
-                if ($this->style === self::PERCENT) {
-                    $number = $number * 100;
-                    $formatted = number_format($number, $this->attributes[self::FRACTION_DIGITS] ?? 0, '.', ' ');
-                    return $formatted . '%';
-                }
-
-                $precision = $this->attributes[self::FRACTION_DIGITS] ?? $this->attributes[self::MAX_FRACTION_DIGITS] ?? 0;
-                return number_format($number, $precision, ',', ' ');
-            }
-
-            public function formatCurrency($number, $currency)
-            {
-                $precision = $this->attributes[self::FRACTION_DIGITS] ?? 2;
-                $formatted = number_format($number, $precision, ',', ' ');
-                return $formatted . ' ' . $currency;
-            }
-        }
-    }
-}
-
-namespace App\Providers {
-
-    use Illuminate\Support\ServiceProvider;
-    use Filament\GlobalSearch\Contracts\GlobalSearchProvider;
-    use Filament\GlobalSearch\Models\SearchResult;
-    use Filament\GlobalSearch\Models\SearchResults;
-    use Carbon\Carbon;
-
-    class AppServiceProvider extends ServiceProvider
+class AppServiceProvider extends ServiceProvider
     {
         /**
          * Register any application services.
@@ -164,4 +95,3 @@ namespace App\Providers {
             }
         }
     }
-}

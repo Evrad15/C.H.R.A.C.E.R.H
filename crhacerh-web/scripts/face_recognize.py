@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import base64
+import numpy as np
 
 # =============================================================================
 #  Moteur de reconnaissance faciale — InsightFace ArcFace
@@ -123,12 +124,18 @@ def decode_b64_to_temp(b64_input):
     """Décode une image base64 vers un fichier temporaire."""
     import time, random
     os.makedirs(TEMP_DIR, exist_ok=True)
-    raw_b64   = b64_input.split(',')[-1]
-    img_bytes = base64.b64decode(raw_b64)
-    path = os.path.join(TEMP_DIR, f'_temp_{int(time.time())}_{random.randint(1000,9999)}.jpg')
-    with open(path, 'wb') as f:
-        f.write(img_bytes)
-    return path
+    try:
+        raw_b64 = b64_input.split(',')[-1].strip()
+        missing_padding = len(raw_b64) % 4
+        if missing_padding:
+            raw_b64 += '=' * (4 - missing_padding)
+        img_bytes = base64.b64decode(raw_b64)
+        path = os.path.join(TEMP_DIR, f'_temp_{int(time.time())}_{random.randint(1000,9999)}.jpg')
+        with open(path, 'wb') as f:
+            f.write(img_bytes)
+        return path
+    except Exception:
+        return None
 
 
 def run_recognition():
@@ -158,6 +165,13 @@ def run_recognition():
         if captured_input.startswith('data:image') or len(captured_input) > 255:
             captured_path = decode_b64_to_temp(captured_input)
             is_temp       = True
+
+        if captured_path is None or not os.path.exists(captured_path):
+            print(json.dumps({
+                "status":  "error",
+                "message": "Fichier image capturee introuvable ou illisible."
+            }))
+            sys.exit(0)
 
         v = get_embedding(app, captured_path)
 
@@ -195,6 +209,13 @@ def run_recognition():
         if captured_input.startswith('data:image') or len(captured_input) > 255:
             captured_path = decode_b64_to_temp(captured_input)
             is_temp       = True
+
+        if captured_path is None or not os.path.exists(captured_path):
+            print(json.dumps({
+                "status":  "error",
+                "message": "Fichier image capturee introuvable ou illisible."
+            }))
+            sys.exit(0)
 
         v_captured = get_embedding(app, captured_path)
 
@@ -267,8 +288,7 @@ def run_recognition():
     # Utilisé par le PHP pour la comparaison 1:N depuis la base de données.
     # =========================================================================
     elif action == 'compare_vectors':
-        import numpy as np
-
+        captured_input   = sys.argv[2]
         candidates_input = sys.argv[3]
         is_temp          = False
         captured_path    = captured_input
@@ -276,6 +296,13 @@ def run_recognition():
         if captured_input.startswith('data:image') or len(captured_input) > 255:
             captured_path = decode_b64_to_temp(captured_input)
             is_temp       = True
+
+        if captured_path is None or not os.path.exists(captured_path):
+            print(json.dumps({
+                "status":  "error",
+                "message": "Fichier image capturee introuvable ou illisible."
+            }))
+            sys.exit(0)
 
         v_captured = get_embedding(app, captured_path)
 

@@ -33,4 +33,7 @@ Thumbs.db
 /models/**/*.bin
 /models/**/*.pt
 /models/**/*.pth
-/temp_faces/
+# Fichiers Python
+__pycache__/
+*.pyc
+*.pyo
