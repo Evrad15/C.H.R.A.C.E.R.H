@@ -87,27 +87,73 @@ php artisan migrate
 php artisan db:seed   # optionnel — données de démonstration
 ```
 
-### 5. Dépendances Python (moteur biométrique)
+### 5. Environnement & Dépendances Python (Moteur Biométrique InsightFace)
 
-```bash
-pip install insightface onnxruntime opencv-python numpy
+Le moteur de reconnaissance faciale repose sur **InsightFace (modèle ArcFace `buffalo_l` 512D)**, **ONNX Runtime** et **OpenCV**.
+
+#### A. Création et activation de l'environnement virtuel (Recommandé)
+
+Sur Windows (PowerShell) :
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 ```
 
-### 6. Télécharger les modèles InsightFace
-
-> Les modèles ONNX ne sont pas inclus dans le dépôt (trop lourds). Ils sont téléchargés automatiquement au premier appel, ou via le script :
-
+Sur Linux / macOS (Bash) :
 ```bash
-python scripts/download_models.py
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-Les modèles sont mis en cache dans `models/insightface/models/buffalo_l/`.
+#### B. Mise à niveau des outils de packaging
+```bash
+pip install --upgrade pip setuptools wheel
+```
 
-### 7. Lancer les serveurs
+#### C. Installation des dépendances via `requirements.txt`
+```bash
+pip install -r requirements.txt
+```
+
+> **Note GPU (Optionnelle) :** Si vous disposez d'une carte graphique NVIDIA avec CUDA et cuDNN configurés, remplacez `onnxruntime` par la version GPU pour accélérer les inférences :
+> ```bash
+> pip uninstall -y onnxruntime
+> pip install onnxruntime-gpu
+> ```
+
+#### D. Configuration du chemin Python dans Laravel (Optionnel)
+Si votre binaire Python n'est pas dans le `PATH` global, définissez son chemin absolu dans votre fichier `.env` :
+```env
+PYTHON_BINARY="C:\chemin\vers\votre\python.exe"
+```
+
+---
+
+### 6. Téléchargement des Modèles Biométriques
+
+Les modèles neuronaux ONNX ne sont pas versionnés dans Git en raison de leur taille (~250 Mo). Ils sont automatiquement téléchargés au premier démarrage ou manuellement :
 
 ```bash
-php artisan serve      # Laravel — http://127.0.0.1:8000
-npm run dev            # Vite — http://localhost:5173
+python -c "import insightface; app = insightface.app.FaceAnalysis(name='buffalo_l', root='models/insightface'); app.prepare(ctx_id=0, det_size=(320, 320)); print('Modèles buffalo_l prêts !')"
+```
+
+Les modèles seront stockés dans le dossier local : `models/insightface/models/buffalo_l/`.
+
+---
+
+### 7. Lancer les Serveurs de l'Application
+
+Pour un fonctionnement optimal de la borne et du portail RH, démarrez les 3 services :
+
+```bash
+# Terminal 1 : Démon Biométrique IA (Reconnaissance faciale ultra-rapide < 200 ms)
+python scripts/face_daemon.py
+
+# Terminal 2 : Serveur Web Laravel RH & Kiosk
+php artisan serve --port=8000
+
+# Terminal 3 : Serveur Frontend Vite (Compilation live du CSS / JS)
+npm run dev
 ```
 
 ---

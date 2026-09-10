@@ -63,6 +63,7 @@ Système Intégré de Gestion des Présences.../
 * **PHP :** Version `>= 8.2` avec extensions `pdo_pgsql`, `gd`, `zip`, `xml`, `mbstring`.
 * **SGBD :** PostgreSQL version `>= 15`.
 * **Gestionnaires :** Composer `>= 2.6` & Node.js `>= 18` (npm).
+* **Python :** Version `3.10` à `3.12` avec `pip` (pour le moteur biométrique InsightFace ArcFace).
 
 ---
 
@@ -80,12 +81,31 @@ Système Intégré de Gestion des Présences.../
    npm run build
    ```
 
-3. Créez la base de données PostgreSQL :
+3. Installez l'environnement et les dépendances Python (Biométrie InsightFace) :
+   ```bash
+   # Création et activation du venv (optionnel mais recommandé)
+   python -m venv venv
+   # Windows PowerShell :
+   .\venv\Scripts\Activate.ps1
+   # Linux/macOS :
+   source venv/bin/activate
+
+   # Mise à jour des outils de build et installation des bibliothèques IA
+   pip install --upgrade pip setuptools wheel
+   pip install -r requirements.txt
+   ```
+
+4. Téléchargez les modèles d'IA pré-entraînés (InsightFace `buffalo_l` 512D) :
+   ```bash
+   python -c "import insightface; app = insightface.app.FaceAnalysis(name='buffalo_l', root='models/insightface'); app.prepare(ctx_id=0, det_size=(320, 320)); print('Modèles buffalo_l opérationnels !')"
+   ```
+
+5. Créez la base de données PostgreSQL :
    ```sql
    CREATE DATABASE chracerh_db;
    ```
 
-4. Configurez le fichier d'environnement :
+6. Configurez le fichier d'environnement :
    ```bash
    cp .env.example .env
    ```
@@ -97,18 +117,28 @@ Système Intégré de Gestion des Présences.../
    DB_DATABASE=chracerh_db
    DB_USERNAME=postgres
    DB_PASSWORD=votre_mot_de_passe
+
+   # Chemin absolu de Python si non présent dans le PATH global (optionnel)
+   PYTHON_BINARY="C:\chemin\vers\python.exe"
    ```
 
-5. Générez la clé d'application et exécutez les migrations :
+7. Générez la clé d'application et exécutez les migrations :
    ```bash
    php artisan key:generate
    php artisan migrate --seed
    php artisan storage:link
    ```
 
-6. Lancez le serveur de développement :
+8. Lancez les serveurs :
    ```bash
-   php artisan serve
+   # 1. Démon Biométrique IA (Port 5001)
+   python scripts/face_daemon.py
+
+   # 2. Serveur Web Laravel (Port 8000)
+   php artisan serve --port=8000
+
+   # 3. Serveur Assets Vite (Port 5173 - Hot Module Replacement)
+   npm run dev
    ```
 
 ---

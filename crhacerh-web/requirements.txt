@@ -1,0 +1,16 @@
+# Moteur Biométrique CHRACERH (InsightFace ArcFace 512D)
+# Compatible Python 3.10 - 3.12
+
+# Dépendances principales pour la reconnaissance faciale
+insightface>=0.7.3
+onnx>=1.15.0
+onnxruntime>=1.16.0  # Remplacer par onnxruntime-gpu si GPU NVIDIA avec CUDA disponible
+opencv-python>=4.8.0.76
+numpy>=1.24.0,<3.0.0
+Pillow>=10.0.0
+
+# Utilitaires & réseau
+requests>=2.31.0
+tqdm>=4.66.0
+scipy>=1.11.0
+scikit-image>=0.21.0
